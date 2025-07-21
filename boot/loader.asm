@@ -4,8 +4,6 @@
 
 org LOADER_BASE_ADDR
 section loader
-
-    LOADER_STACK_TOP equ LOADER_BASE_ADDR
     ; jmp loader_start
 
     ; 构建gdt及其内部的描述符
@@ -18,7 +16,7 @@ section loader
     DATA_STACK_DESC:    dd 0x0000FFFF
                         dd DESC_DATA_HIGH4
 
-    VIDEO_DESC:         dd 0x80000007   ; limit = (0xBFFFF - 0xB800) / 4K = 0x7
+    VIDEO_DESC:         dd 0x80000007   ; limit = (0xBFFFF - 0xB8000) / 4K = 0x7
                         dd DESC_VIDEO_HIGH4 ;
 
     GDT_SIZE equ $ - GDT_BASE
@@ -33,7 +31,7 @@ section loader
 
     ; gdt指针 前2字节为gdt界限 后4字节为gdt起始地址 共48位
 
-    gdt_ptr:
+    gdt_ptr
         dw GDT_LIMIT
         dd GDT_BASE
 
@@ -102,7 +100,7 @@ loader_start: ; (地址 0xC00 文件地址0x300)
 .e801_failed_so_try88:
     mov ax, 0x88
     int 0x15        ; KB为单位 ax存取个数
-    nop  ; jc .error_hlt
+    jc .error_hlt
     and eax, 0x0000FFFF ; 只有低16位(ax)存有正确结果, 于是确保
 
     mov cx, 0x400
@@ -132,10 +130,14 @@ loader_start: ; (地址 0xC00 文件地址0x300)
     or eax, 0x00000001
     mov cr0, eax 
 
-    jmp SELECTOR_CODE:p_mode_start    ; 刷新段描述缓冲寄存器与流水线
+    jmp dword SELECTOR_CODE:p_mode_start    ; 刷新段描述缓冲寄存器与流水线
+
+.error_hlt:
+    hlt
 
 [bits 32]
 p_mode_start:
+
     mov ax, SELECTOR_DATA
     mov ds, ax
     mov es, ax
@@ -144,6 +146,12 @@ p_mode_start:
 
     mov ax, SELECTOR_VIDEO
     mov gs, ax
+
+    mov eax, KERNEL_START_SECTOR    ; kernel.bin所在的扇区号
+    mov ebx, KERNEL_BIN_BASE_ADDR   ; 磁盘读出后写入内存的起始地址
+    mov ecx, 200                    ; 读取的扇区数
+
+    call rd_disk_m_32
     
     ; 创建页目录及页表并初始化页内存位图
     call setup_page
@@ -172,7 +180,58 @@ p_mode_start:
 
     mov byte [gs:160], 'V'
 
-    jmp $
+    jmp SELECTOR_CODE:enter_kernel ; 32->32 原则不需要刷流水线，但确保什么 刷上
+enter_kernel:
+    call kernel_init
+    mov esp, 0xc009f000
+    jmp KERNEL_ENTRY_POINT
+
+;--------------------------------加载内核-------------------------------------
+kernel_init:
+    xor eax, eax 
+    xor ebx, ebx    ; 记录程序头表位置
+    xor ecx, ecx    ; 记录程序头表中的program header数量
+    xor edx, edx    ; dx 记录program header的尺寸(e_phenesize)
+
+    mov dx, [KERNEL_BIN_BASE_ADDR + 42] ; [42]处属性是e_phentsize 表示program header大小
+    mov ebx, [KERNEL_BIN_BASE_ADDR + 28] ; [28]处是e_phoff 表示第一个program header在文件中的偏移量
+
+    add ebx, KERNEL_BIN_BASE_ADDR
+    mov cx, [KERNEL_BIN_BASE_ADDR + 44] ; [44]处是e_phnum 表示program header数量(有几个program header)
+
+.each_segment:
+    cmp byte [ebx + 0], PT_NULL ; 若p_type为PT_NULL, 说明此program header未使用
+    je .PTNULL
+
+    ; 为函数 memcpy 压入参数 从右往左入栈 memcpy(dst, src, size)
+    push dword [ebx + 16] ; program_header[16]是p_filesz
+    mov eax, [ebx + 4] ; ph[4]是p_offset
+    add eax, KERNEL_BIN_BASE_ADDR ; 加上kernal二进制的加载地址
+    push eax ; 压入 src
+    push dword [ebx + 8] ; 压入 dst
+    call memcpy
+    add esp, 12
+.PTNULL:
+    add ebx, edx        ; edx为program header大小(e_phentsize) 这里指向下一个程序头
+    loop .each_segment
+    ret
+
+; memcpy(dst, src, size) -> void
+; 右往左压栈输入三个参数
+memcpy:
+    cld 
+    push ebp
+    mov ebp, esp 
+    push ecx    ; 要用到ecx 备份外层的ecx
+
+    mov edi, [ebp + 8]      ; dst
+    mov esi, [ebp + 12]     ; src
+    mov ecx, [ebp + 16]     ; size
+    rep movsb               ; 逐字节拷贝
+
+    pop ecx 
+    pop ebp 
+    ret
 
 setup_page:
     ; 清空页目录表
@@ -253,3 +312,61 @@ setup_page:
     add eax, 0x1000
     loop .create_kernel_pde 
     ret
+
+rd_disk_m_32: ; (eax, ebx, ecx) LBA扇区号 写入的内存地址 读入的扇区数
+    mov esi, eax 
+    mov di, cx  ; 备份eax cx
+
+    ; 设置读取的扇区数
+    mov dx, 0x1f2   ; 设置端口
+    mov al, cl 
+    out dx, al 
+
+    mov eax, esi   ; 恢复 eax
+
+    ; 将LBA地址存入 0x1f3 ~ 0x1f6
+    ; 7~0
+    mov dx, 0x1f3
+    out dx, al 
+    ; 15~8
+    mov cl, 8
+    shr eax, cl 
+    mov dx, 0x1f4
+    out dx, al 
+    ; 23~16
+    shr eax, cl 
+    mov dx, 0x1f5 
+    out dx, al 
+    ; 27~24
+    shr eax, cl 
+    and al, 0x0f 
+    or al, 0xe0 
+    mov dx, 0x1f6 
+    out dx, al
+
+    ; 向0x1f7端口写入读命令, 0x20
+    mov dx, 0x1f7 
+    mov al, 0x20 
+    out dx, al 
+
+.not_ready:
+    nop                  ; 空操作 增加延迟 (等待磁盘准备好)
+    in al, dx            ; 写入后的读取状态寄存器
+    and al, 0x88         ; al[4] 为1表示准备好了 al[7] 为1表示忙 取两位
+    cmp al, 0x08         ; 表示读取命令执行完毕 al[4] = 1 and al[7] = 0
+    jnz .not_ready       ; 如果非上述条件，继续循环
+
+    mov ax, di           ; 一开始di存储要读取的扇区个数
+    mov dx, 256 
+    mul dx               ; dx|ax = 读取扇区个数 * 256字节 (不会溢出16位到dx，因为读取磁盘个数限制在255个以内)
+    mov cx, ax           ; cx = ax = 读取的次数 (一次读取一个字(2字节) )
+    mov dx, 0x1f0        ; 指定端口 0x1f0
+
+.go_on_read:
+    in ax, dx            ; 读取数据
+    mov [ebx], ax         ; 将数据写入bx (函数参数，要写入的目标内存地址)
+    add ebx, 2            ; 移动bx到下一个字
+    loop .go_on_read     ; 循环读取 (loop每次执行默认自减 cx)
+
+    ret
+    
