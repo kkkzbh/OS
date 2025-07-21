@@ -4,16 +4,8 @@
 
 int kkkzbh(void)
 {
-    putchar('k');
-    putchar('k');
-    putchar('k');
-    putchar('z');
-    putchar('b');
-    putchar('h');
-    putchar('\b');
-    putchar('\n');
-    putchar('k');
-
+    puts("kkkzbh says: Hello OS\n");
+    puthex(0x123);
 
     while(true) {}
 }
