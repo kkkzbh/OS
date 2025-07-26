@@ -31,7 +31,7 @@ section loader
 
     ; gdt指针 前2字节为gdt界限 后4字节为gdt起始地址 共48位
 
-    gdt_ptr
+    gdt_ptr:
         dw GDT_LIMIT
         dd GDT_BASE
 
