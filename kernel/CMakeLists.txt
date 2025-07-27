@@ -12,9 +12,10 @@ target_include_directories(stdio PRIVATE
 
 # 创建内核可执行文件
 add_executable(kernel
-    main.c
-    interrupt.c
-    kernel.asm
+        main.c
+        interrupt.c
+        kernel.asm
+        init.c
 )
 
 # 设置内核的包含目录
