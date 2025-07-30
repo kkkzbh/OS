@@ -27,6 +27,12 @@ target_include_directories(kernel PRIVATE
 # 链接stdio库到内核
 target_link_libraries(kernel PRIVATE stdio)
 
+# 设置编译选项 - 添加调试信息
+target_compile_options(kernel PRIVATE
+    $<$<COMPILE_LANGUAGE:C>:-g>
+    $<$<COMPILE_LANGUAGE:ASM>:-g -F dwarf>
+)
+
 # 设置链接器选项 - 修复入口点问题 (现代写法)
 target_link_options(kernel PRIVATE
     "-nostartfiles"

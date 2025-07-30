@@ -5,8 +5,10 @@
 %define ZERO push 0
 
 extern puts
+extern idt_table ; C中注册的中断处理程序数组
 
 global intr_entry_table
+global intr_exit
 
 section .data
 
@@ -17,21 +19,36 @@ intr_entry_table:
 section .text 
 intr%1entry:
     %2
-    push intr_str
-    call puts 
-    add esp, 4
+    push ds
+    push es 
+    push fs
+    push gs
+    pushad
+    
 
     mov al, 0x20
     out 0xa0, al    ; 向从片发送 EOI
     out 0x20, al    ; 向主片发送 EOI
 
-    add esp, 4      ; 清理 error_code
-    iret 
+    push %1         ; 压入中断向量号
+    call [idt_table + %1 * 4]
+    jmp intr_exit
 
 section .data 
     dd intr%1entry  ; 中断入口程序地址
 
 %endmacro
+
+section .text 
+intr_exit:
+    add esp, 4
+    popad 
+    pop gs 
+    pop fs 
+    pop es 
+    pop ds 
+    add esp, 4  ; error_code
+    iretd
 
 VECTOR 0x00, ZERO 
 VECTOR 0x01, ZERO 
