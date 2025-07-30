@@ -9,10 +9,8 @@ int kkkzbh()
     puthex(0x123);
     putchar('\n');
 
-
     init_all();
     asm volatile("sti");
-
 
     while(true) {}
 }
