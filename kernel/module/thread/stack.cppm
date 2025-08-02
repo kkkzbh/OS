@@ -4,6 +4,8 @@ module thread:stack;
 
 import :utility;
 
+import :list;
+
 // 中断栈数据结构
 // 维护中断发生时，保护程序(线程或进程)的上下文环境
 // 在线程自己的内核栈中位置固定，所在页的最顶端
@@ -54,8 +56,16 @@ struct task
 {
     u32* self_kstack;       // 各个内核线程都用自己的内核栈
     status stu;             // 状态
-    u8 priority;            // 优先级
     char name[16];
+    u8 priority;            // 优先级
+    u8 ticks;               // 每次在处理器上执行的时间嘀嗒数
+
+    u32 elapsed_ticks;      // 此任务上cpu运行后至今占用了多少cpu嘀嗒数
+
+    list::node general_tag; // 用于线程在一般的队列中的节点
+    list::node all_list_tag;// 用于线程队列thread_all_list中的节点
+
+    u32* pgdir;             // 进程自己页表的虚拟地址
     u32 stack_magic;        // 栈的边界标记，防止溢出
 };
 

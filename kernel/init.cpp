@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <interrupt.h>
 #include <time.h>
+#include <assert.h>
 
 import memory;
 
