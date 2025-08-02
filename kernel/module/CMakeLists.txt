@@ -77,6 +77,7 @@ target_sources(thread
         thread/utility.cppm
         thread/stack.cppm
         thread/exec.cppm
+        thread/list.cppm
 )
 
 target_link_libraries(thread
@@ -85,18 +86,7 @@ target_link_libraries(thread
         memory
         string
         stdio
-)
-
-add_library(list)
-
-target_sources(list
-        PUBLIC
-        FILE_SET CXX_MODULES
-        FILES
-        list.cppm
-)
-
-target_link_libraries(list
-        PRIVATE
+        list
         interrupt
+        assert
 )

@@ -2,16 +2,18 @@ module;
 
 #include <interrupt.h>
 
-export module list;
+module thread:list;
 
-struct node
-{
-    node* prev;
-    node* next;
-};
+import utility;
 
-export struct list
+struct list
 {
+    struct node
+    {
+        node* prev;
+        node* next;
+    };
+
     auto insert(node* it,node* v) -> list&
     {
         auto old_stu = intr_disable();
@@ -68,14 +70,14 @@ export struct list
         return *this;
     }
 
-    auto begin() -> node*
+    auto begin(this auto&& self) -> auto*
     {
-        return head.next;
+        return self.head.next;
     }
 
-    auto end() -> node*
+    auto end(this auto&& self) -> auto*
     {
-        return &tail;
+        return &self.tail;
     }
 
     auto contains(node* v) const -> bool
@@ -109,10 +111,18 @@ export struct list
         return nullptr;
     }
 
+    auto init() -> list&
+    {
+        sz = 0;
+        head = { nullptr,&tail };
+        tail = { &head,nullptr };
+        return *this;
+    }
+
     // head->prev 用作 bound 第一个元素实为head->next
     // tail->next 用作 bound
-    size_t sz = 0;
-    node head{ nullptr,&tail };
-    node tail{ &head,nullptr };
+    size_t sz;
+    node head;
+    node tail;
 };
 
