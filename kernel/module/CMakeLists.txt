@@ -76,3 +76,28 @@ target_link_libraries(memory
         string
         assert
 )
+
+add_library(thread)
+
+target_sources(thread
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        thread/thread.cppm
+        thread/utility.cppm
+        thread/stack.cppm
+        thread/exec.cppm
+)
+
+target_include_directories(thread
+        PRIVATE
+        ${KERNEL}/include/
+)
+
+target_link_libraries(thread
+        PRIVATE
+        utility
+        memory
+        string
+        stdio
+)
