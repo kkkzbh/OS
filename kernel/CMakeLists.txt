@@ -90,6 +90,7 @@ target_link_libraries(kernel
         interrupt
         assert
         memory
+        thread
 )
 
 # 设置编译选项 - 添加调试信息
