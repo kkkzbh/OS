@@ -1,7 +1,7 @@
 
 
-#ifndef IO_H
-#define IO_H
+#ifndef _IO_H
+#define _IO_H
 
 #include <stdint.h>
 
@@ -48,4 +48,4 @@ void static insw(u16 port,void* addr,u32 word_cnt)
 
 
 
-#endif //IO_H
+#endif //_IO_H

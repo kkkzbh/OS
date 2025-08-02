@@ -1,17 +1,25 @@
 cmake_minimum_required(VERSION 4.0.1)
 
 project(KernelOS
-    LANGUAGES C ASM_NASM
+    LANGUAGES C ASM_NASM CXX
     VERSION 1.0.0
     DESCRIPTION "Custom Operating System Project"
 )
 
 # 设置编译器和标准
 set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 
 # 32位目标架构设置
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -ffreestanding -nostdlib -nostdinc -fno-builtin -fno-stack-protector")
+
+# C++ 32位目标架构设置
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32 -ffreestanding -nostdlib -nostdinc -fno-builtin -fno-stack-protector")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti -fno-threadsafe-statics")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-use-cxa-atexit -nostdlib++")
+
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib")
+
 
 # NASM汇编器设置
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf32)

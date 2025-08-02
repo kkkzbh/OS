@@ -1,9 +1,9 @@
 
 
-#ifndef INIT_H
+#ifndef _KINIT_H
+#define _KINIT_H
 
 void init_all();
 
-#define INIT_H
 
-#endif //INIT_H
+#endif //_KINIT_H
