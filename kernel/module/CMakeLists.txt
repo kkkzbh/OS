@@ -35,11 +35,6 @@ target_sources(bitmap
         FILES bitmap.cppm
 )
 
-target_include_directories(bitmap
-        PRIVATE
-        ${KERNEL}/include/
-)
-
 target_link_libraries(bitmap
         PRIVATE
         stdio
@@ -63,11 +58,6 @@ target_sources(memory
         memory/pool.cppm
 )
 
-target_include_directories(memory
-        PRIVATE
-        ${KERNEL}/include/
-)
-
 target_link_libraries(memory
         PRIVATE
         bitmap
@@ -89,15 +79,24 @@ target_sources(thread
         thread/exec.cppm
 )
 
-target_include_directories(thread
-        PRIVATE
-        ${KERNEL}/include/
-)
-
 target_link_libraries(thread
         PRIVATE
         utility
         memory
         string
         stdio
+)
+
+add_library(list)
+
+target_sources(list
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        list.cppm
+)
+
+target_link_libraries(list
+        PRIVATE
+        interrupt
 )
