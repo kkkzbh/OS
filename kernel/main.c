@@ -24,11 +24,12 @@
 //     }
 // }
 
+void start();
+
 int kkkzbh()
 {
     // 在init_all()之前调用C++全局构造函数
     // call_global_constructors();
-
 
     puts("kkkzbh says: Hello OS\n");
     puthex(0x123);
@@ -37,9 +38,9 @@ int kkkzbh()
 
     init_all();
 
+    start();
 
     ASSERT(1 == 2);
 
-    while(true) {
-    }
+    return 0;
 }

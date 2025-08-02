@@ -11,9 +11,6 @@ export auto mem_init() -> void;
 
 
 
-module : private;
-
-
 auto mem_pool_init(u32 all_mem) -> void
 {
     puts("   mem_pool_init start\n");

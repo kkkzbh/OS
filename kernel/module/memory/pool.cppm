@@ -1,6 +1,6 @@
 
 
-export module memory:pool;
+module memory:pool;
 
 import bitmap;
 import :utility;
@@ -59,6 +59,25 @@ struct pool : bitmap
     u32 pool_size;
 };
 
-export auto kernel_pool = pool{};          // 内核物理内存池位图
-export auto user_pool = pool{};            // 用户物理内存池位图
-export auto kernel_vaddr = virtual_addr{}; // 内核虚拟地址池位图
+auto kernel_pool = pool{};          // 内核物理内存池位图
+auto user_pool = pool{};            // 用户物理内存池位图
+auto kernel_vaddr = virtual_addr{}; // 内核虚拟地址池位图
+auto user_vaddr = virtual_addr{};
+
+
+
+auto get_pool(pool_flags pf) -> pool&
+{
+    if(pf == pool_flags::KERNEL) {
+        return kernel_pool;
+    }
+    return user_pool;
+}
+
+auto get_vaddr(pool_flags pf) -> virtual_addr&
+{
+    if(pf == pool_flags::KERNEL) {
+        return kernel_vaddr;
+    }
+    return user_vaddr;
+}

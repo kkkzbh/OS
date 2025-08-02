@@ -57,10 +57,10 @@ target_sources(memory
         FILE_SET CXX_MODULES
         FILES
         memory/memory.cppm
-        memory/pool.cppm
-        memory/utilty.cppm
         memory/init.cppm
         memory/pgtable.cppm
+        memory/utilty.cppm
+        memory/pool.cppm
 )
 
 target_include_directories(memory
@@ -73,4 +73,6 @@ target_link_libraries(memory
         bitmap
         utility
         stdio
+        string
+        assert
 )
