@@ -102,7 +102,7 @@ set(DEVICE ${CMAKE_SOURCE_DIR}/device)
 add_executable(kernel
         main.c
         kernel.asm
-        init.c
+        init.cpp
         ${DEVICE}/time.c
 )
 
@@ -119,7 +119,7 @@ target_link_libraries(kernel
         stdio
         interrupt
         assert
-        cmemory
+        memory
 )
 
 # 设置编译选项 - 添加调试信息

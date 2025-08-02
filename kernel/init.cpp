@@ -4,9 +4,10 @@
 #include <stdio.h>
 #include <interrupt.h>
 #include <time.h>
-#include <memory>
 
-void init_all()
+import memory;
+
+extern "C" void init_all()
 {
     puts("init_all\n");
     idt_init();         // 初始化 中断
