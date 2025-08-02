@@ -3,12 +3,18 @@
 #ifndef _KSTDIO_H
 #define _KSTDIO_H
 
-#include "stdint.h"
+#include <cdefs.h>
+
+__BEGIN_DECLS
+
+#include <stdint.h>
 
 void putchar(int c);
 
 void puts(char const* str);
 
 void puthex(u32 num);
+
+__END_DECLS
 
 #endif

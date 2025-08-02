@@ -8,6 +8,8 @@
 
 auto constexpr IDT_DESC_CNT = 0x21;
 
+auto constexpr EFLAGS_IF = 0x00000200; // eflags寄存器中的if位为 1
+
 // 中断门描述符结构体
 typedef struct gate_desc
 {
@@ -108,6 +110,42 @@ void static exception_init()
     intr_name[17] = "#AC Alignment Check Exception";
     intr_name[18] = "#MC Machine-Check Exception";
     intr_name[19] = "#XF SIMD Floating-Point Exception";
+}
+
+// 开中断 并返回先前的状态
+intr_status intr_enable()
+{
+    if(INTR_ON == intr_get_status()) {
+        return INTR_ON;
+    }
+    asm volatile("sti"); // 开中断 将IF位置位
+    return INTR_OFF;
+}
+
+// 关中断 并返回先前的状态
+intr_status intr_disable()
+{
+    if(INTR_OFF == intr_get_status()) {
+        return INTR_OFF;
+    }
+    asm volatile("cli" : : : "memory");
+            // 关中断 将IF位复位 设立memory内存屏障 防止cli后续的读写中断重排到cli之前
+    return INTR_ON;
+}
+
+intr_status intr_set_status(intr_status status)
+{
+    if(status) {
+        return intr_enable();
+    }
+    return intr_disable();
+}
+
+intr_status intr_get_status()
+{
+    u32 eflags;
+    asm volatile("pushfl; popl %0" : "=g"(eflags));
+    return EFLAGS_IF & eflags;
 }
 
 void idt_init()
