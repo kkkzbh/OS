@@ -63,37 +63,6 @@ target_link_libraries(string
         assert
 )
 
-add_library(cbitmap STATIC
-        src/bitmap.cpp
-)
-
-target_include_directories(cbitmap
-        PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/
-)
-
-target_link_libraries(cbitmap
-        PRIVATE
-)
-
-add_library(cmemory STATIC
-        memory.cpp
-)
-
-target_include_directories(cmemory
-        PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/
-)
-
-target_link_libraries(cmemory
-        PRIVATE
-        memory
-)
-
 add_subdirectory(module)
 
 set(DEVICE ${CMAKE_SOURCE_DIR}/device)
@@ -104,6 +73,7 @@ add_executable(kernel
         kernel.asm
         init.cpp
         ${DEVICE}/time.c
+        main.cpp
 )
 
 # 设置内核的包含目录
