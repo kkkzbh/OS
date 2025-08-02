@@ -22,6 +22,11 @@ target_sources(utility
         FILES utility.cppm
 )
 
+target_include_directories(utility
+        PRIVATE
+        ${KERNEL}/include/
+)
+
 add_library(bitmap)
 
 target_sources(bitmap
@@ -51,7 +56,11 @@ target_sources(memory
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
-        memory.cppm
+        memory/memory.cppm
+        memory/pool.cppm
+        memory/utilty.cppm
+        memory/init.cppm
+        memory/pgtable.cppm
 )
 
 target_include_directories(memory
@@ -62,4 +71,6 @@ target_include_directories(memory
 target_link_libraries(memory
         PRIVATE
         bitmap
+        utility
+        stdio
 )
