@@ -5,6 +5,7 @@
 #include <global.h>
 #include <stdio.h>
 #include <io.h>
+#include <os.h>
 
 auto constexpr IDT_DESC_CNT = 0x21;
 
@@ -77,9 +78,32 @@ void static general_intr_handler(u8 vec_nr)
         // IRQ7与IRQ15 伪中断，无需处理 0x2f是从片8259A上的最后一个IRQ引脚，是保留项
         return;
     }
-    puts("int vector : 0x");
-    puthex(vec_nr);
-    putchar('\n');
+
+    // 清屏，从屏幕左上角打印异常信息，更清晰
+
+    set_cursor(0);
+    auto cursor_pos = 0;
+    while(cursor_pos < 320) { // 25x80 清空前4行信息
+        putchar(' ');
+        ++cursor_pos;
+    }
+    set_cursor(0);
+    puts("!!!!!!!    exception message begin      !!!!!!!\n");
+    set_cursor(88); // 25 x 80的结构
+    puts(intr_name[vec_nr]);
+    if(vec_nr == 14) { // 缺页丢失
+        u32 page_fault_vaddr = 0;
+        asm ("movl %%cr2, %0" : "=r"(page_fault_vaddr)); // cr2是存放造成page_fault的地址
+
+        puts("\npage fault addr is ");
+        puthex(page_fault_vaddr);
+    }
+
+    puts("\n!!!!!!!    exception message begin      !!!!!!!\n");
+
+    while(true) {
+
+    }
 }
 
 // 完成一般中断处理函数注册及异常名称注册
@@ -146,6 +170,12 @@ intr_status intr_get_status()
     u32 eflags;
     asm volatile("pushfl; popl %0" : "=g"(eflags));
     return EFLAGS_IF & eflags;
+}
+
+// 中断注册函数
+void register_handler(u8 vector_no,intr_handler func)
+{
+    idt_table[vector_no] = func;
 }
 
 void idt_init()

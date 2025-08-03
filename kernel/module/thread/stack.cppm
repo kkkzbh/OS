@@ -38,11 +38,11 @@ struct intr_stack
 struct thread_stack
 {
     u32 ebp;        // 这四个寄存器归主调函数所有，主调函数为调度器函数，要为他保存上下文环境
-    u32 ebx;
+    u32 ebx;        // 为第一次 switch_to的时候的pop 做对齐处理
     u32 edi;
     u32 esi;
 
-    // 线程第一次执行时，eip指向待调用的函数，其他时候，eip指向 switch_to 的返回地址
+    // 线程第一次执行时，刚好eip指向待调用的函数，其他时候，eip指向 switch_to 的返回地址
     void (*eip) (function* func,void* func_arg);
 
     // 以下仅在第一次被调度上cpu时会使用
@@ -69,3 +69,16 @@ struct task
     u32 stack_magic;        // 栈的边界标记，防止溢出
 };
 
+auto find_task_by_general(list::node* tag) -> task*
+{
+    return reinterpret_cast<task*>(
+        reinterpret_cast<u32>(tag) - reinterpret_cast<u32>(&reinterpret_cast<task*>(0)->general_tag)
+    );
+}
+
+auto find_task_by_all(list::node* tag) -> task*
+{
+    return reinterpret_cast<task*>(
+        reinterpret_cast<u32>(tag) - reinterpret_cast<u32>(&reinterpret_cast<task*>(0)->all_list_tag)
+    );
+}

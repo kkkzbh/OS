@@ -78,6 +78,18 @@ target_sources(thread
         thread/stack.cppm
         thread/exec.cppm
         thread/list.cppm
+        thread/init.cppm
+)
+
+target_sources(thread
+        PRIVATE
+        thread/switch.asm
+)
+
+target_include_directories(thread
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/thread/
+        ${KERNEL}/include/
 )
 
 target_link_libraries(thread
@@ -86,7 +98,6 @@ target_link_libraries(thread
         memory
         string
         stdio
-        list
         interrupt
         assert
 )

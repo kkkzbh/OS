@@ -4,18 +4,9 @@
 #include <time.h>
 #include <io.h>
 #include <stdio.h>
+#include <interrupt.h>
 
-auto constexpr IRQ0_FREQUENCY   =          100;
-auto constexpr INPUT_FREQUENCY  =          1193180;
-auto constexpr COUNTER0_VALUE   =          INPUT_FREQUENCY / IRQ0_FREQUENCY;
-auto constexpr COUNTER0_PORT    =          0x40;
-auto constexpr COUNTER0_NO      =          0;
-auto constexpr COUNTER_MODE     =          2;
-auto constexpr READ_WRITE_LATCH =          3;
-auto constexpr PIT_CONTROL_PORT =          0x43;
-
-
-void static frequency_set (
+void frequency_set (
     u8 counter_port,
     u8 counter_no,      // 计数器编号
     u8 rwl,             // 读写锁属性
@@ -40,6 +31,9 @@ void timer_init()
         COUNTER_MODE,
         COUNTER0_VALUE
     );
+
+    register_handler(0x20,intr_time_handler);
+
     puts("timer_init done\n");
 
 }

@@ -7,6 +7,8 @@
 
 __BEGIN_DECLS
 
+#include <stdint.h>
+
 typedef void* intr_handler;
 
 void idt_init();
@@ -24,6 +26,8 @@ intr_status intr_set_status(intr_status status);
 intr_status intr_enable();
 
 intr_status intr_disable();
+
+void register_handler(u8 vector_no,intr_handler func);
 
 __END_DECLS
 
