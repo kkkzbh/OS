@@ -5,6 +5,7 @@ module;
 #include <stdio.h>
 #include <interrupt.h>
 #include <assert.h>
+#include <switch.h>
 
 export module thread:exec;
 
@@ -15,16 +16,19 @@ import :list;
 
 export auto thread_start(char const* name,u8 prio,function func,void* func_arg) -> task*;
 
+export auto running_thread() -> task*;
+
+export auto schedule() -> void;
+
 task* main_thread;  // 主线程 PCB
 list thread_ready_list; // 线程就绪队列
 list thread_all_list;   // 所有任务队列
-list::node* thread_tag; // 用于保存队列中的线程结点
 
 // 获取当前线程的 pcb 指针
 auto running_thread() -> task*
 {
     u32 esp;
-    asm ("mov %%wsp, %0" : "=g"(esp));
+    asm ("mov %%esp, %0" : "=g"(esp));
     // 取整 得到PCB起始地址
     return reinterpret_cast<task*>(esp & 0xfffff000);
 }
@@ -39,27 +43,17 @@ auto thread_create(task* pthread,function func,void* func_arg) -> void
 {
     // 内核栈 预留 中断栈与线程栈的空间
     pthread->self_kstack = reinterpret_cast<u32*>(reinterpret_cast<char*>(pthread->self_kstack) - sizeof(intr_stack) - sizeof(thread_stack));
+
     auto kthread_stack = reinterpret_cast<thread_stack*>(pthread->self_kstack);
-    // *kthread_stack = (thread_stack) {
-    //     .eip        =    kernel_thread,
-    //     .func       =    func,
-    //     .func_arg   =    func_arg,
-    // };
     kthread_stack->eip = kernel_thread;
     kthread_stack->func = func;
     kthread_stack->func_arg = func_arg;
+    kthread_stack->ebp = kthread_stack->ebx = kthread_stack->esi = kthread_stack->edi = 0;
 }
 
 auto init_thread(task* pthread,char const* name,u8 prio) -> void
 {
-    // *pthread = (task) {
-    //     .self_kstack    =      reinterpret_cast<u32*>(reinterpret_cast<u32>(pthread) + PG_SIZE),
-    //                                             // 线程自己在内核态下，使用的栈顶地址
-    //     .stu            =      status::running,
-    //     .priority       =      prio,
-    //     .name           =      {},
-    //     .stack_magic    =      0x19870916  // 魔数
-    // };
+    memset(pthread,0,sizeof(*pthread));
     if(pthread == main_thread) {
         // 将 main 函数封装为一个线程，main本就当前正在运行
         pthread->stu = status::running;
@@ -71,7 +65,7 @@ auto init_thread(task* pthread,char const* name,u8 prio) -> void
     pthread->ticks = prio;  // 优先级控制占用时长 大优先级占用大时长
     pthread->elapsed_ticks = 0;
     pthread->pgdir = nullptr;
-    pthread->stack_magic = 0x1987016;
+    pthread->stack_magic = 0x19870916;
     strcpy(pthread->name,name);
 }
 
@@ -102,6 +96,30 @@ auto thread_start(char const* name,u8 prio,function func,void* func_arg) -> task
     // );
 
     return thread;
+}
+
+// 实现任务调度
+auto schedule() -> void
+{
+    ASSERT(intr_get_status() == INTR_OFF);
+
+    auto cur = running_thread();
+
+    if(cur->stu == status::running) {
+        // 表示该线程是 cpu 时间片到了
+        ASSERT(not thread_ready_list.contains(&cur->general_tag));
+        thread_ready_list.push_back(&cur->general_tag);
+        cur->ticks = cur->priority;
+        cur->stu = status::ready;
+    } else {
+        // 否则应该是某个事件导致其后续才能继续上cpu运行 不加入就绪队列
+    }
+    ASSERT(not thread_ready_list.empty());
+    auto thread_tag = thread_ready_list.front();
+    thread_ready_list.pop_front();
+    auto next = find_task_by_general(thread_tag);
+    next->stu = status::running;
+    switch_to(cur,next);    // 调度
 }
 
 // 将 kernel 的执行流完善为主线程

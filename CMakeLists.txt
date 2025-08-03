@@ -47,6 +47,7 @@ endfunction()
 # 添加子目录
 add_subdirectory(boot)
 add_subdirectory(kernel)
+add_subdirectory(device)
 
 # 创建完整构建目标
 add_custom_target(osbuild

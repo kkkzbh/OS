@@ -19,7 +19,7 @@ struct list
         auto old_stu = intr_disable();
         it->prev->next = v;
         v->prev = it->prev;
-        v->next = v;
+        v->next = it;
         it->prev = v;
         ++sz;
         intr_set_status(old_stu);
@@ -28,13 +28,13 @@ struct list
 
     auto push_front(node* v) -> list&
     {
-        insert(front(),v);
+        insert(begin(),v);
         return *this;
     }
 
     auto push_back(node* v) -> list&
     {
-        insert(back(),v);
+        insert(end(),v);
         return *this;
     }
 
@@ -70,20 +70,20 @@ struct list
         return *this;
     }
 
-    auto begin(this auto&& self) -> auto*
+    auto begin() -> node*
     {
-        return self.head.next;
+        return head.next;
     }
 
-    auto end(this auto&& self) -> auto*
+    auto end() -> node*
     {
-        return &self.tail;
+        return &tail;
     }
 
-    auto contains(node* v) const -> bool
+    auto contains(node* v) -> bool
     {
-        for(auto it : *this) {
-            if(&it == v) {
+        for(auto it = begin(); it != end(); it = it->next) {
+            if(it == v) {
                 return true;
             }
         }
@@ -101,11 +101,11 @@ struct list
     }
 
     template<typename Pred>
-    auto find(Pred pred) const -> node*
+    auto find(Pred pred) -> node*
     {
-        for(auto it : *this) {
-            if(pred(&it)) {
-                return &it;
+        for(auto it = begin(); it != end(); it = it->next) {
+            if(pred(it)) {
+                return it;
             }
         }
         return nullptr;

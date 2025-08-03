@@ -45,6 +45,7 @@ target_include_directories(interrupt
 target_link_libraries(interrupt
         PRIVATE
         stdio
+        os
 )
 
 add_library(string STATIC
@@ -63,6 +64,23 @@ target_link_libraries(string
         assert
 )
 
+add_library(os STATIC
+        src/os.c
+        src/os.asm
+)
+
+target_include_directories(os
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(os
+        PRIVATE
+        stdio
+)
+
 add_subdirectory(module)
 
 set(DEVICE ${CMAKE_SOURCE_DIR}/device)
@@ -72,7 +90,6 @@ add_executable(kernel
         main.c
         kernel.asm
         init.cpp
-        ${DEVICE}/time.c
         main.cpp
 )
 
@@ -80,7 +97,6 @@ add_executable(kernel
 target_include_directories(kernel PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${DEVICE}/
 )
 
 # 链接stdio库到内核
@@ -91,6 +107,7 @@ target_link_libraries(kernel
         assert
         memory
         thread
+        time
 )
 
 # 设置编译选项 - 添加调试信息
