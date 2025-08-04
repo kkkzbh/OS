@@ -6,9 +6,33 @@
 import memory;
 import thread;
 
+struct test
+{
+    test()
+    {
+        puts("  ***********  test constrctor function ! ********\n");
+    }
+};
+
+test t{};
+test t2{};
+
+void call_global_constructors()
+{
+    typedef void (*constrctror)();
+    extern constrctror __init_array_start[];
+    extern constrctror __init_array_end[];
+    for(auto p = __init_array_start; p != __init_array_end; ++p) {
+        (*p)();
+    }
+
+}
+
 extern "C" auto start() -> void
 {
 
+    call_global_constructors();
+    puts(" ***global_constructors! ok ***\n");
     puts("C++ extension dominate\n");
 
     auto addr = get_kernel_pages(3);
@@ -23,29 +47,35 @@ extern "C" auto start() -> void
     puthex(*v);
     putchar('\n');
 
-    thread_start("kthread_a",31,
-        [](void* arg) -> void {
-            auto s = static_cast<char*>(arg);
-            while(true) {
-                puts(s);
-            }
-        }
-        ,const_cast<char*>("ArgX   ")
-    );
-
-    thread_start("kthread_b",8,
-    [](void* arg) -> void {
-        auto s = static_cast<char*>(arg);
-        while(true) {
-            puts(s);
-        }
-    }
-    ,const_cast<char*>("ArgB   "));
-
-    intr_enable();
+    // thread_start("kthread_a",31,
+    //     [](void* arg) -> void {
+    //         auto s = static_cast<char*>(arg);
+    //         while(true) {
+    //             intr_disable();
+    //             puts(s);
+    //             intr_enable();
+    //         }
+    //     }
+    //     ,const_cast<char*>("ArgX   ")
+    // );
+    //
+    // thread_start("kthread_b",8,
+    // [](void* arg) -> void {
+    //     auto s = static_cast<char*>(arg);
+    //     while(true) {
+    //         intr_disable();
+    //         puts(s);
+    //         intr_enable();
+    //     }
+    // }
+    // ,const_cast<char*>("ArgB   "));
+    //
+    // intr_enable();
 
 
     while(true) {
-        puts("Main    ");
+        // intr_disable();
+        // puts("Main    ");
+        // intr_enable();
     }
 }

@@ -2,6 +2,7 @@
 
 %include "boot.inc"
 
+
 org LOADER_BASE_ADDR
 section loader
     ; jmp loader_start
@@ -40,7 +41,6 @@ section loader
 
 
 loader_start: ; (地址 0xC00 文件地址0x300)
-
 
     ; int 15h eax = 0xE820, edx = 534D4150("SMAP")  获取内存布局
 
