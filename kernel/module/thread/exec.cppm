@@ -122,6 +122,32 @@ auto schedule() -> void
     switch_to(cur,next);    // 调度
 }
 
+// 线程将自己阻塞，状态标记为 stu (blocked waiting hanging)
+auto thread_block(status stu) -> void
+{
+    using enum status;
+    ASSERT(stu == blocked or stu == waiting or stu == hanging);
+    auto old_status = intr_disable();
+    auto cur_thread = running_thread();
+    cur_thread->stu = stu;
+    schedule();
+    // 当阻塞被解除后 才继续运行下面的
+    intr_set_status(old_status);
+}
+
+// 解除 pthread 的阻塞
+auto thread_unblock(task* pthread) -> void
+{
+    auto old_status = intr_disable();
+    auto stu = pthread->stu;
+    using enum status;
+    ASSERT(stu == blocked or stu == waiting or stu == hanging);
+    ASSERT(not thread_ready_list.contains(&pthread->general_tag));
+    thread_ready_list.push_front(&pthread->general_tag); // 唤醒后放到前面，就让他先运行吧
+    pthread->stu = ready;
+    intr_set_status(old_status);
+}
+
 // 将 kernel 的执行流完善为主线程
 auto make_main_thread() -> void
 {
