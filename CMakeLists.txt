@@ -54,10 +54,3 @@ add_custom_target(osbuild
     DEPENDS write_mbr write_loader write_kernel
     COMMENT "Building complete OS image"
 )
-
-# 添加清理磁盘镜像目标
-add_custom_target(clean-disk
-    COMMAND dd if=/dev/zero of=${DISK_IMAGE} bs=1M count=64 2>/dev/null || true
-    COMMENT "Cleaning disk image"
-    VERBATIM
-)

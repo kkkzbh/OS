@@ -108,13 +108,17 @@ target_link_libraries(kernel
         memory
         thread
         time
+        console
 )
 
 # 设置编译选项 - 添加调试信息
+
 target_compile_options(kernel PRIVATE
-    $<$<COMPILE_LANGUAGE:C>:-g -O0>
-    $<$<COMPILE_LANGUAGE:CXX>:-g -O0>
-    $<$<COMPILE_LANGUAGE:ASM>:-g -F dwarf>
+        $<$<COMPILE_LANGUAGE:C>:-g>
+        $<$<COMPILE_LANGUAGE:C>:-O0>
+        $<$<COMPILE_LANGUAGE:CXX>:-g>
+        $<$<COMPILE_LANGUAGE:CXX>:-O0>
+        $<$<COMPILE_LANGUAGE:ASM>:-gdwarf-2>
 )
 
 # 设置链接器选项 - 修复入口点问题 (现代写法)
@@ -131,5 +135,5 @@ target_include_directories(kernel_utility
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-add_disk_target(write_kernel $<TARGET_FILE:kernel> 9 200)
+add_disk_target(write_kernel $<TARGET_FILE:kernel> 9 250)
 add_dependencies(write_kernel kernel)
