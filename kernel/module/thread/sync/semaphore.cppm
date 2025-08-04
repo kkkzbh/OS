@@ -11,7 +11,7 @@ import :list;
 import :exec;
 import :stack;
 
-struct semaphore
+export struct semaphore
 {
     explicit semaphore(u8 desire) : value(desire)
     {
@@ -19,6 +19,8 @@ struct semaphore
     }
 
     semaphore(semaphore const&) = delete;
+
+    auto operator=(semaphore const&) -> semaphore& = delete;
 
     auto acquire() -> void
     {

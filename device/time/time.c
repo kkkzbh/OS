@@ -1,7 +1,7 @@
 
 
 #include <stdint.h>
-#include <time.h>
+#include <../time.h>
 #include <io.h>
 #include <stdio.h>
 #include <interrupt.h>

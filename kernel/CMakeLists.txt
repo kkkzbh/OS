@@ -124,5 +124,12 @@ target_link_options(kernel PRIVATE
     "-Wl,-e,kkkzbh"
 )
 
+add_library(kernel_utility INTERFACE)
+
+target_include_directories(kernel_utility
+        INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 add_disk_target(write_kernel $<TARGET_FILE:kernel> 9 200)
 add_dependencies(write_kernel kernel)

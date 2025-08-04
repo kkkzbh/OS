@@ -80,7 +80,8 @@ target_sources(thread
         thread/list.cppm
         thread/init.cppm
         thread/sync/semaphore.cppm
-        thread/sync/mutux.cppm
+        thread/sync/mutex.cppm
+        thread/sync/lock_guard.cpp
 )
 
 target_sources(thread
