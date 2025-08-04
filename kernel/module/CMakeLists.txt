@@ -79,6 +79,8 @@ target_sources(thread
         thread/exec.cppm
         thread/list.cppm
         thread/init.cppm
+        thread/sync/semaphore.cppm
+        thread/sync/mutux.cppm
 )
 
 target_sources(thread

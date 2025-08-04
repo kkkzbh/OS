@@ -1,6 +1,7 @@
 module;
 
 #include <interrupt.h>
+#include <stdio.h>
 
 module thread:list;
 
@@ -13,6 +14,11 @@ struct list
         node* prev;
         node* next;
     };
+
+    constexpr list() : sz(0),head{ nullptr,&tail },tail{ &head,nullptr }
+    {
+        puts("list construction! *************     \n");
+    }
 
     auto insert(node* it,node* v) -> list&
     {
@@ -109,14 +115,6 @@ struct list
             }
         }
         return nullptr;
-    }
-
-    auto init() -> list&
-    {
-        sz = 0;
-        head = { nullptr,&tail };
-        tail = { &head,nullptr };
-        return *this;
     }
 
     // head->prev 用作 bound 第一个元素实为head->next

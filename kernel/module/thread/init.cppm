@@ -8,6 +8,7 @@ import :exec;
 
 export auto thread_init() -> void;
 
+
 auto thread_init() -> void
 {
     puts("thread_init start");

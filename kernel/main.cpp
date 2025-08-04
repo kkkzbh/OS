@@ -12,26 +12,11 @@ struct test
     {
         puts("  ***********  test constrctor function ! ********\n");
     }
-};
-
-test t{};
-test t2{};
-
-void call_global_constructors()
-{
-    typedef void (*constrctror)();
-    extern constrctror __init_array_start[];
-    extern constrctror __init_array_end[];
-    for(auto p = __init_array_start; p != __init_array_end; ++p) {
-        (*p)();
-    }
-
-}
+} t{}, t2{};
 
 extern "C" auto start() -> void
 {
 
-    call_global_constructors();
     puts(" ***global_constructors! ok ***\n");
     puts("C++ extension dominate\n");
 
