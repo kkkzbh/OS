@@ -5,6 +5,7 @@
 
 import memory;
 import thread;
+import console;
 
 struct test
 {
@@ -32,35 +33,29 @@ extern "C" auto start() -> void
     puthex(*v);
     putchar('\n');
 
-    // thread_start("kthread_a",31,
-    //     [](void* arg) -> void {
-    //         auto s = static_cast<char*>(arg);
-    //         while(true) {
-    //             intr_disable();
-    //             puts(s);
-    //             intr_enable();
-    //         }
-    //     }
-    //     ,const_cast<char*>("ArgX   ")
-    // );
-    //
-    // thread_start("kthread_b",8,
-    // [](void* arg) -> void {
-    //     auto s = static_cast<char*>(arg);
-    //     while(true) {
-    //         intr_disable();
-    //         puts(s);
-    //         intr_enable();
-    //     }
-    // }
-    // ,const_cast<char*>("ArgB   "));
-    //
-    // intr_enable();
+    thread_start("kthread_a",31,
+        [](void* arg) -> void {
+            auto s = static_cast<char*>(arg);
+            while(true) {
+                console::write(s);
+            }
+        }
+        ,const_cast<char*>("ArgX   ")
+    );
+
+    thread_start("kthread_b",8,
+    [](void* arg) -> void {
+        auto s = static_cast<char*>(arg);
+        while(true) {
+            console::write(s);
+        }
+    }
+    ,const_cast<char*>("ArgB   "));
+
+    intr_enable();
 
 
     while(true) {
-        // intr_disable();
-        // puts("Main    ");
-        // intr_enable();
+        console::write("Main   ");
     }
 }

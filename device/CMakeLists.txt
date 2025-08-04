@@ -35,4 +35,5 @@ target_link_libraries(console
         PRIVATE
         utility
         thread
+        stdio
 )
