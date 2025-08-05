@@ -20,6 +20,10 @@ export auto running_thread() -> task*;
 
 export auto schedule() -> void;
 
+export auto thread_block(status stu) -> void;
+
+export auto thread_unblock(task* pthread) -> void;
+
 task* main_thread;  // 主线程 PCB
 list thread_ready_list; // 线程就绪队列
 list thread_all_list;   // 所有任务队列

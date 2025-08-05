@@ -37,3 +37,47 @@ target_link_libraries(console
         thread
         stdio
 )
+
+add_library(keyboard
+        keyboard/keyboard.c
+)
+
+target_sources(keyboard
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        keyboard/iobuf.cpp
+)
+
+target_include_directories(keyboard
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/keyboard
+        INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_link_libraries(keyboard
+        PRIVATE
+        kernel_utility
+        stdio
+        interrupt
+        ioqueue
+)
+
+add_library(ioqueue)
+
+target_sources(ioqueue
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        ioqueue/ioqueue.cpp
+)
+
+target_link_libraries(ioqueue
+        PRIVATE
+        thread
+        utility
+        stdio
+        interrupt
+        assert
+)

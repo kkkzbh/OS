@@ -109,6 +109,7 @@ target_link_libraries(kernel
         thread
         time
         console
+        keyboard
 )
 
 # 设置编译选项 - 添加调试信息
@@ -135,5 +136,11 @@ target_include_directories(kernel_utility
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-add_disk_target(write_kernel $<TARGET_FILE:kernel> 9 250)
+add_custom_command(TARGET kernel POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} --strip-all $<TARGET_FILE:kernel> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped
+    COMMENT "Stripping debug symbols from kernel to create kernel_stripped"
+    VERBATIM
+)
+
+add_disk_target(write_kernel ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped 9 250)
 add_dependencies(write_kernel kernel)
