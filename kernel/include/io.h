@@ -3,6 +3,10 @@
 #ifndef _IO_H
 #define _IO_H
 
+#include <cdefs.h>
+
+__BEGIN_DECLS
+
 #include <stdint.h>
 
 void static outb(u16 port,u8 data)
@@ -46,6 +50,6 @@ void static insw(u16 port,void* addr,u32 word_cnt)
     );
 }
 
-
+__END_DECLS
 
 #endif //_IO_H

@@ -7,7 +7,7 @@
 #include <io.h>
 #include <os.h>
 
-auto constexpr IDT_DESC_CNT = 0x21;
+auto constexpr IDT_DESC_CNT = 0x30;
 
 auto constexpr EFLAGS_IF = 0x00000200; // eflags寄存器中的if位为 1
 
@@ -64,9 +64,13 @@ void static pic_init()
     outb(PIC_S_DATA,0x02); // ICW3: 设置从片连接到主片的 IR2 引脚
     outb(PIC_S_DATA,0x01); // ICW4: 8086模式，正常EOI
 
-    // 打开主片上的 IR0，即时钟中断
-    outb(PIC_M_DATA,0xfe);
-    outb(PIC_S_DATA,0xff);
+    // // 打开主片上的 IR0，即时钟中断
+    // outb(PIC_M_DATA,0xfe);
+    // outb(PIC_S_DATA,0xff);
+
+    // 测试键盘 只打开键盘中断
+    outb(PIC_M_DATA, 0xfd);
+    outb(PIC_S_DATA, 0xff);
 
     puts("pic_init done\n");
 }

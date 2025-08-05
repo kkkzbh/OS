@@ -7,18 +7,10 @@ import memory;
 import thread;
 import console;
 
-struct test
-{
-    test()
-    {
-        puts("  ***********  test constrctor function ! ********\n");
-    }
-} t{}, t2{};
 
 extern "C" auto start() -> void
 {
 
-    puts(" ***global_constructors! ok ***\n");
     puts("C++ extension dominate\n");
 
     auto addr = get_kernel_pages(3);
@@ -33,29 +25,29 @@ extern "C" auto start() -> void
     puthex(*v);
     putchar('\n');
 
-    thread_start("kthread_a",31,
-        [](void* arg) -> void {
-            auto s = static_cast<char*>(arg);
-            while(true) {
-                console::write(s);
-            }
-        }
-        ,const_cast<char*>("ArgX   ")
-    );
-
-    thread_start("kthread_b",8,
-    [](void* arg) -> void {
-        auto s = static_cast<char*>(arg);
-        while(true) {
-            console::write(s);
-        }
-    }
-    ,const_cast<char*>("ArgB   "));
+    // thread_start("kthread_a",31,
+    //     [](void* arg) -> void {
+    //         auto s = static_cast<char*>(arg);
+    //         while(true) {
+    //             console::write(s);
+    //         }
+    //     }
+    //     ,const_cast<char*>("ArgX   ")
+    // );
+    //
+    // thread_start("kthread_b",8,
+    // [](void* arg) -> void {
+    //     auto s = static_cast<char*>(arg);
+    //     while(true) {
+    //         console::write(s);
+    //     }
+    // }
+    // ,const_cast<char*>("ArgB   "));
 
     intr_enable();
 
 
     while(true) {
-        console::write("Main   ");
+        //console::write("Main   ");
     }
 }

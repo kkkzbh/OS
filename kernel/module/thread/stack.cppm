@@ -1,6 +1,6 @@
 
 
-module thread:stack;
+export module thread:stack;
 
 import :utility;
 
@@ -52,7 +52,7 @@ struct thread_stack
 };
 
 
-struct task
+export struct task
 {
     u32* self_kstack;       // 各个内核线程都用自己的内核栈
     status stu;             // 状态
