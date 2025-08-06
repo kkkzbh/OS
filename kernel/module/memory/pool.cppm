@@ -1,12 +1,12 @@
 
 
-module memory:pool;
+export module memory:pool;
 
 import bitmap;
 import :utility;
 
 // 虚拟内存池
-struct virtual_addr : bitmap
+export struct virtual_addr : bitmap
 {
     auto init(char* addr,size_t sz,u32 vstart) -> void
     {
@@ -63,7 +63,6 @@ auto kernel_pool = pool{};          // 内核物理内存池位图
 auto user_pool = pool{};            // 用户物理内存池位图
 auto kernel_vaddr = virtual_addr{}; // 内核虚拟地址池位图
 auto user_vaddr = virtual_addr{};
-
 
 
 auto get_pool(pool_flags pf) -> pool&

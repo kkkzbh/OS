@@ -6,6 +6,8 @@ import :utility;
 
 import :list;
 
+import memory;
+
 // 中断栈数据结构
 // 维护中断发生时，保护程序(线程或进程)的上下文环境
 // 在线程自己的内核栈中位置固定，所在页的最顶端
@@ -66,6 +68,7 @@ export struct task
     list::node all_list_tag;// 用于线程队列thread_all_list中的节点
 
     u32* pgdir;             // 进程自己页表的虚拟地址
+    virtual_addr userprog_vaddr;    // 用户进程的虚拟地址
     u32 stack_magic;        // 栈的边界标记，防止溢出
 };
 

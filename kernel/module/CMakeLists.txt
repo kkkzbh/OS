@@ -92,7 +92,6 @@ target_sources(thread
 target_include_directories(thread
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/thread/
-        ${KERNEL}/include/
 )
 
 target_link_libraries(thread
@@ -103,4 +102,5 @@ target_link_libraries(thread
         stdio
         interrupt
         assert
+        kernel_utility
 )
