@@ -69,7 +69,9 @@ void static pic_init()
     // outb(PIC_S_DATA,0xff);
 
     // 测试键盘 只打开键盘中断
-    outb(PIC_M_DATA, 0xfd);
+
+    // 开启时钟与键盘中断
+    outb(PIC_M_DATA, 0xfc);
     outb(PIC_S_DATA, 0xff);
 
     puts("pic_init done\n");

@@ -110,6 +110,7 @@ target_link_libraries(kernel
         time
         console
         keyboard
+        tss
 )
 
 # 设置编译选项 - 添加调试信息
