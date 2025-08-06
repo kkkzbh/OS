@@ -1,6 +1,6 @@
 
 
-module memory:utility;
+export module memory:utility;
 
 export import utility;
 
@@ -12,7 +12,7 @@ auto constexpr MEM_BITMAP_BASE = 0xc009a000;
 // 跨过内核虚拟地址的低端1MB
 auto constexpr K_HEAP_START = 0xc0100000;
 
-enum struct pool_flags
+export enum struct pool_flags
 {
     KERNEL,
     USER

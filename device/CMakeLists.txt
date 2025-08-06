@@ -17,7 +17,7 @@ target_link_libraries(time
         PRIVATE
         stdio
         utility
-        thread
+        sync
         assert
         interrupt
 )
@@ -34,7 +34,7 @@ target_sources(console
 target_link_libraries(console
         PRIVATE
         utility
-        thread
+        sync
         stdio
 )
 
@@ -75,7 +75,7 @@ target_sources(ioqueue
 
 target_link_libraries(ioqueue
         PRIVATE
-        thread
+        sync
         utility
         stdio
         interrupt

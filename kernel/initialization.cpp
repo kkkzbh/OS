@@ -1,17 +1,13 @@
+module;
 
-
-#include <init.h>
+#include <initialization.h>
 #include <stdio.h>
 #include <interrupt.h>
 #include <time.h>
 #include <assert.h>
 #include <keyboard.h>
 
-import memory;
-import thread;
-import tss;
-
-void call_global_constructors()
+auto call_global_constructors() -> void
 {
     typedef void (*constrctror)();
     extern constrctror __init_array_start[];
@@ -22,7 +18,14 @@ void call_global_constructors()
 
 }
 
-extern "C" void init_all()
+export module init;
+
+import memory;
+import tss;
+import thread;
+
+
+export extern "C" void init_all()
 {
     puts("init_all\n");
     call_global_constructors(); // 调用C++全局构造函数

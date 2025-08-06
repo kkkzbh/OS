@@ -7,8 +7,7 @@ module;
 export module ioqueue;
 
 import utility;
-import thread;
-
+import sync;
 
 // 循环队列
 export struct ioqueue

@@ -1,29 +1,18 @@
-
+module;
 
 #include <stdio.h>
 #include <interrupt.h>
 
-import memory;
-import thread;
-import console;
+export module os;
 
+import console;
+import init;
 
 extern "C" auto start() -> void
 {
+    init_all();
 
     puts("C++ extension dominate\n");
-
-    auto addr = get_kernel_pages(3);
-
-    puts("get_kernel_page start vaddr is: ");
-    puthex(reinterpret_cast<u32>(addr));
-    putchar('\n');
-
-    auto v = reinterpret_cast<int*>(addr);
-    *v = 123;
-    puts("modify the kernel memory : v = ");
-    puthex(*v);
-    putchar('\n');
 
     // thread_start("kthread_a",31,
     //     [](void* arg) -> void {

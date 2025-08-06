@@ -1,6 +1,6 @@
 
 
-export module thread:lock_guard;
+export module sync:lock_guard;
 
 import :mutex;
 

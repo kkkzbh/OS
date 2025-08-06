@@ -3,11 +3,10 @@ module;
 #include <stdio.h>
 #include <assert.h>
 
-export module thread:mutex;
+export module sync:mutex;
 
-import :utility;
 import :semaphore;
-import :stack;
+import :task;
 
 export struct mutex
 {

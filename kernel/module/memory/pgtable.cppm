@@ -8,9 +8,7 @@ export module memory:pgtable;
 import :utility;
 import :pool;
 
-export auto get_kernel_pages(u32 pg_cnt) -> void*;
-
-
+export auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
 
 auto pde_idx(u32 addr) -> u32
 {
@@ -65,39 +63,12 @@ auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void
     *pte = page_phyaddr | PG_US_U | PG_RW_W | PG_P_1; // 页内存是否清空 交给外部处理
 }
 
-// 分配 pg_cnt 个页空间，成功返回虚拟地址，失败返回 nullptr
-auto malloc_page(pool_flags pf,u32 pg_cnt) -> void*
+// 得到虚拟地址映射的物理地址
+auto addr_v2p(u32 vaddr) -> u32
 {
-    ASSERT(pg_cnt and pg_cnt < 3840); // 15MB封顶 总内存32MB 按对半划分 15MB封顶保险处理 实际上由于简化的向下取整，内核和用户都仅有3840片页
-    auto& vaddr_pool = get_vaddr(pf);
-    auto vaddr_start = vaddr_pool.get(pg_cnt);
-    if(not vaddr_start) {
-        return nullptr;
-    }
-    auto vaddr = reinterpret_cast<u32>(vaddr_start);
-    auto cnt = pg_cnt;
-    auto& pool = get_pool(pf);
-    // 虚拟地址连续 物理内存可不连续 做逐个按页映射
-    while(cnt--) {
-        auto page_phyaddr = pool.palloc();
-        if(not page_phyaddr) { // 内存已满
-            // 回滚全部物理页 (地址回收功能)
-            // !-----------------------!!将来实现!!------------------------------!
-            return nullptr;
-        }
-        page_table_add(reinterpret_cast<void*>(vaddr),page_phyaddr);
-        vaddr += PG_SIZE;
-    }
-    return vaddr_start;
-}
+    auto pte = pte_ptr(vaddr);
+    // *pte的值是页表所在的物理页框地址
+    // 去掉其低12位的页表项属性位 + vaddr的低12位
 
-// 从内核物理内存池申请 pg_cnt 页内存
-// 成功返回虚拟地址，失败返回 nullptr
-auto get_kernel_pages(u32 pg_cnt) -> void*
-{
-    auto vaddr = malloc_page(pool_flags::KERNEL,pg_cnt);
-    if(vaddr) {
-        memset(vaddr,0,pg_cnt * PG_SIZE);
-    }
-    return vaddr;
+    return (*pte & 0xfffff000) + (vaddr & 0x00000fff);
 }

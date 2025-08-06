@@ -3,11 +3,11 @@ module;
 #include <interrupt.h>
 #include <stdio.h>
 
-module thread:list;
+export module sync:list;
 
 import utility;
 
-struct list
+export struct thread_list
 {
     struct node
     {
@@ -15,12 +15,12 @@ struct list
         node* next;
     };
 
-    constexpr list() : sz(0),head{ nullptr,&tail },tail{ &head,nullptr }
+    constexpr thread_list() : sz(0),head{ nullptr,&tail },tail{ &head,nullptr }
     {
-        puts("list construction! *************     \n");
+        puts("thread_list construction! *************     \n");
     }
 
-    auto insert(node* it,node* v) -> list&
+    auto insert(node* it,node* v) -> thread_list&
     {
         auto old_stu = intr_disable();
         it->prev->next = v;
@@ -32,19 +32,19 @@ struct list
         return *this;
     }
 
-    auto push_front(node* v) -> list&
+    auto push_front(node* v) -> thread_list&
     {
         insert(begin(),v);
         return *this;
     }
 
-    auto push_back(node* v) -> list&
+    auto push_back(node* v) -> thread_list&
     {
         insert(end(),v);
         return *this;
     }
 
-    auto erase(node* v) -> list&
+    auto erase(node* v) -> thread_list&
     {
         auto old_stu = intr_disable();
         v->prev->next = v->next;
@@ -59,7 +59,7 @@ struct list
         return head.next;
     }
 
-    auto pop_front() -> list&
+    auto pop_front() -> thread_list&
     {
         erase(front());
         return *this;
@@ -70,7 +70,7 @@ struct list
         return tail.prev;
     }
 
-    auto pop_back() -> list&
+    auto pop_back() -> thread_list&
     {
         erase(back());
         return *this;

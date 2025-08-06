@@ -4,7 +4,7 @@
 #include <assert.h>
 
 import utility;
-import thread;
+import sync;
 
 u32 ticks;  // 内核自中断开启以来总共的嘀嗒数
 

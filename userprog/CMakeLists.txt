@@ -12,7 +12,7 @@ target_sources(tss
 target_link_libraries(tss
         PRIVATE
         utility
-        thread
+        sync
         kernel_utility
         stdio
 )

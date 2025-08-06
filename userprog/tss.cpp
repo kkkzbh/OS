@@ -6,7 +6,7 @@ module;
 export module tss;
 
 import utility;
-import thread;
+import sync;
 
 export auto tss_init() -> void;
 
