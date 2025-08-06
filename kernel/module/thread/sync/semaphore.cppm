@@ -4,12 +4,11 @@ module;
 #include <interrupt.h>
 #include <assert.h>
 
-export module thread:semaphore;
+export module sync:semaphore;
 
-import :utility;
 import :list;
-import :exec;
-import :stack;
+import :execution;
+import :task;
 
 export struct semaphore
 {
@@ -30,7 +29,7 @@ export struct semaphore
             auto cur = running_thread();
             ASSERT(not waiters.contains(&cur->general_tag));
             waiters.push_back(&cur->general_tag);
-            thread_block(status::blocked);
+            thread_block(thread_status::blocked);
         }
         // 直到或一开始存在可获得的信号
         --value;
@@ -51,5 +50,5 @@ export struct semaphore
     }
 
     u8 value;
-    list waiters;
+    thread_list waiters;
 };

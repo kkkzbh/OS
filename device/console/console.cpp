@@ -5,7 +5,7 @@ module;
 export module console;
 
 import utility;
-import thread;
+import sync;
 
 export namespace console
 {

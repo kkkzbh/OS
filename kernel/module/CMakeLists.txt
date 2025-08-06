@@ -67,6 +67,57 @@ target_link_libraries(memory
         assert
 )
 
+add_library(sync)
+
+target_sources(sync
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        thread/sync/task.cpp
+        thread/sync/sync.cpp
+        thread/sync/list.cppm
+        thread/sync/semaphore.cppm
+        thread/sync/mutex.cppm
+        thread/sync/lock_guard.cpp
+        thread/sync/execution.cpp
+)
+
+target_sources(sync
+        PRIVATE
+        thread/sync/switch.asm
+)
+
+target_include_directories(sync
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/thread/sync/
+)
+
+target_link_libraries(sync
+        PRIVATE
+        utility
+        stdio
+        interrupt
+        assert
+        memory
+)
+
+add_library(alloc)
+
+target_sources(alloc
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        memory/alloc/alloc.cpp
+)
+
+target_link_libraries(alloc
+        PRIVATE
+        memory
+        assert
+        string
+        sync
+)
+
 add_library(thread)
 
 target_sources(thread
@@ -77,30 +128,16 @@ target_sources(thread
         thread/utility.cppm
         thread/stack.cppm
         thread/exec.cppm
-        thread/list.cppm
         thread/init.cppm
-        thread/sync/semaphore.cppm
-        thread/sync/mutex.cppm
-        thread/sync/lock_guard.cpp
-)
-
-target_sources(thread
-        PRIVATE
-        thread/switch.asm
-)
-
-target_include_directories(thread
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/thread/
 )
 
 target_link_libraries(thread
         PRIVATE
         utility
-        memory
         string
         stdio
         interrupt
         assert
         kernel_utility
+        alloc
 )

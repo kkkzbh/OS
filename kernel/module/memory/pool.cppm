@@ -1,4 +1,6 @@
+module;
 
+#include <assert.h>
 
 export module memory:pool;
 
@@ -26,6 +28,21 @@ export struct virtual_addr : bitmap
         set(*start,*start + pg_cnt,true);
         auto vaddr = vaddr_start + *start * PG_SIZE;
         return reinterpret_cast<void*>(vaddr);
+    }
+
+    using bitmap::set;
+
+    // 将虚拟地址 转换为对应的位的位置
+    auto trans(u32 vaddr) const -> size_t
+    {
+        ASSERT(vaddr >= vaddr_start);
+        return (vaddr - vaddr_start) / PG_SIZE;
+    }
+
+    // 将 vaddr对应的位图位 置1
+    auto set(u32 vaddr) -> void
+    {
+        set(trans(vaddr),true);
     }
 
     u32 vaddr_start;
@@ -59,24 +76,6 @@ struct pool : bitmap
     u32 pool_size;
 };
 
-auto kernel_pool = pool{};          // 内核物理内存池位图
-auto user_pool = pool{};            // 用户物理内存池位图
-auto kernel_vaddr = virtual_addr{}; // 内核虚拟地址池位图
-auto user_vaddr = virtual_addr{};
-
-
-auto get_pool(pool_flags pf) -> pool&
-{
-    if(pf == pool_flags::KERNEL) {
-        return kernel_pool;
-    }
-    return user_pool;
-}
-
-auto get_vaddr(pool_flags pf) -> virtual_addr&
-{
-    if(pf == pool_flags::KERNEL) {
-        return kernel_vaddr;
-    }
-    return user_vaddr;
-}
+export auto kernel_pool = pool{};          // 内核物理内存池位图
+export auto user_pool = pool{};            // 用户物理内存池位图
+export auto kernel_vaddr = virtual_addr{}; // 内核虚拟地址池位图

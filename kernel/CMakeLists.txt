@@ -45,7 +45,7 @@ target_include_directories(interrupt
 target_link_libraries(interrupt
         PRIVATE
         stdio
-        os
+        system
 )
 
 add_library(string STATIC
@@ -64,19 +64,19 @@ target_link_libraries(string
         assert
 )
 
-add_library(os STATIC
+add_library(system STATIC
         src/os.c
         src/os.asm
 )
 
-target_include_directories(os
+target_include_directories(system
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include/
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(os
+target_link_libraries(system
         PRIVATE
         stdio
 )
@@ -85,12 +85,53 @@ add_subdirectory(module)
 
 set(DEVICE ${CMAKE_SOURCE_DIR}/device)
 
+add_library(init)
+
+target_sources(init
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        initialization.cpp
+)
+
+target_include_directories(init
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/
+)
+
+target_link_libraries(init
+        PRIVATE
+        stdio
+        interrupt
+        time
+        assert
+        keyboard
+        memory
+        tss
+        thread
+)
+
+add_library(os)
+
+target_sources(os
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        main.cpp
+)
+
+target_link_libraries(os
+        PRIVATE
+        stdio
+        interrupt
+        console
+        init
+)
+
 # 创建内核可执行文件
 add_executable(kernel
         main.c
         kernel.asm
-        init.cpp
-        main.cpp
 )
 
 # 设置内核的包含目录
@@ -105,12 +146,7 @@ target_link_libraries(kernel
         stdio
         interrupt
         assert
-        memory
-        thread
-        time
-        console
-        keyboard
-        tss
+        os
 )
 
 # 设置编译选项 - 添加调试信息
