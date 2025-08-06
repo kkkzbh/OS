@@ -4,8 +4,6 @@ module memory:utility;
 
 export import utility;
 
-auto constexpr PG_SIZE = u32{ 4096 };
-
 // 0xc009f000 是内核主线程栈顶，0xc009e000是内核主线程的pcb
 // 一个页框大小的位图可表示 128MB 内存，位图位置安排在 0xc009a000
 // 则支持 4 个页框的位图 共 512MB

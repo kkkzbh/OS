@@ -9,6 +9,7 @@
 
 import memory;
 import thread;
+import tss;
 
 void call_global_constructors()
 {
@@ -24,10 +25,12 @@ void call_global_constructors()
 extern "C" void init_all()
 {
     puts("init_all\n");
-    call_global_constructors();
+    call_global_constructors(); // 调用C++全局构造函数
+
     idt_init();         // 初始化 中断
     mem_init();         // 初始化 内存管理系统
     thread_init();      // 初始化 线程环境
     timer_init();       // 初始化 PIT
     keyboard_init();    // 初始化 键盘中断
+    tss_init();         // 初始化 tss
 }

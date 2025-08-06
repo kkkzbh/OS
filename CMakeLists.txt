@@ -48,6 +48,7 @@ endfunction()
 add_subdirectory(boot)
 add_subdirectory(kernel)
 add_subdirectory(device)
+add_subdirectory(userprog)
 
 # 创建完整构建目标
 add_custom_target(osbuild

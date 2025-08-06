@@ -15,7 +15,5 @@ enum struct status
     died
 };
 
-auto constexpr PG_SIZE = 4096;
-
 using function = void(void*);
 
