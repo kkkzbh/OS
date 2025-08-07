@@ -7,12 +7,17 @@ export module alloc;
 
 import memory;
 import sync;
+import console;
 
 export auto get_vaddr(pool_flags pf,u32 cnt) -> void*;
 
 export auto get_pool(pool_flags pf) -> auto&;
 
 export auto get_kernel_pages(u32 pg_cnt) -> void*;
+
+export auto get_a_page(pool_flags pf,u32 vaddr) -> void*;
+
+export auto create_page_dir() -> u32*;
 
 auto kernel_mtx = mutex{};
 auto user_mtx = mutex{};
@@ -119,4 +124,26 @@ auto get_a_page(pool_flags pf,u32 vaddr) -> void*
 
     page_table_add((void*)vaddr,page_phyaddr);
     return (void*)vaddr;
+}
+
+// 创建页目录表，将当前页表的表示内核空间的pde复制
+// 成功则返回页目录的虚拟地址，否则返回 nullptr
+
+auto create_page_dir() -> u32*
+{
+    // 用户进程的页表不能让用户直接访问到，故在内核空间中申请
+    auto page_dir_vaddr = (u32*)get_kernel_pages(1);
+    if(page_dir_vaddr == nullptr) {
+        console::writeline("create_page_dir: get_kernel_page failed!");
+        return nullptr;
+    }
+    // 先复制页表，统一内核虚拟空间
+    // page_dir_vaddr + 0x300*4 是内核页目录的第768项
+    memcpy((void*)((u32)page_dir_vaddr + 0x300*4),(void*)(0xfffff000 + 0x300 * 4),1024);
+
+    // 更新页目录地址
+    auto new_page_dir_phy_addr = addr_v2p((u32)page_dir_vaddr);
+    page_dir_vaddr[1023] = new_page_dir_phy_addr | PG_US_U | PG_RW_W | PG_P_1; // 让最后指向自己
+    return page_dir_vaddr;
+
 }

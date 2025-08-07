@@ -22,8 +22,7 @@ export enum struct thread_status
 
 export using thread_function = void(void*);
 
-
-template<typename T>
+export template<typename T>
 auto max(T const& x,T const& y) -> T const&
 {
     if(y > x) {
@@ -32,3 +31,8 @@ auto max(T const& x,T const& y) -> T const&
     return x;
 }
 
+export template<typename T>
+auto div_ceil(T x,auto p)
+{
+    return (x + p - 1) / p;
+}

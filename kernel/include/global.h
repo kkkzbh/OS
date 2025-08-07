@@ -94,6 +94,15 @@ typedef struct
     u8  base_high_byte;
 } gdt_desc;
 
+// ================ EFLAGS 标志位定义 ================
+auto constexpr EFLAGS_MBS             = (1 << 1);   // 此项必须要设置
+auto constexpr EFLAGS_IF_1            = (1 << 9);   // if 为 1, 开中断
+auto constexpr EFLAGS_IF_0            = 0;          // if 为 0, 关中断
+auto constexpr EFLAGS_IOPL_3          = (3 << 12);
+// IOPL3, 用于测试用户程序在非系统调用下进行 IO
+auto constexpr EFLAGS_IOPL_0          = (0 << 12);  // IOPL0
+
+
 __END_DECLS
 
 #endif // _GLOBAL_H

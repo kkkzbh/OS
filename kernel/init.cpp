@@ -1,11 +1,13 @@
-module;
 
-#include <initialization.h>
 #include <stdio.h>
 #include <interrupt.h>
 #include <time.h>
 #include <assert.h>
 #include <keyboard.h>
+
+import memory;
+import sync;
+import thread;
 
 auto call_global_constructors() -> void
 {
@@ -18,14 +20,7 @@ auto call_global_constructors() -> void
 
 }
 
-export module init;
-
-import memory;
-import tss;
-import thread;
-
-
-export extern "C" void init_all()
+void init_all()
 {
     puts("init_all\n");
     call_global_constructors(); // 调用C++全局构造函数

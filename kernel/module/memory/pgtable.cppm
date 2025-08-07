@@ -10,6 +10,8 @@ import :pool;
 
 export auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
 
+export auto addr_v2p(u32 vaddr) -> u32;
+
 auto pde_idx(u32 addr) -> u32
 {
     return (addr & 0xffc00000) >> 22;

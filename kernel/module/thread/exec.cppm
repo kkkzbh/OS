@@ -10,10 +10,13 @@ export module thread:exec;
 
 import :utility;
 import :stack;
-// import sync;
 import alloc;
 
 export auto thread_start(char const* name,u8 prio,function func,void* func_arg) -> task*;
+
+export auto init_thread(task* pthread,char const* name,u8 prio) -> void;
+
+export auto thread_create(task* pthread,function func,void* func_arg) -> void;
 
 task* main_thread;  // 主线程 PCB
 

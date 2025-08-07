@@ -24,7 +24,7 @@ typedef struct gate_desc
 gate_desc idt[IDT_DESC_CNT]; // 中断描述符表
 char* intr_name[IDT_DESC_CNT]; // 保存异常名字
 intr_handler idt_table[IDT_DESC_CNT]; // 中断处理程序数组，程序入口
-extern intr_handler intr_entry_table[IDT_DESC_CNT]; // kernel.sam中的中断处理函数入口数组
+extern intr_handler intr_entry_table[IDT_DESC_CNT]; // kernel.asm中的中断处理函数入口数组
 
 void static make_idt_desc(gate_desc* gdesc,u8 attr,intr_handler function)
 {
@@ -64,11 +64,6 @@ void static pic_init()
     outb(PIC_S_DATA,0x02); // ICW3: 设置从片连接到主片的 IR2 引脚
     outb(PIC_S_DATA,0x01); // ICW4: 8086模式，正常EOI
 
-    // // 打开主片上的 IR0，即时钟中断
-    // outb(PIC_M_DATA,0xfe);
-    // outb(PIC_S_DATA,0xff);
-
-    // 测试键盘 只打开键盘中断
 
     // 开启时钟与键盘中断
     outb(PIC_M_DATA, 0xfc);

@@ -1,9 +1,8 @@
 
 
 #include <stdio.h>
-#include <assert.h>
 
-void start();
+void main();
 
 int kkkzbh()
 {
@@ -12,9 +11,7 @@ int kkkzbh()
     puthex(0x123);
     putchar('\n');
 
-    start();
-
-    ASSERT(1 == 2);
+    main();
 
     return 0;
 }

@@ -18,11 +18,11 @@ export enum struct pool_flags
     USER
 };
 
-auto constexpr PG_P_1   =   1;  // 页表项或页目录项 存在 属性位
-auto constexpr PG_P_0   =   0;
+export auto constexpr PG_P_1   =   1;  // 页表项或页目录项 存在 属性位
+export auto constexpr PG_P_0   =   0;
 
-auto constexpr PG_RW_R  =   0;  // R/W属性位，读/执行
-auto constexpr PG_RW_W  =   2;  // 读/写/执行
+export auto constexpr PG_RW_R  =   0;  // R/W属性位，读/执行
+export auto constexpr PG_RW_W  =   2;  // 读/写/执行
 
-auto constexpr PG_US_S  =   0;  // U/S 属性位值，系统级
-auto constexpr PG_US_U  =   4;  // 用户级
+export auto constexpr PG_US_S  =   0;  // U/S 属性位值，系统级
+export auto constexpr PG_US_U  =   4;  // 用户级

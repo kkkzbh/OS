@@ -12,7 +12,7 @@ export struct virtual_addr : bitmap
 {
     auto init(char* addr,size_t sz,u32 vstart) -> void
     {
-        bits = addr;
+        bits = (u8*)addr;
         this->sz = sz;
         vaddr_start = vstart;
     }
@@ -53,7 +53,7 @@ struct pool : bitmap
 {
     auto init(char* addr,size_t sz,u32 pstart,size_t psize) -> void
     {
-        bits = addr;
+        bits = (u8*)addr;
         this->sz = sz;
         phy_addr_start = pstart;
         pool_size = psize;
