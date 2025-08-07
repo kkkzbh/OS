@@ -80,6 +80,8 @@ target_sources(sync
         thread/sync/mutex.cppm
         thread/sync/lock_guard.cpp
         thread/sync/execution.cpp
+        thread/sync/tss.cpp
+        thread/sync/init.cpp
 )
 
 target_sources(sync
@@ -116,6 +118,7 @@ target_link_libraries(alloc
         assert
         string
         sync
+        console
 )
 
 add_library(thread)
@@ -129,6 +132,7 @@ target_sources(thread
         thread/stack.cppm
         thread/exec.cppm
         thread/init.cppm
+        thread/process.cpp
 )
 
 target_link_libraries(thread
@@ -140,4 +144,5 @@ target_link_libraries(thread
         assert
         kernel_utility
         alloc
+        memory
 )

@@ -3,12 +3,13 @@ module;
 #include <assert.h>
 #include <interrupt.h>
 #include <switch.h>
+#include <stdio.h>
 
 export module sync:execution;
 
 import utility;
 import :task;
-
+import :tss;
 
 export auto schedule() -> void;
 
@@ -34,7 +35,6 @@ auto running_thread() -> task*
 auto schedule() -> void
 {
     ASSERT(intr_get_status() == INTR_OFF);
-
     auto cur = running_thread();
 
     if(cur->stu == thread_status::running) {
@@ -51,6 +51,7 @@ auto schedule() -> void
     thread_ready_list.pop_front();
     auto next = find_task_by_general(thread_tag);
     next->stu = thread_status::running;
+
     switch_to(cur,next);    // 调度
 }
 
@@ -78,4 +79,34 @@ auto thread_unblock(task* pthread) -> void
     thread_ready_list.push_front(&pthread->general_tag); // 唤醒后放到前面，就让他先运行吧
     pthread->stu = ready;
     intr_set_status(old_status);
+}
+
+// 激活页表
+auto page_dir_active(task const* pthread) -> void
+{
+    // 可能是线程也可能是进程调用这个函数
+    // 线程重新安装是因为，上一次被调度的可能是某个进程
+    // 此时需要恢复目前这个线程应该用哪儿个进程的页表
+
+    // 如果是内核线程 需要重新填充页表为 0x100000
+    auto pagedir_phy_addr = u32(0x100000);
+
+    if(pthread->pgdir != nullptr) { // 如果是用户态进程，使用自己的页目录表
+        pagedir_phy_addr = addr_v2p((u32)pthread->pgdir);
+    }
+
+    asm volatile("movl %0, %%cr3" : : "r"(pagedir_phy_addr) : "memory");
+}
+
+// 激活线程或者进程的页表，更新tss中的esp0为进程的0特权级栈
+
+auto process_activate(task const* pthread) -> void
+{
+    ASSERT(pthread != nullptr);
+    page_dir_active(pthread);
+    // 内核线程特权级本身是0，处理器进入中断不会从tss获取0特权级栈地址，不需要更新esp0
+    if(pthread->pgdir) { // 如果是用户进程(线程)
+        tss.update(pthread);
+        // 更新esp0 用于进程被中断时保留上下文
+    }
 }

@@ -29,6 +29,8 @@ intr_status intr_disable();
 
 void register_handler(u8 vector_no,intr_handler func);
 
+void intr_exit();
+
 __END_DECLS
 
 #endif

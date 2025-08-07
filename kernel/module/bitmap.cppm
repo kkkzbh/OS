@@ -93,6 +93,6 @@ export struct bitmap
     auto clear() const -> void
     { memset(bits,0,sz); }
 
-    char* bits;
+    u8* bits;
     size_t sz;
 };

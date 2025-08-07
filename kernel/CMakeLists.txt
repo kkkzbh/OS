@@ -85,13 +85,8 @@ add_subdirectory(module)
 
 set(DEVICE ${CMAKE_SOURCE_DIR}/device)
 
-add_library(init)
-
-target_sources(init
-        PUBLIC
-        FILE_SET CXX_MODULES
-        FILES
-        initialization.cpp
+add_library(init
+        init.cpp
 )
 
 target_include_directories(init
@@ -107,16 +102,11 @@ target_link_libraries(init
         assert
         keyboard
         memory
-        tss
+        sync
         thread
 )
 
-add_library(os)
-
-target_sources(os
-        PUBLIC
-        FILE_SET CXX_MODULES
-        FILES
+add_library(os
         main.cpp
 )
 
@@ -126,12 +116,13 @@ target_link_libraries(os
         interrupt
         console
         init
+        thread
 )
 
 # 创建内核可执行文件
 add_executable(kernel
         main.c
-        kernel.asm
+        interrupt.asm
 )
 
 # 设置内核的包含目录
@@ -144,18 +135,14 @@ target_include_directories(kernel PRIVATE
 target_link_libraries(kernel
         PRIVATE
         stdio
-        interrupt
-        assert
         os
 )
 
 # 设置编译选项 - 添加调试信息
 
 target_compile_options(kernel PRIVATE
-        $<$<COMPILE_LANGUAGE:C>:-g>
-        $<$<COMPILE_LANGUAGE:C>:-O0>
-        $<$<COMPILE_LANGUAGE:CXX>:-g>
-        $<$<COMPILE_LANGUAGE:CXX>:-O0>
+        $<$<COMPILE_LANGUAGE:C>:-g;-O0>
+        $<$<COMPILE_LANGUAGE:CXX>:-g;-O0>
         $<$<COMPILE_LANGUAGE:ASM>:-gdwarf-2>
 )
 
@@ -179,5 +166,5 @@ add_custom_command(TARGET kernel POST_BUILD
     VERBATIM
 )
 
-add_disk_target(write_kernel ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped 9 250)
+add_disk_target(write_kernel ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped 9 200)
 add_dependencies(write_kernel kernel)

@@ -11,6 +11,8 @@ export namespace console
 {
     auto write(char const* str) -> void;
 
+    auto writeline(char const* str) -> void;
+
     auto putc(int c) -> void;
 
     auto puth(u32 v) -> void;
@@ -24,6 +26,13 @@ namespace console
     {
         auto lcg = lock_guard{ mtx };
         puts(str);
+    }
+
+    auto writeline(char const* str) -> void
+    {
+        auto lcg = lock_guard{ mtx };
+        puts(str);
+        putc('\n');
     }
 
     auto putc(int c) -> void

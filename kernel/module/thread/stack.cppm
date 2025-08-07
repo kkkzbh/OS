@@ -8,7 +8,7 @@ import :utility;
 // 维护中断发生时，保护程序(线程或进程)的上下文环境
 // 在线程自己的内核栈中位置固定，所在页的最顶端
 
-struct intr_stack
+export struct intr_stack
 {
     u32 vec_no;     // 中断向量号
     u32 edi;
@@ -33,7 +33,7 @@ struct intr_stack
     u32 ss;
 };
 
-struct thread_stack
+export struct thread_stack
 {
     u32 ebp;        // 这四个寄存器归主调函数所有，主调函数为调度器函数，要为他保存上下文环境
     u32 ebx;        // 为第一次 switch_to的时候的pop 做对齐处理
