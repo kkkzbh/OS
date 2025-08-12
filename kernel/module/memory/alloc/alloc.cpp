@@ -47,7 +47,7 @@ auto get_vaddr(pool_flags pf,u32 cnt) -> void*
     auto cur = running_thread();
     auto vstart = cur->userprog_vaddr.get(cnt);
     // 0xc0000000 - PG_SIZE 作为用户3级栈 已经在start_process分配
-    ASSERT((u32)vstart < 0xc0000000 - PG_SIZE);
+    ASSERT((u32)vstart < (0xc0000000 - PG_SIZE));
     return vstart;
 }
 
@@ -80,9 +80,10 @@ auto malloc_page(pool_flags pf,u32 pg_cnt) -> void*
 // 成功返回虚拟地址，失败返回 nullptr
 auto get_kernel_pages(u32 pg_cnt) -> void*
 {
-    auto vaddr = malloc_page(pool_flags::KERNEL,pg_cnt);
-    if(vaddr) {
-        memset(vaddr,0,pg_cnt * PG_SIZE);
+    auto lcg = lock_guard{ kernel_mtx };   // 关键：保护 kernel_vaddr 位图与物理池
+    auto vaddr = malloc_page(pool_flags::KERNEL, pg_cnt);
+    if (vaddr) {
+        memset(vaddr, 0, pg_cnt * PG_SIZE);
     }
     return vaddr;
 }
