@@ -17,7 +17,7 @@ target_link_libraries(time
         PRIVATE
         stdio
         utility
-        sync
+        sync_alloc
         assert
         interrupt
 )
@@ -34,8 +34,8 @@ target_sources(console
 target_link_libraries(console
         PRIVATE
         utility
-        sync
         stdio
+        sync_alloc
 )
 
 add_library(keyboard
@@ -75,7 +75,7 @@ target_sources(ioqueue
 
 target_link_libraries(ioqueue
         PRIVATE
-        sync
+        sync_alloc
         utility
         stdio
         interrupt

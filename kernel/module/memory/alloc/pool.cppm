@@ -1,11 +1,14 @@
 module;
 
 #include <assert.h>
+#include <stdio.h>
 
-export module memory:pool;
+export module pool;
 
 import bitmap;
-import :utility;
+import memory;
+import mutex;
+import lock_guard;
 
 // 虚拟内存池
 export struct virtual_addr : bitmap
@@ -33,6 +36,7 @@ export struct virtual_addr : bitmap
     using bitmap::set;
 
     // 将虚拟地址 转换为对应的位的位置
+    [[nodiscard]]
     auto trans(u32 vaddr) const -> size_t
     {
         ASSERT(vaddr >= vaddr_start);
@@ -63,17 +67,19 @@ struct pool : bitmap
     // 成功返回物理地址，失败返回 nullptr
     auto palloc() -> void*
     {
+        auto lcg = lock_guard{ mtx };
         auto start = scan(1);
         if(not start) {
             return nullptr;
         }
-        set(*start,1);
+        set(*start,true);
         auto page_phyaddr = phy_addr_start + *start * PG_SIZE;
         return reinterpret_cast<void*>(page_phyaddr);
     }
 
     u32 phy_addr_start;
     u32 pool_size;
+    mutex mtx;
 };
 
 export auto kernel_pool = pool{};          // 内核物理内存池位图

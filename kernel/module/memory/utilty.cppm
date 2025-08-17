@@ -7,10 +7,10 @@ export import utility;
 // 0xc009f000 是内核主线程栈顶，0xc009e000是内核主线程的pcb
 // 一个页框大小的位图可表示 128MB 内存，位图位置安排在 0xc009a000
 // 则支持 4 个页框的位图 共 512MB
-auto constexpr MEM_BITMAP_BASE = 0xc009a000;
+export auto constexpr MEM_BITMAP_BASE = 0xc009a000;
 
 // 跨过内核虚拟地址的低端1MB
-auto constexpr K_HEAP_START = 0xc0100000;
+export auto constexpr K_HEAP_START = 0xc0100000;
 
 export enum struct pool_flags
 {

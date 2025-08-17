@@ -5,7 +5,8 @@ module;
 export module console;
 
 import utility;
-import sync;
+import mutex;
+import lock_guard;
 
 export namespace console
 {

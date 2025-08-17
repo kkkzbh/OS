@@ -1,8 +1,8 @@
 
 
-export module sync:lock_guard;
+export module lock_guard;
 
-import :mutex;
+import mutex;
 
 export template<typename Mutex>
 struct lock_guard

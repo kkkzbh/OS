@@ -3,7 +3,7 @@ module;
 #include <interrupt.h>
 #include <stdio.h>
 
-export module sync:list;
+export module list;
 
 import utility;
 

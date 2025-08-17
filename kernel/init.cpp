@@ -5,9 +5,10 @@
 #include <assert.h>
 #include <keyboard.h>
 
-import memory;
-import sync;
+
 import thread;
+import alloc;
+import tss;
 
 auto call_global_constructors() -> void
 {

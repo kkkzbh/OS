@@ -2,12 +2,17 @@ module;
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 export module alloc;
 
+export import :init;
+
 import memory;
-import sync;
-import console;
+import schedule;
+import pool;
+import mutex;
+import lock_guard;
 
 export auto get_vaddr(pool_flags pf,u32 cnt) -> void*;
 
@@ -19,16 +24,18 @@ export auto get_a_page(pool_flags pf,u32 vaddr) -> void*;
 
 export auto create_page_dir() -> u32*;
 
-auto kernel_mtx = mutex{};
-auto user_mtx = mutex{};
+auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
+
+auto kernel_alloc_mtx = mutex{};
+auto user_alloc_mtx = mutex{};
 
 auto get_mutex(pool_flags pf) -> auto&
 {
     using enum pool_flags;
     if(pf == KERNEL) {
-        return kernel_mtx;
+        return kernel_alloc_mtx;
     }
-    return user_mtx;
+    return user_alloc_mtx;
 }
 
 auto get_pool(pool_flags pf) -> auto&
@@ -80,7 +87,7 @@ auto malloc_page(pool_flags pf,u32 pg_cnt) -> void*
 // 成功返回虚拟地址，失败返回 nullptr
 auto get_kernel_pages(u32 pg_cnt) -> void*
 {
-    auto lcg = lock_guard{ kernel_mtx };   // 关键：保护 kernel_vaddr 位图与物理池
+    auto lcg = lock_guard{ kernel_alloc_mtx };
     auto vaddr = malloc_page(pool_flags::KERNEL, pg_cnt);
     if (vaddr) {
         memset(vaddr, 0, pg_cnt * PG_SIZE);
@@ -91,7 +98,7 @@ auto get_kernel_pages(u32 pg_cnt) -> void*
 // 在用户空间申请4k内存，并返回虚拟地址
 auto get_user_pages(u32 pg_cnt) -> void*
 {
-    auto lcg = lock_guard{ user_mtx };
+    auto lcg = lock_guard{ user_alloc_mtx };
     auto vaddr = malloc_page(pool_flags::USER,pg_cnt);
     memset(vaddr,0,pg_cnt * PG_SIZE);
     return vaddr;
@@ -102,12 +109,10 @@ auto get_a_page(pool_flags pf,u32 vaddr) -> void*
 {
     using enum pool_flags;
     auto& pool = get_pool(pf);
-    auto& mtx = get_mutex(pf);
-    auto lcg = lock_guard{ mtx };
+    auto lcg = lock_guard{ get_mutex(pf) };
     auto cur = running_thread();
+    
     // 先将虚拟地址位图置 1
-
-    // 如果是用户进程申请用户内存
     if(cur->pgdir != nullptr and pf == USER) {
         auto bi = cur->userprog_vaddr.trans(vaddr);
         cur->userprog_vaddr.set(bi,true);
@@ -123,7 +128,7 @@ auto get_a_page(pool_flags pf,u32 vaddr) -> void*
         return nullptr;
     }
 
-    page_table_add((void*)vaddr,page_phyaddr);
+    page_table_add((void*)vaddr, page_phyaddr);
     return (void*)vaddr;
 }
 
@@ -135,7 +140,7 @@ auto create_page_dir() -> u32*
     // 用户进程的页表不能让用户直接访问到，故在内核空间中申请
     auto page_dir_vaddr = (u32*)get_kernel_pages(1);
     if(page_dir_vaddr == nullptr) {
-        console::writeline("create_page_dir: get_kernel_page failed!");
+        puts("create_page_dir: get_kernel_page failed!");
         return nullptr;
     }
     // 先复制页表，统一内核虚拟空间
@@ -143,8 +148,31 @@ auto create_page_dir() -> u32*
     memcpy((void*)((u32)page_dir_vaddr + 0x300*4),(void*)(0xfffff000 + 0x300 * 4),1024);
 
     // 更新页目录地址
-    auto new_page_dir_phy_addr = addr_v2p((u32)page_dir_vaddr);
+    auto new_page_dir_phy_addr = pgtable::addr_v2p((u32)page_dir_vaddr);
     page_dir_vaddr[1023] = new_page_dir_phy_addr | PG_US_U | PG_RW_W | PG_P_1; // 让最后指向自己
     return page_dir_vaddr;
 
+}
+
+// 页表pte中 添加一个 虚拟地址与物理地址的映射
+auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void
+{
+    auto vaddr = reinterpret_cast<u32>(__vaddr);
+    auto page_phyaddr = reinterpret_cast<u32>(__page_phyaddr);
+    auto pde = pgtable::pde_ptr(vaddr); // 注意先确保 pde 建立完毕 才能访问 pte
+    auto pte = pgtable::pte_ptr(vaddr);
+
+    if(not pgtable::contains(pde)) { // 如果 pde 不存在
+        // 内核物理内存池中分配一页内存
+        auto pde_phyaddr = reinterpret_cast<u32>(kernel_pool.palloc());
+        if (pde_phyaddr == 0) {
+            PANIC("page_table_add: kernel_pool.palloc failed");
+        }
+        *pde = pde_phyaddr | PG_US_U | PG_RW_W | PG_P_1;
+        // 要将新分配的内存清 0 处理(防止*页表状态*混乱)，pte取高20位便是对应pde的物理地址
+        memset(reinterpret_cast<void*>(reinterpret_cast<u32>(pte) & 0xfffff000),0,PG_SIZE);
+    }
+
+    ASSERT(not pgtable::contains(pte)); // 因为是在添加映射 所以pte就应该不存在
+    *pte = page_phyaddr | PG_US_U | PG_RW_W | PG_P_1; // 页内存是否清空 交给外部处理
 }

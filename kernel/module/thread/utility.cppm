@@ -4,7 +4,7 @@ module thread:utility;
 
 export import utility;
 
-import sync;
+import list;
 
 using list = thread_list;
 

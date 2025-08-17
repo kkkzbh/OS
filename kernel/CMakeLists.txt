@@ -102,7 +102,7 @@ target_link_libraries(init
         assert
         keyboard
         memory
-        sync
+        sync_alloc
         thread
 )
 
