@@ -13,6 +13,7 @@ import schedule;
 import pool;
 import mutex;
 import lock_guard;
+import utility;
 
 export auto get_vaddr(pool_flags pf,u32 cnt) -> void*;
 
@@ -24,10 +25,13 @@ export auto get_a_page(pool_flags pf,u32 vaddr) -> void*;
 
 export auto create_page_dir() -> u32*;
 
+export auto allocate_pid() -> pid_t;
+
 auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
 
 auto kernel_alloc_mtx = mutex{};
 auto user_alloc_mtx = mutex{};
+auto pid_lock = mutex{};
 
 auto get_mutex(pool_flags pf) -> auto&
 {
@@ -175,4 +179,11 @@ auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void
 
     ASSERT(not pgtable::contains(pte)); // 因为是在添加映射 所以pte就应该不存在
     *pte = page_phyaddr | PG_US_U | PG_RW_W | PG_P_1; // 页内存是否清空 交给外部处理
+}
+
+auto allocate_pid() -> pid_t
+{
+    auto static next_pid = 0;
+    auto lcg = lock_guard{ pid_lock };
+    return ++next_pid;
 }

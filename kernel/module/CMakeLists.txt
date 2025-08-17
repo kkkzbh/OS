@@ -125,3 +125,21 @@ target_link_libraries(thread
         kernel_utility
         sync_alloc
 )
+
+add_library(user)
+
+target_sources(user
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        user/syscall.cpp
+        user/syscall_init.cpp
+        user/utility.cpp
+)
+
+target_link_libraries(user
+        PRIVATE
+        utility
+        sync_alloc
+        stdio
+)

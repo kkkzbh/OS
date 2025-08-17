@@ -44,6 +44,7 @@ auto thread_create(task* pthread,function func,void* func_arg) -> void
 auto init_thread(task* pthread,char const* name,u8 prio) -> void
 {
     memset(pthread,0,sizeof(*pthread));
+    pthread->pid = allocate_pid();
     if(pthread == main_thread) {
         // 将 main 函数封装为一个线程，main本就当前正在运行
         pthread->stu = status::running;

@@ -22,6 +22,8 @@ export enum struct thread_status
 
 export using thread_function = void(void*);
 
+export using pid_t = u16;
+
 export template<typename T>
 auto max(T const& x,T const& y) -> T const&
 {

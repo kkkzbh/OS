@@ -7,9 +7,11 @@
 #include <io.h>
 #include <os.h>
 
-auto constexpr IDT_DESC_CNT = 0x30;
+auto constexpr IDT_DESC_CNT = 0x81;
 
 auto constexpr EFLAGS_IF = 0x00000200; // eflags寄存器中的if位为 1
+
+u32 syscall_handler();
 
 // 中断门描述符结构体
 typedef struct gate_desc
@@ -42,6 +44,8 @@ void static idt_desc_init()
     for(auto i = 0; i != IDT_DESC_CNT; ++i) {
         make_idt_desc(&idt[i],IDT_DESC_ATTR_DPL0,intr_entry_table[i]);
     }
+    auto constexpr sysi = IDT_DESC_CNT - 1;
+    make_idt_desc(&idt[sysi],IDT_DESC_ATTR_DPL3,syscall_handler);
     puts("idt_desc_init done\n");
 }
 
