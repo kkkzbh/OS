@@ -60,6 +60,7 @@ export struct bitmap
 
     auto set(size_t bi,bool value) -> void
     {
+        ASSERT(bi < sz * 8);  // 检查索引是否在有效范围内
         auto x = bi / 8;
         auto y = bi % 8;
         if(value) {
@@ -87,7 +88,7 @@ export struct bitmap
         }
         l /= 8;
         r /= 8;
-        memset(bits,value ? 0xff : 0,r - l);
+        memset(bits + l, value ? 0xff : 0, r - l);  // 修复：应该是 bits + l，不是 bits
     }
 
     auto clear() const -> void

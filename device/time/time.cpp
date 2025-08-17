@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 import utility;
-import sync;
+import schedule;
 
 u32 ticks;  // 内核自中断开启以来总共的嘀嗒数
 

@@ -11,6 +11,8 @@ export module thread:exec;
 import :utility;
 import :stack;
 import alloc;
+import task;
+import schedule;
 
 export auto thread_start(char const* name,u8 prio,function func,void* func_arg) -> task*;
 

@@ -2,13 +2,12 @@ module;
 
 #include <stdio.h>
 
-export module memory:init;
+export module alloc:init;
 
-import :utility;
-import :pool;
+import memory;
+import pool;
 
 export auto mem_init() -> void;
-
 
 
 auto mem_pool_init(u32 all_mem) -> void

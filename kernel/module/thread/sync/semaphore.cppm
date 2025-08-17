@@ -4,11 +4,12 @@ module;
 #include <interrupt.h>
 #include <assert.h>
 
-export module sync:semaphore;
+export module semaphore;
 
-import :list;
-import :execution;
-import :task;
+import list;
+import schedule;
+import task;
+import utility;
 
 export struct semaphore
 {

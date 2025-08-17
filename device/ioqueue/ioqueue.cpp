@@ -7,7 +7,10 @@ module;
 export module ioqueue;
 
 import utility;
-import sync;
+import task;
+import lock_guard;
+import mutex;
+import schedule;
 
 // 循环队列
 export struct ioqueue

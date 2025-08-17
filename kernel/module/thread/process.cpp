@@ -10,9 +10,9 @@ export module process;
 
 import thread;
 import alloc;
-import sync;
-import console;
+import schedule;
 import utility;
+import task;
 import memory;
 
 export auto process_execute(void* filename,char const* name) -> void;
@@ -42,7 +42,6 @@ auto start_process(void* filename) -> void
     };
 
     asm volatile("movl %0, %%esp; jmp intr_exit" : : "g"(proc_stack) : "memory");
-
 }
 
 // 创建用户进程虚拟地址位图
@@ -52,7 +51,7 @@ auto create_user_vaddr_bitmap(task* user_prog) -> void
         (char*)get_kernel_pages(
             div_ceil((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8,PG_SIZE)
         ),
-        (0xc0000000 - USER_VADDR_START / PG_SIZE / 8),
+        ((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8),
         USER_VADDR_START
     );
 }
