@@ -6,9 +6,11 @@
 
 extern puts
 extern idt_table ; C中注册的中断处理程序数组
+extern syscall_table
 
 global intr_entry_table
 global intr_exit
+global syscall_handler
 
 section .data
 
@@ -98,3 +100,21 @@ VECTOR 0x2c, ZERO  ; ps/2鼠标
 VECTOR 0x2d, ZERO  ; fpu浮点单元异常
 VECTOR 0x2e, ZERO  ; 硬盘
 VECTOR 0x2f, ZERO  ; 保留
+
+section .text
+syscall_handler:
+    push 0
+    push ds
+    push es
+    push fs
+    push gs
+    pushad
+
+    push 0x80
+    push edx
+    push ecx
+    push ebx
+    call [syscall_table + eax * 4]
+    add esp, 12
+    mov [esp + 8 * 4], eax  ; 对应 pushad 的EAX
+    jmp intr_exit

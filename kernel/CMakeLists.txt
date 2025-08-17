@@ -104,6 +104,7 @@ target_link_libraries(init
         memory
         sync_alloc
         thread
+        user
 )
 
 add_library(os
@@ -117,6 +118,7 @@ target_link_libraries(os
         console
         init
         thread
+        user
 )
 
 # 创建内核可执行文件
@@ -136,6 +138,7 @@ target_link_libraries(kernel
         PRIVATE
         stdio
         os
+        user
 )
 
 # 设置编译选项 - 添加调试信息

@@ -52,6 +52,7 @@ struct virtual_addr : bitmap
 export struct task
 {
     u32* self_kstack;       // 各个内核线程都用自己的内核栈
+    pid_t pid;
     thread_status stu;             // 状态
     char name[16];
     u8 priority;            // 优先级

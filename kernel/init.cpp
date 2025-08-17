@@ -9,6 +9,7 @@
 import thread;
 import alloc;
 import tss;
+import syscall.init;
 
 auto call_global_constructors() -> void
 {
@@ -32,4 +33,5 @@ void init_all()
     timer_init();       // 初始化 PIT
     keyboard_init();    // 初始化 键盘中断
     tss_init();         // 初始化 tss
+    syscall_init();     // 初始化 系统调用
 }
