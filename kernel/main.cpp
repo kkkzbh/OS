@@ -7,8 +7,10 @@ void init_all();
 import console;
 import thread;
 import process;
-import syscall;
+import sys;
 import syscall.init;
+import printf;
+import getpid;
 
 int prog_a_pid;
 int prog_b_pid;
@@ -19,6 +21,7 @@ extern "C" auto main() -> void
 
     process_execute((void*)+[] {
         prog_a_pid = sys::getpid();
+        std::printf(" prog_a_pid:0x%x\n",prog_a_pid);
         while(true) {
 
         }
@@ -26,6 +29,7 @@ extern "C" auto main() -> void
 
     process_execute((void*)+[] {
         prog_b_pid = sys::getpid();
+        std::printf(" prog_b_pid:0x%x\n",prog_b_pid);
         while(true) {
 
         }
@@ -42,9 +46,6 @@ extern "C" auto main() -> void
         console::write(" thread_a_pid:0x");
         console::puth(getpid());
         console::putc('\n');
-        console::write(" prog_a_pid:0x");
-        console::puth(prog_a_pid);
-        console::putc('\n');
         while(true) {
 
         }
@@ -54,9 +55,6 @@ extern "C" auto main() -> void
         auto para = (char*)arg;
         console::write(" thread_b_pid:0x");
         console::puth(getpid());
-        console::putc('\n');
-        console::write(" prog_b_pid:0x");
-        console::puth(prog_b_pid);
         console::putc('\n');
         while(true) {
 

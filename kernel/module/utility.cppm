@@ -20,6 +20,21 @@ export enum struct thread_status
     died
 };
 
+export template<typename T>
+concept signed_integral =
+    __is_same(T,i8) or
+    __is_same(T,i16) or
+    __is_same(T,i32);
+
+export template<typename T>
+concept unsigned_integral =
+    __is_same(T,u8) or
+    __is_same(T,u16) or
+    __is_same(T,u32);
+
+export template<typename T>
+concept integral = signed_integral<T> or unsigned_integral<T>;
+
 export using thread_function = void(void*);
 
 export using pid_t = u16;

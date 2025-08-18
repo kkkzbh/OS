@@ -1,6 +1,6 @@
 
 
-export module syscall;
+export module sys;
 
 import syscall.utility;
 
@@ -48,4 +48,10 @@ namespace sys
     {
         return syscall(+sysid::getpid);
     }
+
+    export auto write(char const* str) -> u32
+    {
+        return syscall(+sysid::write,str);
+    }
+
 }

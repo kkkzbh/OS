@@ -135,6 +135,10 @@ target_sources(user
         user/syscall.cpp
         user/syscall_init.cpp
         user/utility.cpp
+        user/getpid.cpp
+        user/write.cpp
+        user/format.cpp
+        user/printf.cpp
 )
 
 target_link_libraries(user
@@ -142,4 +146,16 @@ target_link_libraries(user
         utility
         sync_alloc
         stdio
+        console
+        string
+        assert
+)
+
+add_library(stringm)
+
+target_sources(stringm
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        string.cpp
 )
