@@ -1,6 +1,7 @@
 module;
 
 #include <assert.h>
+#include <string.h>
 
 export module format;
 
@@ -23,7 +24,7 @@ auto to_chars(char* &first,T val,int base = 10) -> void
 }
 
 template<typename T>
-auto format(char* out,T&& arg) -> char* = delete("No useful");
+auto format(char* out,T&& arg) -> char* = delete("para for safe print");
 
 export template<typename... Args>
 auto format_to(char* out,char const* format,Args&&... args) -> u32
@@ -40,10 +41,29 @@ auto format_to(char* out,char const* format,Args&&... args) -> u32
         }
         c = *++format;
         switch(c) {
-            case 'x': {
+            case 'x' : {
                 auto v = *(u32*)arg[i++];
                 to_chars(out,v,16);
                 ASSERT(out != nullptr);
+                c = *++format;
+                break;
+            } case 'c' : {
+                *out++ = *(char*)arg[i++];
+                c = *++format;
+                break;
+            } case 'd' : {
+                auto v = *(int*)arg[i++];
+                if(v < 0) {
+                    v = -v;
+                    *out++ = '-';
+                }
+                to_chars(out,(u32)v,10);
+                c = *++format;
+                break;
+            } case 's' : {
+                auto str = *(char**)arg[i++];
+                strcpy(out,str);
+                out += strlen(str);
                 c = *++format;
                 break;
             } default : {
