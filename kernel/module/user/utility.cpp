@@ -7,6 +7,7 @@ export import utility;
 export enum struct sysid : int
 {
     getpid,
+    write,
 };
 
 export auto constexpr operator+(sysid i) -> int

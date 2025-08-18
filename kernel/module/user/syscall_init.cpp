@@ -1,15 +1,17 @@
 module;
 
 #include <stdio.h>
+#include <string.h>
 
 export module syscall.init;
 
 import syscall.utility;
-import schedule;
+import console;
+import getpid;
+import write;
 
 export auto syscall_init();
 
-export extern "C" auto getpid() -> u32;
 
 auto constexpr syscall_nr = 32;
 
@@ -17,14 +19,11 @@ using sysfunc = void*;
 
 extern "C" sysfunc syscall_table[syscall_nr]{};
 
-extern "C" auto getpid() -> u32
-{
-    return running_thread()->pid;
-}
 
 auto syscall_init()
 {
     puts("syscall_init start\n");
     syscall_table[+sysid::getpid] = (sysfunc)getpid;
+    syscall_table[+sysid::write] = (sysfunc)write;
     puts("syscall_init done\n");
 }
