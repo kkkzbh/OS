@@ -12,7 +12,13 @@ namespace std
     auto printf(char const* format,Args&&... args) -> u32
     {
         char buf[1024]{};
-        format_to(buf,format,(Args&&)(args)...);
+        format_to(buf,format,(Args&&)args...);
         return sys::write(buf);
+    }
+
+    export template<typename... Args>
+    auto sprintf(char* buf,char const* format,Args&&... args) -> u32
+    {
+        return format_to(buf,format,(Args&&)args...);
     }
 }

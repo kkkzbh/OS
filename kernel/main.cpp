@@ -21,7 +21,8 @@ extern "C" auto main() -> void
 
     process_execute((void*)+[] {
         prog_a_pid = sys::getpid();
-        std::printf(" prog_a_pid:0x%x\n",prog_a_pid);
+        char const* name = "prog_a";
+        std::printf(" I am %s, my pid: %d%c",name,prog_a_pid,'\n');
         while(true) {
 
         }
@@ -29,7 +30,8 @@ extern "C" auto main() -> void
 
     process_execute((void*)+[] {
         prog_b_pid = sys::getpid();
-        std::printf(" prog_b_pid:0x%x\n",prog_b_pid);
+        char const* name = "prog_b";
+        std::printf(" I am %s, my pid: %d%c",name,prog_b_pid,'\n');
         while(true) {
 
         }
