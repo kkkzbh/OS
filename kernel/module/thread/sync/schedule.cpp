@@ -23,6 +23,8 @@ export auto thread_unblock(task* pthread) -> void;
 
 auto process_activate(task const* pthread) -> void;
 
+using thread_list = list;
+
 export thread_list thread_ready_list; // 线程就绪队列
 export thread_list thread_all_list;   // 所有任务队列
 

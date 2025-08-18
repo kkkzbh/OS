@@ -27,6 +27,10 @@ export auto create_page_dir() -> u32*;
 
 export auto allocate_pid() -> pid_t;
 
+export auto get_mutex(pool_flags pf) -> auto&;
+
+export auto malloc_page(pool_flags pf,u32 pg_cnt) -> void*;
+
 auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
 
 auto kernel_alloc_mtx = mutex{};

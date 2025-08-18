@@ -6,8 +6,6 @@ export import utility;
 
 import list;
 
-using list = thread_list;
-
 // 维护进程与线程的状态
 
 using status = thread_status;

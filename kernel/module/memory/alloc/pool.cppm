@@ -77,6 +77,12 @@ struct pool : bitmap
         return reinterpret_cast<void*>(page_phyaddr);
     }
 
+    [[nodiscard]]
+    auto size() const -> size_t
+    {
+        return pool_size;
+    }
+
     u32 phy_addr_start;
     u32 pool_size;
     mutex mtx;

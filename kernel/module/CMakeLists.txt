@@ -82,6 +82,8 @@ target_sources(sync_alloc
         memory/alloc/alloc.cpp
         memory/alloc/init.cppm
         memory/alloc/pool.cppm
+        memory/alloc/arena.cpp
+        memory/alloc/malloc.cpp
 )
 
 target_include_directories(sync_alloc
