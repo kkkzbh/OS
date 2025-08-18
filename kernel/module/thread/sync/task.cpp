@@ -8,6 +8,7 @@ import utility;
 import memory;
 import bitmap;
 import list;
+import arena;
 
 struct virtual_addr : bitmap
 {
@@ -60,26 +61,27 @@ export struct task
 
     u32 elapsed_ticks;      // 此任务上cpu运行后至今占用了多少cpu嘀嗒数
 
-    thread_list::node general_tag; // 用于线程在一般的队列中的节点
-    thread_list::node all_list_tag;// 用于线程队列thread_all_list中的节点
+    list::node general_tag; // 用于线程在一般的队列中的节点
+    list::node all_list_tag;// 用于线程队列thread_all_list中的节点
 
     u32* pgdir;             // 进程自己页目录表的虚拟地址
     virtual_addr userprog_vaddr;    // 用户进程的虚拟地址
+    mem_block_desc u_block_desc[DESC_CNT];
     u32 stack_magic;        // 栈的边界标记，防止溢出
 };
 
-export auto find_task_by_general(thread_list::node* tag) -> task*;
+export auto find_task_by_general(list::node* tag) -> task*;
 
-export auto find_task_by_all(thread_list::node* tag) -> task*;
+export auto find_task_by_all(list::node* tag) -> task*;
 
-auto find_task_by_general(thread_list::node* tag) -> task*
+auto find_task_by_general(list::node* tag) -> task*
 {
     return reinterpret_cast<task*>(
         reinterpret_cast<u32>(tag) - reinterpret_cast<u32>(&reinterpret_cast<task*>(0)->general_tag)
     );
 }
 
-auto find_task_by_all(thread_list::node* tag) -> task*
+auto find_task_by_all(list::node* tag) -> task*
 {
     return reinterpret_cast<task*>(
         reinterpret_cast<u32>(tag) - reinterpret_cast<u32>(&reinterpret_cast<task*>(0)->all_list_tag)

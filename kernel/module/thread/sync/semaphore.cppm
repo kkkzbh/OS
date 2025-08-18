@@ -51,5 +51,5 @@ export struct semaphore
     }
 
     u8 value;
-    thread_list waiters;
+    list waiters;
 };

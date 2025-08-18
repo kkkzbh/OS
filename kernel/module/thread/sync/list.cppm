@@ -7,7 +7,7 @@ export module list;
 
 import utility;
 
-export struct thread_list
+export struct list
 {
     struct node
     {
@@ -15,12 +15,14 @@ export struct thread_list
         node* next;
     };
 
-    constexpr thread_list() : sz(0),head{ nullptr,&tail },tail{ &head,nullptr }
-    {
-        puts("thread_list construction! *************     \n");
-    }
+    constexpr list() : sz(0),head{ nullptr,&tail },tail{ &head,nullptr }
+    {}
 
-    auto insert(node* it,node* v) -> thread_list&
+    list(list const&) = delete("The list do not need copy constructor, because it can cause some amazing error!");
+
+    auto operator=(list const&) -> list& = delete("too");
+
+    auto insert(node* it,node* v) -> list&
     {
         auto old_stu = intr_disable();
         it->prev->next = v;
@@ -32,19 +34,19 @@ export struct thread_list
         return *this;
     }
 
-    auto push_front(node* v) -> thread_list&
+    auto push_front(node* v) -> list&
     {
         insert(begin(),v);
         return *this;
     }
 
-    auto push_back(node* v) -> thread_list&
+    auto push_back(node* v) -> list&
     {
         insert(end(),v);
         return *this;
     }
 
-    auto erase(node* v) -> thread_list&
+    auto erase(node* v) -> list&
     {
         auto old_stu = intr_disable();
         v->prev->next = v->next;
@@ -59,7 +61,7 @@ export struct thread_list
         return head.next;
     }
 
-    auto pop_front() -> thread_list&
+    auto pop_front() -> list&
     {
         erase(front());
         return *this;
@@ -70,7 +72,7 @@ export struct thread_list
         return tail.prev;
     }
 
-    auto pop_back() -> thread_list&
+    auto pop_back() -> list&
     {
         erase(back());
         return *this;

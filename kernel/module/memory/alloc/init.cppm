@@ -6,6 +6,7 @@ export module alloc:init;
 
 import memory;
 import pool;
+import arena;
 
 export auto mem_init() -> void;
 
@@ -81,5 +82,6 @@ auto mem_init() -> void
     puts("mem_init start\n");
     auto total_mem_bytes = *reinterpret_cast<u32*>(0xb00);
     mem_pool_init(total_mem_bytes);
+    kernel_block_desc_init();
     puts("mem_init done\n");
 }

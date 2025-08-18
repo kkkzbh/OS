@@ -14,6 +14,7 @@ import schedule;
 import utility;
 import task;
 import memory;
+import arena;
 
 export auto process_execute(void* filename,char const* name) -> void;
 
@@ -68,6 +69,7 @@ auto process_execute(void* filename,char const* name) -> void
     create_user_vaddr_bitmap(thread);
     thread_create(thread,start_process,filename);
     thread->pgdir = create_page_dir();
+    block_desc_init(thread->u_block_desc);
     auto old_status = intr_disable();
     ASSERT(not thread_ready_list.contains(&thread->general_tag));
     thread_ready_list.push_back(&thread->general_tag);
