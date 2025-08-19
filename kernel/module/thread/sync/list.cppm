@@ -15,8 +15,17 @@ export struct list
         node* next;
     };
 
-    constexpr list() : sz(0),head{ nullptr,&tail },tail{ &head,nullptr }
-    {}
+    constexpr list()
+    {
+        init();
+    }
+
+    auto init() -> void
+    {
+        sz = 0;
+        head = { nullptr,&tail };
+        tail = { &head, nullptr };
+    }
 
     list(list const&) = delete("The list do not need copy constructor, because it can cause some amazing error!");
 

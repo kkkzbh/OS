@@ -8,6 +8,8 @@ export enum struct sysid : int
 {
     getpid,
     write,
+    malloc,
+    free
 };
 
 export auto constexpr operator+(sysid i) -> int

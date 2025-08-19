@@ -31,6 +31,8 @@ export auto get_mutex(pool_flags pf) -> auto&;
 
 export auto malloc_page(pool_flags pf,u32 pg_cnt) -> void*;
 
+export auto mfree_page(pool_flags pf,void* _vaddr,size_t pg_cnt) -> void;
+
 auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
 
 auto kernel_alloc_mtx = mutex{};
@@ -183,6 +185,84 @@ auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void
 
     ASSERT(not pgtable::contains(pte)); // 因为是在添加映射 所以pte就应该不存在
     *pte = page_phyaddr | PG_US_U | PG_RW_W | PG_P_1; // 页内存是否清空 交给外部处理
+}
+
+// 去掉虚拟地址 vaddr 的映射，只去掉pte，不动pde
+auto page_table_pte_remove(u32 vaddr) -> void
+{
+    auto pte = pgtable::pte_ptr(vaddr);
+    *pte &= ~PG_P_1; // P 位置0
+    asm volatile("invlpg %0" : : "m"(vaddr) : "memory"); // 更新 tlb
+}
+
+// 虚拟地址池中释放以 _vaddr 起始的连续pg_cnt个虚拟页地址
+auto vaddr_remove(pool_flags pf,void* _vaddr,size_t pg_cnt) -> void
+{
+    auto vaddr = (u32)_vaddr;
+    using enum pool_flags;
+    if(pf == KERNEL) { // 虚拟内存池
+        auto bi = (vaddr - kernel_vaddr.vaddr_start) / PG_SIZE;
+        kernel_vaddr.set(bi,bi + pg_cnt,false);
+    } else {
+        auto cur_thread = running_thread();
+        auto bi = (vaddr - cur_thread->userprog_vaddr.vaddr_start) / PG_SIZE;
+        cur_thread->userprog_vaddr.set(bi,bi + pg_cnt,false);
+    }
+}
+
+// 回收物理页地址
+auto pfree(u32 pg_phy_addr) -> void
+{
+    if(pg_phy_addr >= user_pool.phy_addr_start) { // 用户物理内存
+        user_pool.set (
+            (pg_phy_addr - user_pool.phy_addr_start) / PG_SIZE,
+            false
+        );
+    } else {
+        kernel_pool.set (
+            (pg_phy_addr - kernel_pool.phy_addr_start) / PG_SIZE,
+            false
+        );
+    }
+}
+
+// 释放以虚拟地址vaddr为起始的 cnt 个物理页框
+auto mfree_page(pool_flags pf,void* _vaddr,size_t pg_cnt) -> void
+{
+    auto vaddr = (i32)_vaddr;
+    ASSERT(pg_cnt >= 1 and vaddr % PG_SIZE == 0);
+    auto pg_phy_addr = pgtable::addr_v2p(vaddr); // vaddr对应的物理地址
+    // 确保释放的物理内存在 低端1MB+1KB的页目录 + 1KB大小的页表地址范围外
+    ASSERT(pg_phy_addr % PG_SIZE == 0 and pg_phy_addr >= 0x102000);
+    if(pg_phy_addr >= user_pool.phy_addr_start) { // 用户内存池
+        vaddr -= PG_SIZE;
+        for(auto i = 0; i != pg_cnt; ++i) {
+            vaddr += PG_SIZE;
+            pg_phy_addr = pgtable::addr_v2p(vaddr);
+            // 确保物理内存始终属于用户内存池
+            ASSERT(pg_phy_addr % PG_SIZE == 0 and pg_phy_addr >= user_pool.phy_addr_start);
+            // 先把物理页框还到内存池
+            pfree(pg_phy_addr);
+            // 页表中清除虚拟地址所在的页表项pte
+            page_table_pte_remove(vaddr);
+        }
+        // 回收虚拟地址
+        vaddr_remove(pf,_vaddr,pg_cnt);
+    } else { // 内核内存池
+        vaddr -= PG_SIZE;
+        for(auto i = 0; i != pg_cnt; ++i) {
+            vaddr += PG_SIZE;
+            pg_phy_addr = pgtable::addr_v2p(vaddr);
+            // 始终确保物理内存属于内核内存池
+            ASSERT(pg_phy_addr % PG_SIZE == 0 and pg_phy_addr >= kernel_pool.phy_addr_start and pg_phy_addr < user_pool.phy_addr_start);
+            // 先回收物理页框至内存池
+            pfree(pg_phy_addr);
+            // 页表中清除虚拟地址的页表项pte
+            page_table_pte_remove(vaddr);
+        }
+        // 回收虚拟地址
+        vaddr_remove(pf,_vaddr,pg_cnt);
+    }
 }
 
 auto allocate_pid() -> pid_t

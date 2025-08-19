@@ -85,11 +85,7 @@ auto malloc(size_t size) -> void*
     }
 
     // 开始分配内存块
-    puts("start alloc block\n");
     auto block = list.front();
-    puts("block = 0x");
-    puthex((int)block);
-    putchar('\n');
     list.pop_front();
     auto b = (mem_block*)((u32)block - (u32)(&((mem_block*)0)->free_elem));
     auto a = ofarena(b);

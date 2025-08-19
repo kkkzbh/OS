@@ -60,9 +60,6 @@ auto create_user_vaddr_bitmap(task* user_prog) -> void
 // 创建用户进程
 auto process_execute(void* filename,char const* name) -> void
 {
-    puts("the function addr is ");
-    puthex((int)process_execute);
-    putchar('\n');
     // pcb内核数据结构，由内核维护进程信息，故在内核内存池中申请
     auto thread = (task*)get_kernel_pages(1);
     init_thread(thread,name,default_prio);

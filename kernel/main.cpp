@@ -13,6 +13,8 @@ import printf;
 import getpid;
 import malloc;
 import list;
+import free;
+import std;
 
 int prog_a_pid;
 int prog_b_pid;
@@ -21,39 +23,64 @@ extern "C" auto main() -> void
 {
     init_all();
 
-    // process_execute((void*)+[] {
-    //     prog_a_pid = sys::getpid();
-    //     char const* name = "prog_a";
-    //     std::printf(" I am %s, my pid: %d%c",name,prog_a_pid,'\n');
-    //     while(true) {
-    //
-    //     }
-    // },"user_prog_a");
-    //
-    // process_execute((void*)+[] {
-    //     prog_b_pid = sys::getpid();
-    //     char const* name = "prog_b";
-    //     std::printf(" I am %s, my pid: %d%c",name,prog_b_pid,'\n');
-    //     while(true) {
-    //
-    //     }
-    // },"user_prog_b");
-
     intr_enable();
 
-    // console::write("  main_pid:0x");
-    // console::puth(getpid());
-    // console::putc('\n');
+    process_execute((void*)+[] {
+        auto addr1 = std::malloc(256);
+        auto addr2 = std::malloc(255);
+        auto addr3 = std::malloc(254);
+        std::printf(" prog_a malloc addr:0x%x, 0x%x, 0x%x\n",addr1,addr2,addr3);
+        auto cpu_delay = 100000000;
+        while(cpu_delay--) {
+
+        }
+        std::free(addr1);
+        std::free(addr2);
+        std::free(addr3);
+        while(true) {
+
+        }
+    },"user_prog_a");
+
+    process_execute((void*)+[] {
+        auto addr1 = std::malloc(256);
+        auto addr2 = std::malloc(255);
+        auto addr3 = std::malloc(254);
+        std::printf(" prog_b malloc addr:0x%x, 0x%x, 0x%x\n",addr1,addr2,addr3);
+        auto cpu_delay = 100000000;
+        while(cpu_delay--) {
+
+        }
+        std::free(addr1);
+        std::free(addr2);
+        std::free(addr3);
+        while(true) {
+
+        }
+    },"user_prog_b");
 
     thread_start("k_thread_a",31,[](void* arg) {
         auto para = (char*)arg;
-        // console::write(" thread_a_pid:0x");
-        // console::puth(getpid());
-        // console::putc('\n');
-        auto addr = malloc(33);
-        console::write(" I am thread_a, std::malloc(33), addr is 0x");
-        console::puth((int)addr);
+        auto addr1 = malloc(256);
+        auto addr2 = malloc(255);
+        auto addr3 = malloc(254);
+        console::write(" thread_a malloc addr:0x");
+        console::puth((int)addr1);
+        console::putc(',');
+        console::puth((int)(addr2));
+        console::putc(',');
+        console::puth((int)addr3);
         console::putc('\n');
+
+        auto cpu_delay = 1000000000;
+
+        while(cpu_delay--) {
+
+        }
+        // free(addr1);
+        // free(addr2);
+        // free(addr3);
+
         while(true) {
 
         }
@@ -61,13 +88,25 @@ extern "C" auto main() -> void
 
     thread_start("k_thread_b",31,[](void* arg) {
         auto para = (char*)arg;
-        // console::write(" thread_b_pid:0x");
-        // console::puth(getpid());
-        // console::putc('\n');
-        auto addr = malloc(63);
-        console::write(" I am thread_b, std::malloc(63), addr is 0x");
-        console::puth((int)addr);
+        auto addr1 = malloc(256);
+        auto addr2 = malloc(255);
+        auto addr3 = malloc(254);
+        console::write(" thread_b malloc addr:0x");
+        console::puth((int)addr1);
+        console::putc(',');
+        console::puth((int)(addr2));
+        console::putc(',');
+        console::puth((int)addr3);
         console::putc('\n');
+
+        auto cpu_delay = 1000000000;
+
+        while(cpu_delay--) {
+
+        }
+        // free(addr1);
+        // free(addr2);
+        // free(addr3);
         while(true) {
 
         }
