@@ -9,6 +9,8 @@ import syscall.utility;
 import console;
 import getpid;
 import write;
+import malloc;
+import free;
 
 export auto syscall_init();
 
@@ -25,5 +27,7 @@ auto syscall_init()
     puts("syscall_init start\n");
     syscall_table[+sysid::getpid] = (sysfunc)getpid;
     syscall_table[+sysid::write] = (sysfunc)write;
+    syscall_table[+sysid::malloc] = (sysfunc)malloc;
+    syscall_table[+sysid::free] = (sysfunc)free;
     puts("syscall_init done\n");
 }

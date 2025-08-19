@@ -13,7 +13,7 @@ namespace std
     {
         char buf[1024]{};
         format_to(buf,format,((Args&&)args)...);
-        return sys::write(buf);
+        return write(buf);
     }
 
     export template<typename... Args>

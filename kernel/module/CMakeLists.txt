@@ -84,6 +84,7 @@ target_sources(sync_alloc
         memory/alloc/pool.cppm
         memory/alloc/arena.cpp
         memory/alloc/malloc.cpp
+        memory/alloc/free.cpp
 )
 
 target_include_directories(sync_alloc
@@ -101,6 +102,23 @@ target_link_libraries(sync_alloc
         string
         kernel_utility
         memory
+)
+
+add_library(new
+        memory/alloc/new.cpp
+)
+
+#target_sources(new
+#        PUBLIC
+#        FILE_SET CXX_MODULES
+#        FILES
+#        memory/alloc/new.cpp
+#)
+
+target_link_libraries(new
+        PRIVATE
+        user
+        utility
 )
 
 add_library(thread)
@@ -141,6 +159,7 @@ target_sources(user
         user/write.cpp
         user/format.cpp
         user/printf.cpp
+        user/std.cpp
 )
 
 target_link_libraries(user

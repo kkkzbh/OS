@@ -59,6 +59,7 @@ export auto block_desc_init(mem_block_desc* desc_array) -> void
         desc_array[i].block_size = sz;
         desc_array[i].block_per_arena = ((PG_SIZE - sizeof(arena)) / sz);
         sz *= 2;
+        desc_array[i].free_list.init();
     }
 }
 
