@@ -50,7 +50,7 @@ auto create_user_vaddr_bitmap(task* user_prog) -> void
 {
     user_prog->userprog_vaddr.init (
         (char*)get_kernel_pages(
-            div_ceil((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8,PG_SIZE)
+            std::div_ceil((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8,PG_SIZE)
         ),
         ((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8),
         USER_VADDR_START

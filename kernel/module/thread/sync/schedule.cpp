@@ -23,10 +23,24 @@ export auto thread_unblock(task* pthread) -> void;
 
 auto process_activate(task const* pthread) -> void;
 
+export auto idle(void* arg) -> void;
+
 using thread_list = list;
 
 export thread_list thread_ready_list; // 线程就绪队列
 export thread_list thread_all_list;   // 所有任务队列
+
+export auto idle_thread = (task*){};         // idle线程
+
+// 系统空闲时，运行的线程
+auto idle(void* arg) -> void
+{
+    while(true) {
+        thread_block(thread_status::blocked);
+        // 执行 hlt 要保证处于开中断下
+        asm volatile("sti; hlt" : : : "memory");
+    }
+}
 
 // 获取当前线程的 pcb 指针
 auto running_thread() -> task*
@@ -41,6 +55,11 @@ auto running_thread() -> task*
 auto schedule() -> void
 {
     ASSERT(intr_get_status() == INTR_OFF);
+
+    if(thread_ready_list.empty()) { // 如果就绪队列没有可运行的任务，唤醒idle
+        thread_unblock(idle_thread);
+    }
+
     auto cur = running_thread();
 
     if(cur->stu == thread_status::running) {
@@ -60,6 +79,18 @@ auto schedule() -> void
 
     process_activate(next);    // 激活新进程的页表
     switch_to(cur,next);    // 调度
+}
+
+// 主动让出cpu，让其他线程运行
+auto thread_yield() -> void
+{
+    auto cur = running_thread();
+    auto old_status = intr_disable();
+    ASSERT(not thread_ready_list.contains(&cur->general_tag));
+    thread_ready_list.push_back(&cur->general_tag);
+    cur->stu = thread_status::ready;
+    schedule();
+    intr_set_status(old_status);
 }
 
 // 线程将自己阻塞，状态标记为 stu (blocked waiting hanging)

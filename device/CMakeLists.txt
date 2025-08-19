@@ -36,6 +36,8 @@ target_link_libraries(console
         utility
         stdio
         sync_alloc
+        format
+        string
 )
 
 add_library(keyboard
@@ -80,4 +82,26 @@ target_link_libraries(ioqueue
         stdio
         interrupt
         assert
+)
+
+add_library(ide)
+
+target_sources(ide
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        ide/ide.cpp
+        ide/init.cpp
+)
+
+target_link_libraries(ide
+        PRIVATE
+        utility
+        sync_alloc
+        bitmap
+        std
+        console
+        assert
+        user
+        sync_alloc
 )

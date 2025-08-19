@@ -120,6 +120,7 @@ target_link_libraries(os
         thread
         user
         new
+        std
 )
 
 # 创建内核可执行文件

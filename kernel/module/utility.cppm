@@ -39,17 +39,126 @@ export using thread_function = void(void*);
 
 export using pid_t = u16;
 
-export template<typename T>
-auto max(T const& x,T const& y) -> T const&
+export namespace std
 {
-    if(y > x) {
-        return y;
-    }
-    return x;
-}
+    template<typename T>
+    struct remove_reference_s
+    {
+        using type = T;
+    };
 
-export template<typename T>
-auto div_ceil(T x,auto p)
-{
-    return (x + p - 1) / p;
+    template<typename T>
+    struct remove_reference_s<T&>
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    struct remove_reference_s<T&&>
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    using remove_reference = typename remove_reference_s<T>::type;
+
+    template<typename T>
+    struct remove_const_s
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    struct  remove_const_s<T const>
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    using remove_const = typename remove_const_s<T>::type;
+
+    template<typename T>
+    using remove_cref = remove_reference<remove_const<T>>;
+
+    template<typename T>
+    struct is_lvalue_reference_s
+    {
+        auto static constexpr value = false;
+    };
+
+    template<typename T>
+    struct is_lvalue_reference_s<T&>
+    {
+        auto static constexpr value = true;
+    };
+
+    template<typename T>
+    struct is_lvalue_reference_s<T&&>
+    {
+        auto static constexpr value = false;
+    };
+
+    template<typename T>
+    auto constexpr is_lvalue_reference = is_lvalue_reference_s<T>::value;
+
+    template<typename T>
+    struct is_rvalue_reference_s
+    {
+        auto static constexpr value = false;
+    };
+
+    template<typename T>
+    struct is_rvalue_reference_s<T&>
+    {
+        auto static constexpr value = false;
+    };
+
+    template<typename T>
+    struct is_rvalue_reference_s<T&&>
+    {
+        auto static constexpr value = true;
+    };
+
+    template<typename T>
+    auto constexpr is_rvalue_reference = is_rvalue_reference_s<T>::value;
+
+    template<typename T>
+    using range_value_t = typename remove_cref<T>::value_type;
+
+    template<typename T>
+    auto constexpr move(T&& v) noexcept
+    {
+        return (remove_reference<T>&&)v;
+    }
+
+    template<typename T>
+    auto constexpr forward(remove_reference<T>& v) noexcept -> T&&
+    {
+        return (T&&)v;
+    }
+
+    template<typename T>
+    auto constexpr forward(remove_reference<T>&& v) noexcept -> T&& requires (not is_lvalue_reference<T>)
+    {
+        return (T&&)v;
+    }
+
+    template<typename T>
+    auto constexpr div_ceil(T x,auto p)
+    {
+        return (x + p - 1) / p;
+    }
+
+    template<typename T,size_t N>
+    auto constexpr begin(T (&a)[N]) -> auto*
+    {
+        return a;
+    }
+
+    template<typename T,size_t N>
+    auto constexpr end(T (&a)[N]) -> auto*
+    {
+        return *(&a + 1);
+    }
+
 }
