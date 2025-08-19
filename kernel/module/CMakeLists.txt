@@ -206,3 +206,17 @@ target_sources(stringm
         FILES
         string.cpp
 )
+
+add_library(sleep)
+
+target_sources(sleep
+        PUBLIC
+        thread/sync/sleep.cpp
+)
+
+target_link_libraries(sleep
+        PRIVATE
+        sync_alloc
+        time
+        utility
+)
