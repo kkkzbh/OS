@@ -21,9 +21,11 @@ export auto thread_block(thread_status stu) -> void;
 
 export auto thread_unblock(task* pthread) -> void;
 
-auto process_activate(task const* pthread) -> void;
-
 export auto idle(void* arg) -> void;
+
+export auto thread_yield() -> void;
+
+auto process_activate(task const* pthread) -> void;
 
 using thread_list = list;
 
