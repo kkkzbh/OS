@@ -40,7 +40,7 @@ auto malloc(size_t size) -> void*
     auto lcg = lock_guard{ get_mutex(pf) };
 
     if(size > 1024) { // 属于大块内存 分配页框
-        auto page_cnt = div_ceil(size + sizeof(arena),PG_SIZE);
+        auto page_cnt = std::div_ceil(size + sizeof(arena),PG_SIZE);
         auto a = (arena*)malloc_page(pf,page_cnt);
         if(a == nullptr) {
             return nullptr;

@@ -69,9 +69,10 @@ void static pic_init()
     outb(PIC_S_DATA,0x01); // ICW4: 8086模式，正常EOI
 
 
-    // 开启时钟与键盘中断
-    outb(PIC_M_DATA, 0xfc);
-    outb(PIC_S_DATA, 0xff);
+    // 开启时钟(IRQ0)与键盘中断(IRQ1)以及从片中断(IRQ2)
+    outb(PIC_M_DATA, 0xf8);
+    // 从片的IRQ14打开，接收硬盘控制器的中断
+    outb(PIC_S_DATA, 0xbf);
 
     puts("pic_init done\n");
 }

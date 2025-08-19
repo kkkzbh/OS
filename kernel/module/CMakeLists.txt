@@ -108,13 +108,6 @@ add_library(new
         memory/alloc/new.cpp
 )
 
-#target_sources(new
-#        PUBLIC
-#        FILE_SET CXX_MODULES
-#        FILES
-#        memory/alloc/new.cpp
-#)
-
 target_link_libraries(new
         PRIVATE
         user
@@ -157,9 +150,7 @@ target_sources(user
         user/utility.cpp
         user/getpid.cpp
         user/write.cpp
-        user/format.cpp
         user/printf.cpp
-        user/std.cpp
 )
 
 target_link_libraries(user
@@ -170,6 +161,41 @@ target_link_libraries(user
         console
         string
         assert
+        format
+)
+
+add_library(format)
+
+target_sources(format
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        user/format.cpp
+)
+
+target_link_libraries(format
+        PRIVATE
+        utility
+        assert
+        string
+)
+
+add_library(std)
+
+target_sources(std
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        std/std.cpp
+        std/array.cpp
+        std/algorithm.cpp
+)
+
+target_link_libraries(std
+        PRIVATE
+        user
+        new
+        utility
 )
 
 add_library(stringm)

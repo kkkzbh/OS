@@ -13,9 +13,15 @@ import utility;
 
 export struct semaphore
 {
-    explicit semaphore(u8 desire) : value(desire)
+    explicit semaphore(u8 desire)
     {
+        init(desire);
         puts(" ***** semaphore construction!! ****** \n");
+    }
+
+    auto init(u8 desire) -> void
+    {
+        value = desire;
     }
 
     semaphore(semaphore const&) = delete;
