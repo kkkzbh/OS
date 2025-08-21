@@ -128,6 +128,14 @@ export struct list
         return nullptr;
     }
 
+    template<typename Pred>
+    auto for_each(Pred pred) -> void
+    {
+        for(auto it = begin(); it != end(); it = it->next) {
+            pred(it);
+        }
+    }
+
     // head->prev 用作 bound 第一个元素实为head->next
     // tail->next 用作 bound
     size_t sz;

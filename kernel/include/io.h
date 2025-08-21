@@ -19,7 +19,7 @@ void static outb(u16 port,u8 data)
     );
 }
 
-void static outse(u16 port,void const* addr,u32 word_cnt)
+void static outsw(u16 port,void const* addr,u32 word_cnt)
 {
     /*
      * 把 ds:esi 处的16位的内容写入port端口
@@ -38,6 +38,7 @@ u8 static inb(u16 port)
     asm volatile(
         "inb %w1, %b0" : "=a"(data) : "Nd"(port)
     );
+    return data;
 }
 
 void static insw(u16 port,void* addr,u32 word_cnt)

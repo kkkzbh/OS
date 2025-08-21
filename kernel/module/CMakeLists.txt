@@ -171,6 +171,7 @@ target_link_libraries(user
         string
         assert
         format
+        console
 )
 
 add_library(format)
@@ -187,7 +188,6 @@ target_link_libraries(format
         utility
         assert
         string
-        std
 )
 
 add_library(std)
@@ -206,6 +206,7 @@ target_link_libraries(std
         PRIVATE
         utility
         new
+        string
 )
 
 add_library(stdfmt)

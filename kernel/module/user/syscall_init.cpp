@@ -6,7 +6,6 @@ module;
 export module syscall.init;
 
 import syscall.utility;
-import console;
 import getpid;
 import write;
 import malloc;

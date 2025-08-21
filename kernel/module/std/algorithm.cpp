@@ -6,22 +6,6 @@ import utility;
 
 namespace std
 {
-    export template<typename T>
-    auto constexpr swap(T& x,T& y) noexcept -> void
-    {
-        T tmp = move(x);
-        x = move(y);
-        y = move(tmp);
-    }
-
-    export template<typename T>
-    auto constexpr max(T const& x,T const& y) -> T const&
-    {
-        if(y > x) {
-            return y;
-        }
-        return x;
-    }
 
     template<typename Lambda>
     struct bind_function
@@ -88,5 +72,26 @@ namespace std
         }
 
     } constexpr fill;
+
+    export struct copy_fn
+    {
+        template<typename R,typename R2>
+        auto static constexpr operator()(R&& r,R2&& r2) -> R&&
+        {
+            auto bound = min(size(r),size(r2));
+            auto it1 = begin(r);
+            auto it2 = begin(r2);
+            for(auto i = 0; i != bound; ++it1,++it2) {
+                *it1 = *it2;
+            }
+            return forward<R>(r);
+        }
+
+        template<typename R2>
+        auto constexpr operator[](this auto self,R2&& r2) -> decltype(auto)
+        {
+            return bind(self,forward<R2>(r2));
+        }
+    } constexpr copy;
 
 }
