@@ -16,6 +16,7 @@ auto constexpr COUNTER_MODE     =          2;
 auto constexpr READ_WRITE_LATCH =          3;
 auto constexpr PIT_CONTROL_PORT =          0x43;
 
+// 内核自中断开启以来总共的嘀嗒数
 
 void intr_time_handler();
 

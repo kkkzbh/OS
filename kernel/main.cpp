@@ -14,14 +14,17 @@ import getpid;
 import malloc;
 import list;
 import free;
-import std;
+import format;
 
-int prog_a_pid;
-int prog_b_pid;
+// int prog_a_pid;
+// int prog_b_pid;
 
 extern "C" auto main() -> void
 {
+
+
     init_all();
+
 
     // intr_enable();
     //
@@ -41,7 +44,7 @@ extern "C" auto main() -> void
     //
     //     }
     // },"user_prog_a");
-    //
+
     // process_execute((void*)+[] {
     //     auto addr1 = std::malloc(256);
     //     auto addr2 = std::malloc(255);

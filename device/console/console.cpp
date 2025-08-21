@@ -22,14 +22,15 @@ export namespace console
 
     auto puth(u32 v) -> void;
 
+    auto constexpr BUFSZ = 128;
+
     template<typename... Args>
     auto print(char const* format,Args&&... args) -> u32
     {
-        auto lcg = lock_guard{ mtx };
-        char buf[1024]{};
-        format_to(buf,format,args...);
+        char buf[BUFSZ]{};
+        auto ret = std::format_to(buf,format,std::forward<Args>(args)...);
         write(buf);
-        return strlen(buf);
+        return ret;
     }
 
     auto println() -> u32
@@ -41,12 +42,11 @@ export namespace console
     template<typename... Args>
     auto println(char const* format,Args&&... args) -> u32
     {
-        auto lcg = lock_guard{ mtx };
-        char buf[1024]{};
-        format_to(buf,format,args...);
+        char buf[BUFSZ]{};
+        auto end = std::format_to(buf,format,std::forward<Args>(args)...);
+        buf[end++] = '\n';
         write(buf);
-        println();
-        return strlen(buf);
+        return end;
     }
 
 }
@@ -56,7 +56,7 @@ namespace console
 
     auto write(char const* str) -> void
     {
-        auto lcg = lock_guard{ mtx };
+        // auto lcg = lock_guard{ mtx };
         puts(str);
     }
 
