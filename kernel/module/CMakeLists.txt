@@ -114,6 +114,16 @@ target_link_libraries(new
         utility
 )
 
+add_library(sysnew
+        memory/alloc/sysnew.cpp
+)
+
+target_link_libraries(sysnew
+        PRIVATE
+        sync_alloc
+        utility
+)
+
 add_library(thread)
 
 target_sources(thread
@@ -158,7 +168,6 @@ target_link_libraries(user
         utility
         sync_alloc
         stdio
-        console
         string
         assert
         format
@@ -178,6 +187,7 @@ target_link_libraries(format
         utility
         assert
         string
+        std
 )
 
 add_library(std)
@@ -186,37 +196,46 @@ target_sources(std
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
-        std/std.cpp
         std/array.cpp
         std/algorithm.cpp
+        std/bit.cpp
+        std/string.cpp
 )
 
 target_link_libraries(std
         PRIVATE
-        user
-        new
         utility
+        new
 )
 
-add_library(stringm)
+add_library(stdfmt)
 
-target_sources(stringm
+target_sources(stdfmt
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
-        string.cpp
+        std/format/array.cpp
+)
+
+target_link_libraries(stdfmt
+        PRIVATE
+        std
+        format
 )
 
 add_library(sleep)
 
 target_sources(sleep
         PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
         thread/sync/sleep.cpp
 )
 
 target_link_libraries(sleep
         PRIVATE
         sync_alloc
-        time
         utility
+        PUBLIC
+        time
 )

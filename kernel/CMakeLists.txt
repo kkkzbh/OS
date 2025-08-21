@@ -105,6 +105,7 @@ target_link_libraries(init
         sync_alloc
         thread
         user
+        ide
 )
 
 add_library(os
@@ -121,6 +122,7 @@ target_link_libraries(os
         user
         new
         std
+        time
 )
 
 # 创建内核可执行文件
