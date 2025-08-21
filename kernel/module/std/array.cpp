@@ -58,7 +58,7 @@ export namespace std
         T a[N];
     };
 
-    template<typename T>
-    struct array<T,0>;  // 不允许0大小
+    template<typename... Args>
+    array(Args... args) -> array<Args...[0],sizeof...(args)>;
 
 }

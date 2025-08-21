@@ -7,7 +7,6 @@ add_library(time
 
 target_include_directories(time
         PRIVATE
-        ${KERNEL}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/time/
         INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -20,6 +19,8 @@ target_link_libraries(time
         sync_alloc
         assert
         interrupt
+        PUBLIC
+        kernel_utility
 )
 
 add_library(console)
@@ -36,8 +37,8 @@ target_link_libraries(console
         utility
         stdio
         sync_alloc
-        format
         string
+        format
 )
 
 add_library(keyboard
@@ -92,6 +93,8 @@ target_sources(ide
         FILES
         ide/ide.cpp
         ide/init.cpp
+        ide/intr.cpp
+        ide/part.cpp
 )
 
 target_link_libraries(ide
@@ -103,5 +106,9 @@ target_link_libraries(ide
         console
         assert
         user
-        sync_alloc
+        kernel_utility
+        sleep
+        interrupt
+        sysnew
+        string
 )
