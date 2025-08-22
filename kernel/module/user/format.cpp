@@ -6,7 +6,6 @@ module;
 export module format;
 
 import utility;
-import array;
 
 namespace std
 {
