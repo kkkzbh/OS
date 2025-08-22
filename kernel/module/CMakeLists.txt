@@ -207,6 +207,7 @@ target_link_libraries(std
         utility
         new
         string
+        optional
 )
 
 add_library(stdfmt)
@@ -216,12 +217,14 @@ target_sources(stdfmt
         FILE_SET CXX_MODULES
         FILES
         std/format/array.cpp
+        std/format/string.cpp
 )
 
 target_link_libraries(stdfmt
         PRIVATE
         std
         format
+        utility
 )
 
 add_library(sleep)

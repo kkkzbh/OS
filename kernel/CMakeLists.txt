@@ -123,6 +123,7 @@ target_link_libraries(os
         new
         std
         time
+        stdfmt
 )
 
 # 创建内核可执行文件

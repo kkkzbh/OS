@@ -6,6 +6,8 @@ export module string;
 
 import utility;
 import algorithm;
+import optional;
+
 
 export namespace std
 {
@@ -14,6 +16,7 @@ export namespace std
                     std::same_as<T,char const> or
                     std::same_as<T,unsigned char> or
                     std::same_as<T,unsigned char const>;
+
 
     template<CharT Char>
     struct string_view
@@ -25,6 +28,8 @@ export namespace std
         constexpr string_view() = default;
 
         constexpr string_view(string_view const&) = default;
+
+        constexpr string_view(Char* str) : string_view(str,strlen(str)) {}
 
         constexpr string_view(Char* str,size_t count) : s(str),sz(count) {}
 
@@ -78,12 +83,6 @@ export namespace std
             return size() == 0;
         }
 
-        auto constexpr swap(string_view other) -> void
-        {
-            swap(s,other.s);
-            swap(sz,other.sz);
-        }
-
         auto constexpr remove_prefix(size_t n) -> string_view
         {
             return { s + n,sz - n };
@@ -99,7 +98,70 @@ export namespace std
             return { s + pos,count };
         }
 
+        auto friend constexpr operator==(string_view x,string_view y) -> bool
+        {
+            return x <=> y == 0;
+        }
+
+        auto friend constexpr operator<=>(string_view x,string_view y) -> strong_ordering
+        {
+            using enum strong_ordering;
+            auto bound = std::min(x.size(),y.size());
+            auto ret = [=] {
+                for(auto i = 0; i != bound; ++i) {
+                    if(x[i] != y[i]) {
+                        return x[i] - y[i];
+                    }
+                }
+                return 0;
+            }();
+            if(ret == 0) {
+                return equal;
+            }
+            if(ret < 0) {
+                return less;
+            }
+            return greater;
+        }
+
+        auto constexpr starts_with(string_view sv) const noexcept -> bool
+        {
+            return string_view{ s,min(size(),sv.size()) } == sv;
+        }
+
+        auto constexpr ends_with(string_view sv) const noexcept -> bool
+        {
+            return size() >= sv.size() and string_view{ s + (size() - sv.size()),sz - sv.size() } == sv;
+        }
+
+        auto constexpr find(string_view sv,size_t pos = 0) const noexcept -> optional<size_t>
+        {
+            auto i = pos;
+            auto bound = sz - sv.size() + 1;
+            auto my = *this->remove_prefix(i);
+            my.sz = sv.size();
+            for(; i < bound; ++i,++my.s) {
+                if(my == sv) {
+                    return i;
+                }
+            }
+            return nullopt;
+        }
+
+        auto constexpr contains(string_view sv) const noexcept -> bool
+        {
+            return find(sv);
+        }
+
+
         Char* s = nullptr;
         size_t sz = 0;
     };
+
+
+}
+
+export auto constexpr operator""sv(char const* str,size_t sz) -> std::string_view<char const>
+{
+    return { str,sz };
 }

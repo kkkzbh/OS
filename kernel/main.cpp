@@ -15,6 +15,10 @@ import malloc;
 import list;
 import free;
 import format;
+import string;
+import string.format;
+import array;
+import array.format;
 
 // int prog_a_pid;
 // int prog_b_pid;
@@ -24,7 +28,6 @@ extern "C" auto main() -> void
 
 
     init_all();
-
 
     // intr_enable();
     //
