@@ -288,6 +288,13 @@ export namespace std
         return y;
     }
 
+    template<typename T,typename... Ts>
+    requires (std::same_as<T,Ts> and ...)
+    auto constexpr max(T const& x,T const& y,Ts const&... other) -> T const&
+    {
+        return max(max(x,y),other...);
+    }
+
     template<typename T>
     auto constexpr min(T const& x,T const& y) -> T const&
     {
@@ -296,6 +303,14 @@ export namespace std
         }
         return y;
     }
+
+    template<typename T,typename... Ts>
+    requires (std::same_as<T,Ts> and ...)
+    auto constexpr min(T const& x,T const& y,Ts const&... other) -> T const&
+    {
+        return min(min(x,y),other...);
+    }
+
 
     template<integral T,T... Idx>
     struct integer_sequence
