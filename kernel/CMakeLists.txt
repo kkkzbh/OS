@@ -109,7 +109,15 @@ target_link_libraries(init
 )
 
 add_library(os
+        start.cpp
+)
+
+target_sources(os
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
         main.cpp
+        kernel.cpp
 )
 
 target_link_libraries(os

@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-void main();
+void start();
 
 int kkkzbh()
 {
@@ -11,7 +11,7 @@ int kkkzbh()
     puthex(0x123);
     putchar('\n');
 
-    main();
+    start();
 
     return 0;
 }
