@@ -427,7 +427,43 @@ export namespace std
                 return *this;
             }
         };
+    }
 
+    enum struct strong_ordering
+    {
+        less = -1,
+        equal = 0,
+        greater = 1
+    };
+
+    auto constexpr operator==(strong_ordering v,nullptr_t) noexcept -> bool
+    {
+        return v == strong_ordering::equal;
+    }
+
+    auto constexpr operator<(strong_ordering v,nullptr_t) noexcept -> bool
+    {
+        return v == strong_ordering::less;
+    }
+
+    auto constexpr operator>(strong_ordering v,nullptr_t) noexcept -> bool
+    {
+        return v == strong_ordering::greater;
+    }
+
+    auto constexpr operator<=(strong_ordering v,nullptr_t) noexcept -> bool
+    {
+        return v < 0 or v == 0;
+    }
+
+    auto constexpr operator>=(strong_ordering v,nullptr_t) noexcept -> bool
+    {
+        return not (v < 0);
+    }
+
+    auto constexpr operator==(strong_ordering x,strong_ordering y) noexcept -> bool
+    {
+        return x == y;
     }
 
     // NOLINTEND
