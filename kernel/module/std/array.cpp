@@ -61,4 +61,8 @@ export namespace std
     template<typename... Args>
     array(Args... args) -> array<Args...[0],sizeof...(args)>;
 
+    // 与上述等价，但为了兼容目前的IDE还无法识别C++26形参包语法，故补充旧语法
+    template<typename T,typename... Args>
+    array(T arg,Args... args) -> array<T,1 + sizeof...(args)>;
+
 }
