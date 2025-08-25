@@ -11,6 +11,8 @@ import console;
 import ide;
 import algorithm;
 import filesystem;
+import ide.part;
+import list;
 
 export auto filesystem_init() -> void
 {
@@ -47,5 +49,9 @@ export auto filesystem_init() -> void
             }
         }
     }
+    auto default_part = "sdb1";
+    partition_list | std::apply_until[([=](list::node& nd) {
+        return mount(&nd,default_part);
+    })];
     delete sb;
 }

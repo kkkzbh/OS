@@ -1,4 +1,6 @@
+module;
 
+#include <assert.h>
 
 export module filesystem;
 
@@ -12,8 +14,11 @@ import console;
 import vector;
 import algorithm;
 import string;
+import list;
 
 export auto format_partition(partition* part) -> void;
+
+export auto mount(list::node* pelem,char const* part_name) -> bool;
 
 auto format_partition(partition* part) -> void
 {
@@ -118,4 +123,45 @@ auto format_partition(partition* part) -> void
     console::println("    root_dir_lba:0x{x}",sb.data_start_lba);
     console::println("{} format done",part->name);
 
+}
+
+partition* cur_part;    // 默认情况下操作的哪儿个分区
+
+// 在分区链表中找到名为part_name的分区，并将其指针赋给cur_part
+auto mount(list::node* pelem,char const* part_name) -> bool
+{
+    auto part = (partition*)((u32)(pelem) - (u32)(&((partition*)0)->part_tag));
+    if(std::string_view{ part_name } != std::string_view{ part->name }) {
+        return false;
+    }
+    cur_part = part;
+    auto hd = cur_part->my_disk;
+    auto sb = new super_block{};
+    // 在内存中创建分区cur_part的超级块
+    cur_part->sb = new super_block;
+    if(cur_part == nullptr or sb == nullptr) {
+        PANIC("alloc memory failed!");
+    }
+    // 读入超级块
+    ide_read(hd,cur_part->start_lba + 1,sb,1);;
+    // 复制超级块sb到分区的超级块sb中
+    cur_part->sb = sb;
+    // 将硬盘上的块位图读入到内存
+    cur_part->block.bits = new u8[sb->block_bitmap_sects * BLOCK_SIZE];
+    if(cur_part->block.bits == nullptr) {
+        PANIC("alloc memory failed!");
+    }
+    cur_part->block.sz = sb->block_bitmap_sects * BLOCK_SIZE;
+    // 从硬盘上读入块位图到分区的bits
+    ide_read(hd,sb->block_bitmap_lba,cur_part->block.bits,sb->block_bitmap_sects);
+    // 将硬盘上的inode位图读入到内存
+    cur_part->inode.bits = new u8[sb->inode_bitmap_sects * BLOCK_SIZE];
+    if(cur_part->inode.bits == nullptr) {
+        PANIC("alloc memory failed!");
+    }
+    cur_part->inode.sz = sb->inode_bitmap_sects * BLOCK_SIZE;
+    // 从硬盘上读入inode位图到分区的inode.bits
+    ide_read(hd,sb->inode_bitmap_lba,cur_part->inode.bits,sb->inode_bitmap_sects);
+    console::println("mount {} done!",part->name);
+    return true;
 }

@@ -34,7 +34,7 @@ export namespace std
 
         template<random_range R>
         requires CharT<range_value_t<R>>
-        constexpr string_view(R&& r) : s(&*begin(r)),sz(size(r)) {}
+        constexpr string_view(R&& r) : s(&*std::begin(r)),sz(std::size(r)) {}
 
         string_view(nullptr_t) = delete("can not use nullptr constructor string_view");
 
@@ -150,11 +150,6 @@ export namespace std
         auto constexpr contains(string_view sv) const noexcept -> bool
         {
             return find(sv);
-        }
-
-        operator Char*() const
-        {
-            return s;
         }
 
 
