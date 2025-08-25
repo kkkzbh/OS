@@ -3,6 +3,7 @@
 export module array;
 
 import utility;
+import algorithm;
 
 export namespace std
 {
@@ -14,9 +15,14 @@ export namespace std
         using value_type = T;
         using iterator = T*;
 
-        auto constexpr operator[](this auto& self,size_t idx) -> auto&
+        auto constexpr operator[](this auto&& self,size_t idx) -> decltype(auto)
         {
             return self.a[idx];
+        }
+
+        auto constexpr operator[](size_t x,size_t y) -> decltype(auto)
+        {
+            return subrange{ a + x,a + y };
         }
 
         auto constexpr front(this auto& self) -> auto&
