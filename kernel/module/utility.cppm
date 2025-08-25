@@ -396,6 +396,13 @@ export namespace std
                 ++it;
                 return *this;
             }
+
+            template<typename It>
+            auto friend constexpr operator==(It x,It y) -> bool
+            {
+                return x.it == y.it;
+            }
+
             T* it;
         };
 
@@ -417,6 +424,13 @@ export namespace std
                 ++it;
                 return *this;
             }
+
+            template<typename It>
+            auto friend operator==(It x,It y) -> bool
+            {
+                return x.it == y.it;
+            }
+
             T* it;
         };
 
@@ -443,6 +457,12 @@ export namespace std
             auto constexpr operator->(this auto&& self) -> decltype(auto)
             {
                 return it;
+            }
+
+            template<typename It>
+            auto constexpr operator==(It x,It y) -> bool
+            {
+                return x.it == y.it;
             }
 
             T* it;
