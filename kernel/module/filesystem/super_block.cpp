@@ -6,7 +6,7 @@ import utility;
 import array;
 
 
-export [[gnu::packed]] struct super_block
+export struct super_block
 {
     u32 magic;              // 魔数标识文件系统类型(适用于多文件系统)
     u32 sec_cnt;            // 本分区总共的扇区数
@@ -26,7 +26,7 @@ export [[gnu::packed]] struct super_block
     u32 root_inode_no;      // 根目录所在的inode号
     u32 dir_entry_size;     // 目录项大小
 
-    std::array<u8,480> pad; // 凑够512字节一个扇区
+    std::array<u8,460> pad; // 凑够512字节一个扇区
 
 };
 

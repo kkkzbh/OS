@@ -30,6 +30,11 @@ export struct list
             it = it->prev;
             return self;
         }
+
+        operator node*() const
+        {
+            return it;
+        }
     };
 
     using value_type = node;
@@ -107,20 +112,20 @@ export struct list
         return *this;
     }
 
-    auto begin() -> node*
+    auto begin() -> iterator
     {
-        return head.next;
+        return { head.next };
     }
 
-    auto end() -> node*
+    auto end() -> iterator
     {
-        return &tail;
+        return { &tail };
     }
 
-    auto contains(node* v) -> bool
+    auto contains(node const* v) -> bool
     {
-        for(auto it = begin(); it != end(); it = it->next) {
-            if(it == v) {
+        for(auto const& nd : *this) {
+            if(&nd == v) {
                 return true;
             }
         }
@@ -135,25 +140,6 @@ export struct list
     auto size() const -> size_t
     {
         return sz;
-    }
-
-    template<typename Pred>
-    auto find(Pred pred) -> node*
-    {
-        for(auto it = begin(); it != end(); it = it->next) {
-            if(pred(it)) {
-                return it;
-            }
-        }
-        return nullptr;
-    }
-
-    template<typename Pred>
-    auto for_each(Pred pred) -> void
-    {
-        for(auto it = begin(); it != end(); it = it->next) {
-            pred(it);
-        }
     }
 
     // head->prev 用作 bound 第一个元素实为head->next

@@ -23,7 +23,6 @@ export namespace std
     {
         using value_type = Char;
         using iterator = Char*;
-        using const_iterator = Char const*;
 
         constexpr string_view() = default;
 

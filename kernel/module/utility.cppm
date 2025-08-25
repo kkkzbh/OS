@@ -416,7 +416,7 @@ export namespace std
 
             auto constexpr operator->(this auto&& self) -> decltype(auto)
             {
-                return it;
+                return self.it;
             }
 
             auto constexpr operator++() -> output&
@@ -456,11 +456,11 @@ export namespace std
 
             auto constexpr operator->(this auto&& self) -> decltype(auto)
             {
-                return it;
+                return self.it;
             }
 
             template<typename It>
-            auto constexpr operator==(It x,It y) -> bool
+            auto friend constexpr operator==(It x,It y) -> bool
             {
                 return x.it == y.it;
             }

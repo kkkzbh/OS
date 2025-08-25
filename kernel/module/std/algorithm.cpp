@@ -7,6 +7,29 @@ import utility;
 namespace std
 {
 
+    export template<typename It,typename Sentry>
+    struct subrange
+    {
+
+        using value_type = iter_value_t<It>;
+        using iterator = It;
+
+        constexpr subrange(It it,Sentry sentry) : it(it), sentry(sentry) {}
+
+        auto constexpr begin() const -> It
+        {
+            return it;
+        }
+
+        auto constexpr end() const -> Sentry
+        {
+            return sentry;
+        }
+
+        It it;
+        Sentry sentry;
+    };
+
     template<typename Lambda>
     struct bind_function
     {
@@ -20,11 +43,11 @@ namespace std
     };
 
     template<typename Func,typename... Args>
-    auto constexpr bind(Func func,Args&&... args) -> auto
+    auto constexpr bind(Func func,Args const&... args) -> auto
     {
         return bind_function {
             [f = move(func),&args...]<typename T>(T&& v) mutable -> decltype(auto) {
-                return f(forward<T>(v),forward<Args>(args)...);
+                return f(forward<T>(v),args...);
             }
         };
     }
@@ -32,10 +55,10 @@ namespace std
     export template<typename Lhs,typename Lam>
     auto constexpr operator|(Lhs&& lhs,bind_function<Lam> rhs) -> decltype(auto)
     {
-        return rhs(lhs);
+        return rhs(forward<Lhs>(lhs));
     }
 
-    export struct for_each_fn
+    export struct apply_fn
     {
         template<typename R,typename Func>
         auto static constexpr operator()(R&& r,Func func) -> R&&
@@ -47,12 +70,33 @@ namespace std
         }
 
         template<typename Func>
-        auto constexpr operator[](this auto self,Func func) -> decltype(auto)
+        auto constexpr operator[](this auto self,Func const& func) -> decltype(auto)
         {
             return bind(self,func);
         }
 
-    } constexpr for_each;
+    } constexpr apply;
+
+    export struct apply_until_fn
+    {
+        template<typename R,typename Func>
+        auto static constexpr operator()(R&& r,Func func) -> R&&
+        {
+            for(auto& v : r) {
+                if(func(v)) {
+                    break;
+                }
+            }
+            return forward<R>(r);
+        }
+
+        template<typename Func>
+        auto constexpr operator[](this auto self,Func const& func) -> decltype(auto)
+        {
+            return bind(self,func);
+        }
+
+    } constexpr apply_until;
 
     export struct fill_fn
     {
@@ -90,34 +134,46 @@ namespace std
         }
 
         template<typename R2>
-        auto constexpr operator[](this auto self,R2&& r2) -> decltype(auto)
+        auto constexpr operator[](this auto self,R2 const& r2) -> decltype(auto)
         {
-            return bind(self,forward<R2>(r2));
+            return bind(self,r2);
         }
     } constexpr copy;
 
-    export template<typename It,typename Sentry>
-    struct subrange
+    export struct first_fn
     {
-
-        using value_type = iter_value_t<It>;
-        using iterator = It;
-        using const_iterator = It const;
-
-        constexpr subrange(It it,Sentry sentry) : it(it), sentry(sentry) {}
-
-        auto constexpr begin() const -> It
+        template<typename R>
+        auto static constexpr operator()(R&& r,range_value_t<R>&& r2) -> decltype(auto)
         {
-            return it;
+            for(auto it : subrange(begin(r),end(r))) {
+                if(*it == r2) {
+                    return *it;
+                }
+            }
+            return end(r);
         }
 
-        auto constexpr end() const -> Sentry
+        template<typename R,typename Pred>
+        requires requires(Pred pred,range_value_t<R> v) { pred(v); }
+        auto static constexpr operator()(R&& r,Pred pred) -> decltype(auto)
         {
-            return sentry;
+            for(auto it : subrange(begin(r),end(r))) {
+                if(pred(*it)) {
+                    return *it;
+                }
+            }
+            return end(r);
         }
 
-        It it;
-        Sentry sentry;
-    };
+        template<typename V_Pred>
+        auto constexpr operator[](this auto self,V_Pred const& v_or_pred) -> decltype(auto)
+        {
+            return bind(self,v_or_pred);
+        }
+
+    } constexpr first;
+
+
+
 
 }

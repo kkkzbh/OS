@@ -13,7 +13,6 @@ export namespace std
 
         using value_type = T;
         using iterator = T*;
-        using const_iterator = T const*;
 
         auto constexpr operator[](this auto& self,size_t idx) -> auto&
         {
