@@ -102,6 +102,7 @@ target_link_libraries(sync_alloc
         string
         kernel_utility
         memory
+        std
 )
 
 add_library(new
