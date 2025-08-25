@@ -386,6 +386,11 @@ export namespace std
                 return *self.it;
             }
 
+            auto constexpr operator->() const -> T const*
+            {
+                return it;
+            }
+
             auto constexpr operator++() -> input&
             {
                 ++it;
@@ -402,7 +407,10 @@ export namespace std
                 return *self.it;
             }
 
-            auto constexpr operator*(this output const& self) -> decltype(auto) = delete("can not read");
+            auto constexpr operator->(this auto&& self) -> decltype(auto)
+            {
+                return it;
+            }
 
             auto constexpr operator++() -> output&
             {
@@ -430,6 +438,11 @@ export namespace std
             {
                 --it;
                 return *this;
+            }
+
+            auto constexpr operator->(this auto&& self) -> decltype(auto)
+            {
+                return it;
             }
 
             T* it;
