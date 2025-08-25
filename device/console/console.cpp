@@ -22,7 +22,7 @@ export namespace console
 
     auto puth(u32 v) -> void;
 
-    auto constexpr BUFSZ = 128;
+    auto constexpr BUFSZ = 1024;
 
     template<typename... Args>
     auto print(char const* format,Args&&... args) -> u32

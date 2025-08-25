@@ -200,12 +200,13 @@ target_sources(std
         std/algorithm.cpp
         std/bit.cpp
         std/string.cpp
+        std/vector.cpp
 )
 
 target_link_libraries(std
         PRIVATE
         utility
-        new
+        sysnew
         string
         optional
 )
@@ -218,6 +219,7 @@ target_sources(stdfmt
         FILES
         std/format/array.cpp
         std/format/string.cpp
+        std/format/vector.cpp
 )
 
 target_link_libraries(stdfmt
@@ -242,4 +244,30 @@ target_link_libraries(sleep
         utility
         PUBLIC
         time
+)
+
+add_library(filesystem)
+
+target_sources(filesystem
+        PUBLIC
+        FILE_SET CXX_MODULES;
+        FILES
+        filesystem/super_block.cpp
+        filesystem/dir.cpp
+        filesystem/inode.cpp
+        filesystem/utility.cpp
+        filesystem/fs.cpp
+        filesystem/init.cpp
+)
+
+target_link_libraries(filesystem
+        PRIVATE
+        utility
+        std
+        sync_alloc
+        ide
+        console
+        sysnew
+        assert
+        string
 )

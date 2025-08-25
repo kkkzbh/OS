@@ -11,6 +11,7 @@ import alloc;
 import tss;
 import syscall.init;
 import ide.init;
+import filesystem.init;
 
 auto call_global_constructors() -> void
 {
@@ -39,4 +40,7 @@ void init_all()
     // 初始化硬盘要开中断
     intr_enable();
     ide_init();         // 初始化 硬盘
+
+    filesystem_init();  // 初始化 文件系统
+
 }
