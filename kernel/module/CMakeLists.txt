@@ -250,9 +250,8 @@ add_library(filesystem)
 
 target_sources(filesystem
         PUBLIC
-        FILE_SET CXX_MODULES;
+        FILE_SET CXX_MODULES
         FILES
-        filesystem/super_block.cpp
         filesystem/dir.cpp
         filesystem/inode.cpp
         filesystem/utility.cpp
@@ -270,4 +269,20 @@ target_link_libraries(filesystem
         sysnew
         assert
         string
+        super_block
+)
+
+add_library(super_block)
+
+target_sources(super_block
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        filesystem/super_block.cpp
+)
+
+target_link_libraries(super_block
+        PRIVATE
+        utility
+        std
 )

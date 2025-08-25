@@ -11,10 +11,10 @@ import ide;
 import format;
 import console;
 
-// 分区表项 特征保证强制16字节大小
+// 分区表项 需要保证强制16字节大小
 struct [[gnu::packed]] partition_table_entry
 {
-    bool bootable;          // 是否可引导
+    u8 bootable;          // 是否可引导
     u8 start_head;          // 起始磁头号
     u8 start_sec;           // 起始扇区号
     u8 start_chs;           // 起始柱面号
@@ -42,7 +42,7 @@ export auto partition_info(list::node& pelem) -> void;
 // 用于记录总扩展分区的起始lba，初始为0, partition_scan时以此为标记
 auto ext_lba_base = 0;
 
-auto p_no = u8(0),l_no = u8(0);     // 用来记录硬盘主分区和逻辑分区的下标
+auto p_no = 0,l_no = 0;     // 用来记录硬盘主分区和逻辑分区的下标
 
 export auto partition_list = list{};       // 用于分区的队列
 
@@ -72,7 +72,7 @@ auto scan_partition(disk* __hd,u32 __ext_lba) -> void
                     part.sec_cnt = p.sec_cnt;
                     part.my_disk = hd;
                     partition_list.push_back(&part.part_tag);
-                    std::format_to(part.name,"{}{}",hd->name,p_no++);
+                    std::format_to(part.name,"{}{}",hd->name,++p_no);
                     ASSERT(p_no < 4); // 0 1 2 3
                 } else { // 处理逻辑分区的情况
                     auto& part = hd->logic_parts[l_no];

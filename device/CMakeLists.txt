@@ -111,4 +111,5 @@ target_link_libraries(ide
         interrupt
         sysnew
         string
+        super_block
 )
