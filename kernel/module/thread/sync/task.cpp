@@ -9,6 +9,7 @@ import memory;
 import bitmap;
 import list;
 import arena;
+import array;
 
 struct virtual_addr : bitmap
 {
@@ -50,6 +51,8 @@ struct virtual_addr : bitmap
     u32 vaddr_start;
 };
 
+export auto constexpr MAX_FILES_OPEN_PER_PROC = 8; // 每个进程允许打开的文件数
+
 export struct task
 {
     u32* self_kstack;       // 各个内核线程都用自己的内核栈
@@ -60,6 +63,8 @@ export struct task
     u8 ticks;               // 每次在处理器上执行的时间嘀嗒数
 
     u32 elapsed_ticks;      // 此任务上cpu运行后至今占用了多少cpu嘀嗒数
+
+    std::array<i32,MAX_FILES_OPEN_PER_PROC> fd_table;  // 文件描述符数组
 
     list::node general_tag; // 用于线程在一般的队列中的节点
     list::node all_list_tag;// 用于线程队列thread_all_list中的节点

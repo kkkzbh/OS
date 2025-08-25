@@ -13,6 +13,7 @@ import :stack;
 import alloc;
 import task;
 import schedule;
+import algorithm;
 
 export auto thread_start(char const* name,u8 prio,function func,void* func_arg) -> task*;
 
@@ -55,6 +56,8 @@ auto init_thread(task* pthread,char const* name,u8 prio) -> void
     pthread->priority = prio;
     pthread->ticks = prio;  // 优先级控制占用时长 大优先级占用大时长
     pthread->elapsed_ticks = 0;
+    pthread->fd_table = { 0,1,2 }; // 0 1 2 分别为 标准输入 输出 错误
+    pthread->fd_table[3,MAX_FILES_OPEN_PER_PROC] | std::fill[-1]; // 其余置 -1 NOLINT
     pthread->pgdir = nullptr;
     pthread->stack_magic = 0x19870916;
     strcpy(pthread->name,name);
