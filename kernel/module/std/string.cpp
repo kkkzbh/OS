@@ -152,6 +152,11 @@ export namespace std
             return find(sv);
         }
 
+        operator Char*() const
+        {
+            return s;
+        }
+
 
         Char* s = nullptr;
         size_t sz = 0;
