@@ -15,6 +15,26 @@ export struct list
         node* next;
     };
 
+    struct iter : std::iter::forward<node>
+    {
+        auto constexpr operator++(this iter& self) -> iter&
+        {
+            auto& it = self.it;
+            it = it->next;
+            return self;
+        }
+
+        auto constexpr operator--(this iter& self) -> iter&
+        {
+            auto& it = self.it;
+            it = it->prev;
+            return self;
+        }
+    };
+
+    using value_type = node;
+    using iterator = iter;
+
     constexpr list()
     {
         init();
