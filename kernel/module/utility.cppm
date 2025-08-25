@@ -425,6 +425,13 @@ export namespace std
                 ++it;
                 return *this;
             }
+
+            auto constexpr operator--() -> forward&
+            {
+                --it;
+                return *this;
+            }
+
             T* it;
         };
 
