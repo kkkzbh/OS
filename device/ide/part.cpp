@@ -37,7 +37,7 @@ struct boot_sector
 
 export auto scan_partition(disk* hd,u32 ext_lba) -> void;
 
-export auto partition_info(list::node* pelem) -> void;
+export auto partition_info(list::node& pelem) -> void;
 
 // 用于记录总扩展分区的起始lba，初始为0, partition_scan时以此为标记
 auto ext_lba_base = 0;
@@ -92,8 +92,9 @@ auto scan_partition(disk* __hd,u32 __ext_lba) -> void
 }
 
 // 打印分区信息
-auto partition_info(list::node* pelem) -> void
+auto partition_info(list::node& elem) -> void
 {
+    auto pelem = &elem;
     auto part = (partition*)((u32)pelem - (u32)(&((partition*)0)->part_tag));
     console::println (
         "      {} start_lba:0x{x}, sec_cnt:0x{x}",

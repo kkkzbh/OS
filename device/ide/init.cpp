@@ -14,6 +14,7 @@ import lock_guard;
 import ide.intr;
 import format;
 import ide.part;
+import algorithm;
 
 export auto ide_init() -> void
 {
@@ -60,7 +61,7 @@ export auto ide_init() -> void
     }
 
     console::println("\n all partition info");
-    partition_list.for_each(partition_info);
+    partition_list | std::apply[partition_info];
     console::println("ide_init done");
 
 }
