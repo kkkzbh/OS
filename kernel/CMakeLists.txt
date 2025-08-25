@@ -106,6 +106,7 @@ target_link_libraries(init
         thread
         user
         ide
+        filesystem
 )
 
 add_library(os

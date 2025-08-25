@@ -17,3 +17,6 @@ export import string;
 export import string.format;
 export import array;
 export import array.format;
+export import algorithm;
+export import vector;
+export import vector.format;

@@ -23,8 +23,8 @@ namespace std
     auto constexpr bind(Func func,Args&&... args) -> auto
     {
         return bind_function {
-            [f = move(func),...args = forward<Args>(args)]<typename T>(T&& v) mutable -> decltype(auto) {
-                return f(forward<T>(v),args...);
+            [f = move(func),&args...]<typename T>(T&& v) mutable -> decltype(auto) {
+                return f(forward<T>(v),forward<Args>(args)...);
             }
         };
     }
@@ -81,8 +81,10 @@ namespace std
             auto bound = min(size(r),size(r2));
             auto it1 = begin(r);
             auto it2 = begin(r2);
-            for(auto i = 0; i != bound; ++it1,++it2) {
+            for(auto i = 0; i != bound; ++i) {
                 *it1 = *it2;
+                ++it1;
+                ++it2;
             }
             return forward<R>(r);
         }
@@ -93,5 +95,29 @@ namespace std
             return bind(self,forward<R2>(r2));
         }
     } constexpr copy;
+
+    export template<typename It,typename Sentry>
+    struct subrange
+    {
+
+        using value_type = iter_value_t<It>;
+        using iterator = It;
+        using const_iterator = It const;
+
+        constexpr subrange(It it,Sentry sentry) : it(it), sentry(sentry) {}
+
+        auto constexpr begin() const -> It
+        {
+            return it;
+        }
+
+        auto constexpr end() const -> Sentry
+        {
+            return sentry;
+        }
+
+        It it;
+        Sentry sentry;
+    };
 
 }
