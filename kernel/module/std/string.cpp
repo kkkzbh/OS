@@ -160,7 +160,7 @@ export namespace std
 
 }
 
-export auto constexpr operator""sv(char const* str,size_t sz) -> std::string_view<char const>
+export auto constexpr operator""sv(char const* str,size_t sz) -> std::string_view<char const>   // NOLINT
 {
     return { str,sz };
 }
