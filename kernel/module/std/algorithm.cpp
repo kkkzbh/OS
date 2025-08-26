@@ -53,7 +53,7 @@ namespace std
     }
 
     export template<typename Lhs,typename Lam>
-    auto constexpr operator|(Lhs&& lhs,bind_function<Lam> rhs) -> decltype(auto)
+    auto constexpr operator|(Lhs&& lhs,bind_function<Lam>&& rhs) -> decltype(auto)
     {
         return rhs(forward<Lhs>(lhs));
     }
@@ -173,6 +173,53 @@ namespace std
 
     } constexpr first;
 
+    export struct decorate_fn
+    {
+
+        template<typename R,typename Pred>
+        struct range
+        {
+            R&& r;
+            Pred const& pred;
+
+            struct iter : range_iter_t<R>
+            {
+                auto constexpr operator*() -> decltype(auto)
+                {
+                    return pred(this->it);
+                }
+                Pred const& pred;
+            };
+
+
+            auto constexpr begin() -> iter
+            {
+                return { std::begin(r),pred };
+            }
+
+            auto constexpr end() -> iter
+            {
+                return { std::end(r),pred };
+            }
+
+            using value_type = remove_cref<decltype(*begin())>;
+            using iterator = iter;
+
+        };
+
+        template<typename R,typename Pred>
+        auto constexpr operator()(R&& r,Pred const& pred) -> decltype(auto)
+        {
+            return range{ forward<R>(r),pred };
+        }
+
+        template<typename Pred>
+        auto constexpr operator[](this auto self,Pred const& pred) -> decltype(auto)
+        {
+            return bind(self,pred);
+        }
+
+    } constexpr decorate;
 
 
 
