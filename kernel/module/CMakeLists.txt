@@ -255,9 +255,9 @@ target_sources(filesystem
         FILES
         filesystem/dir.cpp
         filesystem/inode.cpp
-        filesystem/utility.cpp
         filesystem/fs.cpp
         filesystem/init.cpp
+        filesystem/utility.cpp
 )
 
 target_link_libraries(filesystem
@@ -272,6 +272,7 @@ target_link_libraries(filesystem
         string
         super_block
 )
+
 
 add_library(super_block)
 
