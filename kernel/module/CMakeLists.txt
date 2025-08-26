@@ -102,7 +102,7 @@ target_link_libraries(sync_alloc
         string
         kernel_utility
         memory
-        std
+        std_array
 )
 
 add_library(new
@@ -197,8 +197,6 @@ target_sources(std
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
-        std/array.cpp
-        std/algorithm.cpp
         std/bit.cpp
         std/string.cpp
         std/vector.cpp
@@ -210,6 +208,40 @@ target_link_libraries(std
         sysnew
         string
         optional
+        PUBLIC
+        std_algorithm
+        INTERFACE
+        std_array
+        stdfmt
+)
+
+add_library(std_algorithm)
+
+target_sources(std_algorithm
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        std/algorithm.cpp
+)
+
+target_link_libraries(std_algorithm
+        PRIVATE
+        utility
+)
+
+add_library(std_array)
+
+target_sources(std_array
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        std/array.cpp
+)
+
+target_link_libraries(std_array
+        PRIVATE
+        utility
+        std_algorithm
 )
 
 add_library(stdfmt)
