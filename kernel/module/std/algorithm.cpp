@@ -147,7 +147,7 @@ namespace std
         {
             for(auto it : subrange(begin(r),end(r))) {
                 if(*it == r2) {
-                    return *it;
+                    return it;
                 }
             }
             return end(r);
@@ -159,7 +159,7 @@ namespace std
         {
             for(auto it : subrange(begin(r),end(r))) {
                 if(pred(*it)) {
-                    return *it;
+                    return it;
                 }
             }
             return end(r);
