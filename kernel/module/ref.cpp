@@ -20,7 +20,7 @@ struct reference
     constexpr reference() = default;
 
     template<typename U>
-    explicit constexpr reference(U&& r) : it(construct(std::forward<U>(r))) {}
+    explicit constexpr reference(U&& r) : it(reference::construct(std::forward<U>(r))) {}
 
     constexpr reference(reference const&) = default;
 

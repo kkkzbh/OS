@@ -131,6 +131,27 @@ export namespace std
     auto constexpr is_rvalue_reference = is_rvalue_reference_s<T>::value;
 
     template<typename T>
+    struct remove_lvalue_reference_s
+    {
+        using value_type = T;
+    };
+
+    template<typename T>
+    struct remove_lvalue_reference_s<T&>
+    {
+        using value_type = T;
+    };
+
+    template<typename T>
+    struct remove_lvalue_reference_s<T&&>
+    {
+        using value_type = T&&;
+    };
+
+    template<typename T>
+    using remove_lvalue_reference = remove_lvalue_reference_s<T>;
+
+    template<typename T>
     using range_value_t = typename remove_cref<T>::value_type;
 
     template<typename It>
