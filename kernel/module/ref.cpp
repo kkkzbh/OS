@@ -26,6 +26,11 @@ struct reference
 
     auto constexpr operator=(reference const&) -> reference& = default;
 
+    auto constexpr ref() -> decltype(auto)
+    {
+        return get();
+    }
+
     auto constexpr get() -> T&
     {
         return *it;
@@ -86,6 +91,11 @@ struct reference<T&&>
     constexpr reference(reference&&) = default;
 
     auto constexpr operator=(reference&&) -> reference& = default;
+
+    auto constexpr ref() -> T&
+    {
+        return *it;
+    }
 
     auto constexpr get() -> T&&
     {
