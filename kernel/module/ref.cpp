@@ -26,12 +26,12 @@ struct reference
 
     auto constexpr operator=(reference const&) -> reference& = default;
 
-    auto constexpr get() const -> T&
+    auto constexpr get() -> T&
     {
         return *it;
     }
 
-    constexpr operator T&() const
+    constexpr operator T&()
     {
         return get();
     }
@@ -87,12 +87,12 @@ struct reference<T&&>
 
     auto constexpr operator=(reference&&) -> reference& = default;
 
-    auto constexpr get() const -> T&&
+    auto constexpr get() -> T&
     {
         return *it;
     }
 
-    constexpr operator T&&() const
+    constexpr operator T&()
     {
         return get();
     }
@@ -147,20 +147,41 @@ reference(T&) -> reference<T>;
 template<typename T>
 reference(T&&) -> reference<T&&>;
 
-template<typename T>
+export template<typename T>
 auto ref(T& t) -> reference<T>
 {
     return t;
 }
 
-template<typename T>
+export template<typename T>
 auto ref(T&& t) -> reference<T&&>
 {
     return std::move(t);
 }
 
-template<typename T>
+export template<typename T>
 auto ref(reference<T> t) -> reference<T>
 {
     return t;
 }
+
+template<typename T>
+struct deref_s
+{
+    using value_type = T;
+};
+
+template<typename T>
+struct deref_s<reference<T>>
+{
+    using value_type = T&;
+};
+
+template<typename T>
+struct deref_s<reference<T&&>>
+{
+    using value_type = T&&;
+};
+
+template<typename T>
+using deref = typename deref_s<T>::value_type;

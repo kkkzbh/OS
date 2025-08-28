@@ -16,15 +16,21 @@ auto main() -> void
     a.emplace_back(4);
     a.emplace_back(7);
 
-    // auto r = a | first[([](auto v) {
-    //     return v % 2 == 0;
-    // })];
-    //
-    // auto k = r.get();
-    // println("k = {}",k);
+    auto r = a | decorate[([](auto v) {
+        return v * 2;
+    })] | first[([](auto v) {
+        return v % 2 == 0;
+    })];
 
-    a[1] = 999;
 
-    println("a[1] = {}",a[1]);
+    println("{}",a);
+
+    static_assert(std::same_as<decltype(*r.it),int&>);
+
+    auto y = r.get();
+
+    println("{}",a);
+
+
 
 }
