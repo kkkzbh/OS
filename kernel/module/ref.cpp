@@ -26,12 +26,12 @@ struct reference
 
     auto constexpr operator=(reference const&) -> reference& = default;
 
-    auto constexpr get() -> T&&
+    auto constexpr get() -> T&
     {
-        return std::move(*it);
+        return *it;
     }
 
-    constexpr operator T&&()
+    constexpr operator T&()
     {
         return get();
     }
@@ -87,12 +87,12 @@ struct reference<T&&>
 
     auto constexpr operator=(reference&&) -> reference& = default;
 
-    auto constexpr get() -> T&
+    auto constexpr get() -> T&&
     {
-        return *it;
+        return move(*it);
     }
 
-    constexpr operator T&()
+    constexpr operator T&&()
     {
         return get();
     }
