@@ -193,4 +193,14 @@ export namespace std
         T* bound = nullptr;
         T* it = nullptr;
     };
+
+    struct tovec_fn
+    {} constexpr tovec;
+
+    template<typename R>
+    auto operator|(R&& r,tovec_fn) -> vector<range_value_t<R>>
+    {
+        return r;
+    }
+
 }
