@@ -99,9 +99,9 @@ namespace std
     };
 
     template<typename... Args>
-    auto switch_table(char*& out,Args&&... args) -> auto
+    auto switch_table(char*& out,Args const&... args) -> auto
     {
-        return [args...,&out](size_t idx,char c) {
+        return [&args...,&out](size_t idx,char c) {
             using seq = std::index_sequence_for<Args...>;
             return [=,&out]<size_t... Is>(std::index_sequence<Is...>) {
             ([&]{ if(Is == idx) format<Args>::parse(out,args...[Is],c); }(),...);
@@ -113,7 +113,7 @@ namespace std
     auto format_to(char* out,char const* format,Args&&... args) -> u32
     {
         auto base = out;
-        auto parse = switch_table(out,std::forward<Args>(args)...);
+        auto parse = switch_table(out,args...);
         auto c = *format;
         auto i = 0;
         while(c) {
