@@ -3,6 +3,8 @@
 export module algorithm;
 
 import utility;
+import optional;
+import reference;
 
 namespace std
 {
@@ -147,10 +149,10 @@ namespace std
         {
             for(auto it : subrange(begin(r),end(r))) {
                 if(*it == r2) {
-                    return it;
+                    return optional{ reference(*it) };
                 }
             }
-            return end(r);
+            return nullopt;
         }
 
         template<typename R,typename Pred>
@@ -159,10 +161,10 @@ namespace std
         {
             for(auto it : subrange(begin(r),end(r))) {
                 if(pred(*it)) {
-                    return it;
+                    return optional{ reference(*it) };
                 }
             }
-            return end(r);
+            return nullopt;
         }
 
         template<typename V_Pred>
