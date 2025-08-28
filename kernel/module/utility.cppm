@@ -149,7 +149,7 @@ export namespace std
     };
 
     template<typename T>
-    using remove_lvalue_reference = remove_lvalue_reference_s<T>;
+    using remove_lvalue_reference = remove_lvalue_reference_s<T>::value_type;
 
     template<typename T>
     using range_value_t = typename remove_cref<T>::value_type;
