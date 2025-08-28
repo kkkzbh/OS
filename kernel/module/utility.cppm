@@ -110,6 +110,9 @@ export namespace std
     auto constexpr is_lvalue_reference = is_lvalue_reference_s<T>::value;
 
     template<typename T>
+    concept lvalue_reference = is_lvalue_reference<T>;
+
+    template<typename T>
     struct is_rvalue_reference_s
     {
         auto static constexpr value = false;
@@ -129,6 +132,33 @@ export namespace std
 
     template<typename T>
     auto constexpr is_rvalue_reference = is_rvalue_reference_s<T>::value;
+
+    template<typename T>
+    concept rvalue_reference = is_lvalue_reference<T>;
+
+    template<typename T>
+    struct is_value_t_s
+    {
+        auto static constexpr value = true;
+    };
+
+    template<typename T>
+    struct is_value_t_s<T&>
+    {
+        auto static constexpr value = false;
+    };
+
+    template<typename T>
+    struct is_value_t_s<T&&>
+    {
+        auto static constexpr value = false;
+    };
+
+    template<typename T>
+    auto constexpr is_value_t = is_value_t_s<T>::value;
+
+    template<typename T>
+    concept value_t = is_value_t<T>;
 
     template<typename T>
     struct remove_lvalue_reference_s
