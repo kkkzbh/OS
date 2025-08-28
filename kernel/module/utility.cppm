@@ -381,6 +381,9 @@ export namespace std
         template<typename T>
         struct input
         {
+
+            using value_type = T;
+
             auto constexpr operator*(this input const& self) -> T const&
             {
                 return *self.it;
@@ -397,8 +400,7 @@ export namespace std
                 return *this;
             }
 
-            template<typename It>
-            auto friend constexpr operator==(It x,It y) -> bool
+            auto friend constexpr operator==(input x,input y) -> bool
             {
                 return x.it == y.it;
             }
@@ -409,6 +411,9 @@ export namespace std
         template<typename T>
         struct output
         {
+
+            using value_type = T;
+
             auto constexpr operator*(this auto&& self) -> decltype(auto)
             {
                 return *self.it;
@@ -425,8 +430,7 @@ export namespace std
                 return *this;
             }
 
-            template<typename It>
-            auto friend operator==(It x,It y) -> bool
+            auto friend operator==(output x,output y) -> bool
             {
                 return x.it == y.it;
             }
@@ -437,6 +441,9 @@ export namespace std
         template<typename T>
         struct forward
         {
+
+            using value_type = T;
+
             auto constexpr operator*(this auto&& self) -> decltype(auto)
             {
                 return *self.it;
@@ -459,8 +466,7 @@ export namespace std
                 return self.it;
             }
 
-            template<typename It>
-            auto friend constexpr operator==(It x,It y) -> bool
+            auto friend constexpr operator==(forward x,forward y) -> bool
             {
                 return x.it == y.it;
             }
@@ -471,6 +477,9 @@ export namespace std
         template<typename T>
         struct random : forward<T>
         {
+
+            using value_type = T;
+
             auto constexpr operator[](this auto&& self,size_t idx) -> decltype(auto)
             {
                 return self.it[idx];

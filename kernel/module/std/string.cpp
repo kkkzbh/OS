@@ -22,7 +22,7 @@ export namespace std
     struct string_view
     {
         using value_type = Char;
-        using iterator = Char*;
+        using iterator = std::iter::random<Char>;
 
         constexpr string_view() = default;
 

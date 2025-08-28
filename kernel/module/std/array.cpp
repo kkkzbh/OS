@@ -13,7 +13,7 @@ export namespace std
     {
 
         using value_type = T;
-        using iterator = T*;
+        using iterator = std::iter::random<T>;
 
         auto constexpr operator[](this auto&& self,size_t idx) -> decltype(auto)
         {
