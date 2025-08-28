@@ -230,5 +230,13 @@ namespace std
 
     } constexpr decorate;
 
+    export struct get_fn {} constexpr get;
+
+    export template<typename T>
+    auto operator|(reference<T> ref,get_fn) -> decltype(auto)
+    {
+        return ref.get();
+    }
+
 
 }
