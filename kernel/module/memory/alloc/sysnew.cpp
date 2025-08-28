@@ -4,15 +4,6 @@ import utility;
 import malloc;
 import free;
 
-auto operator new(size_t,void* place) noexcept -> void*
-{
-    return place;
-}
-
-auto operator new[](size_t,void* place) noexcept -> void*
-{
-    return place;
-}
 
 auto operator new(size_t sz) -> void*
 {

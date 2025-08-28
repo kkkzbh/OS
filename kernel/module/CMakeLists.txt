@@ -205,9 +205,9 @@ target_sources(std
 target_link_libraries(std
         PRIVATE
         utility
-        sysnew
         string
         optional
+        sysnew
         PUBLIC
         std_algorithm
         INTERFACE
@@ -227,6 +227,8 @@ target_sources(std_algorithm
 target_link_libraries(std_algorithm
         PRIVATE
         utility
+        optional
+        ref
 )
 
 add_library(std_array)
@@ -319,4 +321,19 @@ target_link_libraries(super_block
         PRIVATE
         utility
         std
+)
+
+add_library(ref)
+
+target_sources(ref
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        ref.cpp
+)
+
+target_link_libraries(ref
+        PRIVATE
+        utility
+        optional
 )
