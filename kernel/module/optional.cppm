@@ -39,18 +39,10 @@ struct optional
     constexpr optional(T&& v) : has(true), value(std::move(v)) {}
 
     auto constexpr operator*(this auto&& self) -> decltype(auto)
-    { return self.value; }
+    { return (self.value); }
 
     explicit constexpr operator bool() const
     { return has; }
-
-    auto constexpr value_or(this auto&& self,T const& default_value) -> decltype(auto)
-    {
-        if(self) {
-            return *self;
-        }
-        return default_value;
-    }
 
 private:
     bool has = false;
