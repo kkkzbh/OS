@@ -102,9 +102,9 @@ struct reference<T&&>
         return (T&&)*it;
     }
 
-    constexpr operator T&&()
+    constexpr operator T&()
     {
-        return get();
+        return ref();
     }
 
     explicit constexpr operator bool() const
