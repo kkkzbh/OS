@@ -11,7 +11,7 @@ export namespace std
     struct vector
     {
         using value_type = T;
-        using iterator = T*;
+        using iterator = std::iter::random<T>;
 
         auto static constexpr epf = size_t{ 2 };
 
