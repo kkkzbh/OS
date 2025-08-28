@@ -305,6 +305,7 @@ target_link_libraries(filesystem
         assert
         string
         super_block
+        interrupt
 )
 
 
