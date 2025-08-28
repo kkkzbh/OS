@@ -16,6 +16,8 @@ struct reference
 
     auto constexpr construct(T&& r) = delete;
 
+    constexpr reference() = default;
+
     template<typename U>
     constexpr reference(U&& r) : it(construct(r)) {}
 
@@ -29,6 +31,11 @@ struct reference
     }
 
     constexpr operator T&() const
+    {
+        return get();
+    }
+
+    explicit constexpr operator bool() const
     {
         return get();
     }
@@ -63,8 +70,11 @@ struct reference
     operator<=>(reference x, reference<T const> y) -> std::strong_ordering
     { return x.get() <=> y.get(); }
 
-    T* it;
+    T* it = nullptr;
 };
+
+export template<typename T>
+auto constexpr nullref = reference<T>{};
 
 template<typename T>
 reference(T&) -> reference<T>;

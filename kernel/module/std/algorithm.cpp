@@ -145,26 +145,26 @@ namespace std
     export struct first_fn
     {
         template<typename R>
-        auto static constexpr operator()(R&& r,range_value_t<R>&& r2) -> decltype(auto)
+        auto static constexpr operator()(R&& r,range_value_t<R>&& r2) -> reference<range_value_t<R>>
         {
-            for(auto it : subrange(begin(r),end(r))) {
-                if(*it == r2) {
-                    return optional{ reference(*it) };
+            for(auto&& it : r) {
+                if(it == r2) {
+                    return it;
                 }
             }
-            return nullopt;
+            return {};
         }
 
         template<typename R,typename Pred>
         requires requires(Pred pred,range_value_t<R> v) { pred(v); }
-        auto static constexpr operator()(R&& r,Pred pred) -> decltype(auto)
+        auto static constexpr operator()(R&& r,Pred pred) -> reference<range_value_t<R>>
         {
-            for(auto it : subrange(begin(r),end(r))) {
-                if(pred(*it)) {
-                    return optional{ reference(*it) };
+            for(auto&& it : r) {
+                if(pred(it)) {
+                    return it;
                 }
             }
-            return nullopt;
+            return {};
         }
 
         template<typename V_Pred>
@@ -186,11 +186,14 @@ namespace std
 
             struct iter : range_iter_t<R>
             {
+                using value_type = decltype((*(Pred*){})(*(range_value_t<R>*){}));
+
                 auto constexpr operator*() -> decltype(auto)
                 {
-                    return pred(this->it);
+                    return pred(*this->it);
                 }
                 Pred const& pred;
+
             };
 
 
@@ -204,10 +207,13 @@ namespace std
                 return { std::end(r),pred };
             }
 
-            using value_type = remove_cref<decltype(*begin())>;
+            using value_type = iter_value_t<iter>;
             using iterator = iter;
 
         };
+
+        template<typename R,typename Pred>
+        range(R&& r,Pred pred) -> range<R,Pred>;
 
         template<typename R,typename Pred>
         auto constexpr operator()(R&& r,Pred const& pred) -> decltype(auto)
