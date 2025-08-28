@@ -198,7 +198,6 @@ namespace std
 
             };
 
-
             auto constexpr begin() -> iter
             {
                 return { std::begin(r),pred };
@@ -230,7 +229,6 @@ namespace std
         }
 
     } constexpr decorate;
-
 
 
 }
