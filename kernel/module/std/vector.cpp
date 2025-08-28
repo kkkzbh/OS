@@ -51,7 +51,7 @@ export namespace std
         {
             auto na = vector(n);
             na | copy[*this];
-            ~vector();
+            this->~vector();
             *this = move(na);
         }
 
@@ -74,8 +74,8 @@ export namespace std
         template<random_range R>
         auto operator=(R&& other) -> vector&
         {
-            resize(size(other));
-            *this | copy(forward<R>(other));
+            resize(std::size(other));
+            *this | copy[forward<R>(other)];
             return *this;
         }
 
@@ -143,7 +143,7 @@ export namespace std
             if(it == bound) [[unlikely]] {
                 realloc(epf * size());
             }
-            new(it++) T{ forward<Args>(args)... };
+            *it++ = T{ forward<Args>(args)... };
         }
 
         template<random_range R>

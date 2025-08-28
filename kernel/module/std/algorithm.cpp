@@ -145,9 +145,9 @@ namespace std
     export struct first_fn
     {
         template<typename R>
-        auto static constexpr operator()(R&& r,range_value_t<R> const& r2) -> reference<range_value_t<R>>
+        auto static constexpr operator()(R&& r,range_value_t<R> const& r2) -> decltype(auto)
         {
-            using return_type = reference<decltype(*begin(r))&&>;
+            using return_type = reference<remove_lvalue_reference<decltype(*begin(r))&&>>;
             for(auto&& it : r) {
                 if(it == r2) {
                     return return_type{ forward<decltype(it)>(it) };
@@ -160,7 +160,7 @@ namespace std
         requires requires(Pred pred,range_value_t<R> v) { pred(v); }
         auto static constexpr operator()(R&& r,Pred pred) -> decltype(auto)
         {
-            using return_type = reference<decltype(*begin(r))&&>;
+            using return_type = reference<remove_lvalue_reference<decltype(*begin(r))&&>>;
             for(auto&& it : r) {
                 if(pred(it)) {
                     return return_type{ forward<decltype(it)>(it) };
