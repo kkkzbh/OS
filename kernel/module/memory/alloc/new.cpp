@@ -4,16 +4,6 @@
 import sys;
 import utility;
 
-auto operator new(size_t,void* place) noexcept -> void*
-{
-    return place;
-}
-
-auto operator new[](size_t,void* place) noexcept -> void*
-{
-    return place;
-}
-
 auto operator new(size_t sz) -> void*
 {
     return std::malloc(sz);
