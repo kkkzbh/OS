@@ -26,7 +26,7 @@ export namespace std
 
         vector(vector const& other) : vector(other.size())
         {
-            *this | copy(other);
+            *this | copy[other];
         }
 
         vector(vector&& other) noexcept : a(other.a), bound(other.bound), it(other.it)
@@ -37,7 +37,7 @@ export namespace std
         }
 
         template<random_range R>
-        vector(R&& r) : vector(size(r))
+        vector(R&& r) : vector(std::size(r))
         {
             *this | copy[forward<R>(r)];
         }
