@@ -28,9 +28,15 @@ struct optional
 
     constexpr optional(optional const& other) = default;
 
+    constexpr optional(optional&&) = default;
+
+    auto constexpr operator=(optional const&) -> optional& = default;
+
+    auto constexpr operator=(optional&&) -> optional& = default;
+
     constexpr optional(T const& v) : has(true), value(v) {}
 
-    constexpr optional(T&& v) : has(true), value(static_cast<T&&>(v)) {}
+    constexpr optional(T&& v) : has(true), value(std::move(v)) {}
 
     auto constexpr operator*(this auto&& self) -> decltype(auto)
     { return self.value; }
