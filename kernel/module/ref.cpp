@@ -9,7 +9,7 @@ struct reference
 {
     using value_type = T;
 
-    auto constexpr construct(T& r) -> T*
+    auto static constexpr construct(T& r) -> T*
     {
         return &r;
     }
@@ -19,7 +19,7 @@ struct reference
     constexpr reference() = default;
 
     template<typename U>
-    constexpr reference(U&& r) : it(construct(r)) {}
+    explicit constexpr reference(U&& r) : it(construct(std::forward<U>(r))) {}
 
     constexpr reference(reference const&) = default;
 
@@ -74,10 +74,75 @@ struct reference
 };
 
 export template<typename T>
-auto constexpr nullref = reference<T>{};
+struct reference<T&&>
+{
+    using value_type = T;
+
+    explicit constexpr reference(T&& v) : it(move(v)) {}
+
+    constexpr reference(reference&&) = default;
+
+    auto constexpr operator=(reference&&) -> reference& = default;
+
+    auto constexpr get() const -> T&
+    {
+        return it;
+    }
+
+    constexpr operator T&() const
+    {
+        return get();
+    }
+
+    explicit constexpr operator bool() const
+    {
+        return true;
+    }
+
+    [[nodiscard]]
+    auto friend constexpr
+    operator==(reference x, reference y) -> bool
+    { return x.get() == y.get(); }
+
+    [[nodiscard]]
+    auto friend constexpr
+    operator==(reference x, T const& y) -> bool
+    { return x.get() == y; }
+
+    [[nodiscard]]
+    auto friend constexpr
+    operator==(reference x, reference<T const> y) -> bool
+    { return x.get() == y.get(); }
+
+    [[nodiscard]]
+    auto friend constexpr
+    operator<=>(reference x, reference y) -> std::strong_ordering
+    { return x.get() <=> y.get(); }
+
+    [[nodiscard]]
+    auto friend constexpr
+    operator<=>(reference x, T const& y) -> std::strong_ordering
+    { return x.get() <=> y; }
+
+    [[nodiscard]]
+    auto friend constexpr
+    operator<=>(reference x, reference<T const&&> y) -> std::strong_ordering
+    { return x.get() <=> y.get(); }
+
+    T it;
+};
+
+template<typename T,typename U>
+auto constexpr operator==(reference<T> const& r1,reference<U> const& r2) -> bool
+{
+    return r1.get() == r2.get();
+}
 
 template<typename T>
 reference(T&) -> reference<T>;
+
+template<typename T>
+reference(T&&) -> reference<T&&>;
 
 template<typename T>
 auto ref(T& t) -> reference<T>
@@ -86,7 +151,10 @@ auto ref(T& t) -> reference<T>
 }
 
 template<typename T>
-auto ref(T&& t) -> void = delete;
+auto ref(T&& t) -> reference<T&&>
+{
+    return std::move(t);
+}
 
 template<typename T>
 auto ref(reference<T> t) -> reference<T>
