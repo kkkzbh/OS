@@ -89,7 +89,7 @@ struct reference<T&&>
 
     auto constexpr get() -> T&&
     {
-        return move(*it);
+        return (T&&)*it;
     }
 
     constexpr operator T&&()
@@ -185,13 +185,3 @@ struct deref_s<reference<T&&>>
 
 template<typename T>
 using deref = typename deref_s<T>::value_type;
-
-export namespace std
-{
-    struct get_fn {} constexpr get;
-    template<typename T>
-    auto operator|(reference<T> ref,get_fn) -> decltype(auto)
-    {
-        return ref.get();
-    }
-}
