@@ -47,7 +47,6 @@ export struct list
 
     auto init() -> void
     {
-        sz = 0;
         head = { nullptr,&tail };
         tail = { &head, nullptr };
     }
@@ -63,7 +62,6 @@ export struct list
         v->prev = it->prev;
         v->next = it;
         it->prev = v;
-        ++sz;
         intr_set_status(old_stu);
         return *this;
     }
@@ -80,14 +78,12 @@ export struct list
         return *this;
     }
 
-    auto erase(node* v) -> list&
+    auto static erase(node* v) -> void
     {
         auto old_stu = intr_disable();
         v->prev->next = v->next;
         v->next->prev = v->prev;
-        --sz;
         intr_set_status(old_stu);
-        return *this;
     }
 
     auto front() -> node*
@@ -132,19 +128,14 @@ export struct list
         return false;
     }
 
+    [[nodiscard]]
     auto empty() const -> bool
     {
-        return not size();
-    }
-
-    auto size() const -> size_t
-    {
-        return sz;
+        return head.next == &tail;
     }
 
     // head->prev 用作 bound 第一个元素实为head->next
     // tail->next 用作 bound
-    size_t sz;
     node head;
     node tail;
 };
