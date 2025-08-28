@@ -3,6 +3,7 @@
 export module reference;
 
 import utility;
+import optional;
 
 export template<typename T>
 struct reference
@@ -73,30 +74,32 @@ struct reference
     T* it = nullptr;
 };
 
-export template<typename T>
+template<typename T>
 struct reference<T&&>
 {
     using value_type = T;
 
-    explicit constexpr reference(T&& v) : it(move(v)) {}
+    constexpr reference() = default;
+
+    explicit constexpr reference(T&& v) : it(std::move(v)) {}
 
     constexpr reference(reference&&) = default;
 
     auto constexpr operator=(reference&&) -> reference& = default;
 
-    auto constexpr get() const -> T&
+    auto constexpr get() const -> T&&
     {
-        return it;
+        return *it;
     }
 
-    constexpr operator T&() const
+    constexpr operator T&&() const
     {
         return get();
     }
 
     explicit constexpr operator bool() const
     {
-        return true;
+        return it;
     }
 
     [[nodiscard]]
@@ -111,7 +114,7 @@ struct reference<T&&>
 
     [[nodiscard]]
     auto friend constexpr
-    operator==(reference x, reference<T const> y) -> bool
+    operator==(reference x, reference<T const&&> y) -> bool
     { return x.get() == y.get(); }
 
     [[nodiscard]]
@@ -129,7 +132,7 @@ struct reference<T&&>
     operator<=>(reference x, reference<T const&&> y) -> std::strong_ordering
     { return x.get() <=> y.get(); }
 
-    T it;
+    optional<T> it;
 };
 
 template<typename T,typename U>
