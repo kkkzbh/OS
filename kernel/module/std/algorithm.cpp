@@ -122,7 +122,7 @@ namespace std
     export struct copy_fn
     {
         template<typename R,typename R2>
-        auto static constexpr operator()(R&& r,R2&& r2) -> R&&
+        auto static constexpr operator()(R&& r,R2 const& r2) -> R&&
         {
             auto bound = min(size(r),size(r2));
             auto it1 = begin(r);
@@ -145,26 +145,28 @@ namespace std
     export struct first_fn
     {
         template<typename R>
-        auto static constexpr operator()(R&& r,range_value_t<R>&& r2) -> reference<range_value_t<R>>
+        auto static constexpr operator()(R&& r,range_value_t<R> const& r2) -> reference<range_value_t<R>>
         {
+            using return_type = reference<decltype(*begin(r))&&>;
             for(auto&& it : r) {
                 if(it == r2) {
-                    return it;
+                    return return_type{ forward<decltype(it)>(it) };
                 }
             }
-            return {};
+            return return_type{};
         }
 
         template<typename R,typename Pred>
         requires requires(Pred pred,range_value_t<R> v) { pred(v); }
-        auto static constexpr operator()(R&& r,Pred pred) -> reference<range_value_t<R>>
+        auto static constexpr operator()(R&& r,Pred pred) -> decltype(auto)
         {
+            using return_type = reference<decltype(*begin(r))&&>;
             for(auto&& it : r) {
                 if(pred(it)) {
-                    return it;
+                    return return_type{ forward<decltype(it)>(it) };
                 }
             }
-            return {};
+            return return_type{};
         }
 
         template<typename V_Pred>
