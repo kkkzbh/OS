@@ -162,6 +162,10 @@ export namespace std
         requires std::same_as<T,std::string_view<typename T::value_type>>;
     };
 
+    template<random_range R>
+    requires CharT<range_value_t<R>>
+    string_view(R&& r) -> string_view<range_value_t<R>>;
+
 }
 
 export auto constexpr operator""sv(char const* str,size_t sz) -> std::string_view<char const>   // NOLINT
