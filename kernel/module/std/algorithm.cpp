@@ -28,6 +28,21 @@ namespace std
             return sentry;
         }
 
+        auto constexpr size() const -> size_t
+        requires requires(It it,Sentry sentry) { { sentry - it } -> std::same_as<i32>; }
+        {
+            return sentry - it;
+        }
+
+        auto constexpr size() const -> size_t
+        {
+            auto sz = size_t{};
+            for(auto _ : *this) {
+                ++sz;
+            }
+            return sz;
+        }
+
         It it;
         Sentry sentry;
     };
