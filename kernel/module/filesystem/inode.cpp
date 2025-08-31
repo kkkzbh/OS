@@ -17,9 +17,6 @@ import vector;
 
 export struct inode
 {
-    constexpr inode() = default;
-
-    constexpr inode(size_t n) : no(n) {}
 
     u32 no;                 // inode编号
     u32 size = 0;               // 文件指文件大小，目录指所有目录项的大小之和
@@ -84,7 +81,7 @@ auto inode_open(partition* part,u32 inode_no) -> inode*
     auto& il = part->open_inodes;
     auto node {
         il
-        | std::decorate[([](list::node& nd) -> inode* {
+        | std::map[([](list::node& nd) -> inode* {
             return (inode*)((u32)&nd - (u32)(&static_cast<inode*>(0)->tag));
         })]
         | std::first[([=](inode* ind) {
