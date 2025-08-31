@@ -19,7 +19,7 @@ struct file
 };
 
 // 标准输入输出描述符
-enum
+export enum
 {
     stdin,
     stdout,
@@ -27,11 +27,15 @@ enum
 };
 
 // 位图类型
-enum struct bitmap_type
+export enum struct bitmap_type
 {
     inode,          // inode位图
     block,          // 块位图
 };
+
+export auto block_bitmap_alloc(partition* part) -> optional<i32>;
+
+export auto bitmap_sync(partition* part,u32 bi,bitmap_type btmp) -> void;
 
 auto constexpr MAX_FILE_OPEN = 32;      // 系统可打开的最大文件数
 

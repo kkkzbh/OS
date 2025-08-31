@@ -293,6 +293,7 @@ target_sources(filesystem
         filesystem/init.cpp
         filesystem/utility.cpp
         filesystem/file.cpp
+        filesystem/dir_struct.cpp
 )
 
 target_link_libraries(filesystem

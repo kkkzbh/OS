@@ -9,7 +9,7 @@ import utility;
 import filesystem.utility;
 import inode;
 import super_block;
-import dir;
+import dir.structure;
 import console;
 import vector;
 import algorithm;
@@ -125,7 +125,7 @@ auto format_partition(partition* part) -> void
 
 }
 
-partition* cur_part;    // 默认情况下操作的哪儿个分区
+export partition* cur_part;    // 默认情况下操作的哪儿个分区
 
 // 在分区链表中找到名为part_name的分区，并将其指针赋给cur_part
 auto mount(list::node* pelem,char const* part_name) -> bool

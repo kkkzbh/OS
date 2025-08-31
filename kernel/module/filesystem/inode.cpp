@@ -37,6 +37,7 @@ struct inode_position
 };
 
 export auto inode_open(partition* part,u32 inode_no) -> inode*;
+export auto inode_close(inode* node) -> void;
 
 // 获取inode所在扇区和扇区内的偏移量
 auto inode_locate(partition* part,u32 inode_no) -> inode_position
