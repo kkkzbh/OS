@@ -17,7 +17,7 @@ export namespace std
 
         auto constexpr operator[](this auto&& self,size_t idx) -> decltype(auto)
         {
-            return self.a[idx];
+            return (self.a[idx]);
         }
 
         auto constexpr operator[](size_t x,size_t y) -> decltype(auto)
@@ -27,12 +27,12 @@ export namespace std
 
         auto constexpr front(this auto& self) -> auto&
         {
-            return self.a[0];
+            return (self.a[0]);
         }
 
         auto constexpr back(this auto& self) -> auto&
         {
-            return self.a[N - 1];
+            return (self.a[N - 1]);
         }
 
         auto constexpr data(this auto& self) -> auto*

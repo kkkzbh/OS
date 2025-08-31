@@ -152,11 +152,15 @@ export namespace std
             return find(sv);
         }
 
-
         Char* s = nullptr;
         size_t sz = 0;
     };
 
+    template<typename T>
+    concept str = requires(T t) {
+        typename T::value_type;
+        requires std::same_as<T,std::string_view<typename T::value_type>>;
+    };
 
 }
 
@@ -164,3 +168,4 @@ export auto constexpr operator""sv(char const* str,size_t sz) -> std::string_vie
 {
     return { str,sz };
 }
+
