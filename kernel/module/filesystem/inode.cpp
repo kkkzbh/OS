@@ -36,6 +36,8 @@ struct inode_position
     u32 off_size;    // inode在扇区内的字节偏移
 };
 
+export auto inode_open(partition* part,u32 inode_no) -> inode*;
+
 // 获取inode所在扇区和扇区内的偏移量
 auto inode_locate(partition* part,u32 inode_no) -> inode_position
 {

@@ -128,6 +128,11 @@ namespace std
             return { x,y };
         }
 
+        auto static constexpr operator[](i32 y) -> range
+        {
+            return range{ y };
+        }
+
     } constexpr iota;
 
     template<typename R>
