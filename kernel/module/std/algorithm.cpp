@@ -32,6 +32,110 @@ namespace std
         Sentry sentry;
     };
 
+    export struct iota_fn
+    {
+        struct range
+        {
+            struct iter
+            {
+
+                using value_type = i32;
+
+                auto constexpr operator*() const -> i32
+                {
+                    return it;
+                }
+
+                auto constexpr operator++() -> iter&
+                {
+                    ++it;
+                    return *this;
+                }
+
+                auto constexpr operator--() -> iter&
+                {
+                    --it;
+                    return *this;
+                }
+
+                auto friend constexpr operator==(iter x,iter y) -> bool
+                {
+                    return x.it >= y.it;
+                }
+
+                auto constexpr operator[](this auto&& self,size_t idx) -> decltype(auto)
+                {
+                    return self.it + idx;
+                }
+
+                auto constexpr operator+=(i32 n) -> iter&
+                {
+                    it += n;
+                    return *this;
+                }
+
+                i32 it;
+            };
+
+            using value_type = std::iter_value_t<iter>;
+            using iterator = iter;
+
+            constexpr explicit range(i32 y) : range(0,y) {}
+
+            constexpr range(i32 x,i32 y) : it(x),bound(y) {}
+
+            [[nodiscard]]
+            auto constexpr begin() const -> iterator
+            {
+                return { it };
+            }
+
+            [[nodiscard]]
+            auto constexpr end() const -> iterator
+            {
+                return { bound };
+            }
+
+            [[nodiscard]]
+            auto constexpr size() const -> size_t
+            {
+                return bound - it;
+            }
+
+            i32 it;
+            i32 bound;
+        };
+
+        template<typename R>
+        auto constexpr operator()(R&& r,i32 x,i32 y) -> R&&
+        {
+            return *this(forward<R>(r),range{ x,y });
+        }
+
+        template<typename R>
+        auto static constexpr operator()(R&& r,range iota_r) -> R&&
+        {
+            auto it1 = r.begin();
+            auto it2 = iota_r.begin();
+            for(; it1 != r.end() and it2 != iota_r.end(); ++it1,++it2) {
+                *it1 = *it2;
+            }
+            return forward<R>(r);
+        }
+
+        auto static constexpr operator[](i32 x,i32 y) -> range
+        {
+            return { x,y };
+        }
+
+    } constexpr iota;
+
+    template<typename R>
+    auto constexpr operator|(R&& r,iota_fn::range ir) -> decltype(auto)
+    {
+        return iota(r,ir);
+    }
+
     template<typename Lambda>
     struct bind_function
     {
@@ -177,7 +281,7 @@ namespace std
 
     } constexpr first;
 
-    export struct decorate_fn
+    export struct map_fn
     {
 
         template<typename R,typename Pred>
@@ -228,7 +332,7 @@ namespace std
             return bind(self,pred);
         }
 
-    } constexpr decorate;
+    } constexpr map;
 
     export struct get_fn {} constexpr get;
 
