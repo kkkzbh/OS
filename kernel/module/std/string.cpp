@@ -34,7 +34,7 @@ export namespace std
 
         template<random_range R>
         requires CharT<range_value_t<R>>
-        constexpr string_view(R&& r) : s(&*std::begin(r)),sz(std::size(r)) {}
+        constexpr string_view(R&& r) : s(&*std::begin(r)),sz(strlen(&*std::begin(r))) {}
 
         string_view(nullptr_t) = delete("can not use nullptr constructor string_view");
 
@@ -97,9 +97,31 @@ export namespace std
             return { s + pos,count };
         }
 
+        auto constexpr operator*() -> decltype(auto)
+        {
+            return front();
+        }
+
+        auto constexpr operator++() -> string_view&
+        {
+            ++s;
+            return *this;
+        }
+
+        auto constexpr operator--() -> string_view&
+        {
+            --s;
+            return *this;
+        }
+
         auto friend constexpr operator==(string_view x,string_view y) -> bool
         {
             return x <=> y == 0;
+        }
+
+        auto friend constexpr operator==(string_view x,decltype(nullptr))-> bool
+        {
+            return x.s == nullptr;
         }
 
         auto friend constexpr operator<=>(string_view x,string_view y) -> strong_ordering
@@ -165,6 +187,8 @@ export namespace std
     template<random_range R>
     requires CharT<range_value_t<R>>
     string_view(R&& r) -> string_view<range_value_t<R>>;
+
+    string_view(char* str) -> string_view<char>;
 
 }
 

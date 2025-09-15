@@ -14,9 +14,19 @@ export auto constexpr SECTOR_SIZE = 512;                // 每扇区字节大小
 
 export auto constexpr BLOCK_SIZE = SECTOR_SIZE;         // 每块大小(1扇区)
 
+export auto constexpr MAX_PATH_LEN = 512;               // 最大支持的路径长度
+
 export enum struct file_type : u8
 {
     unknown,
     regular,
     directory
+};
+
+export enum struct oflags : u8      // 打开文件的选项
+{
+    read,
+    write,
+    rdwr,
+    create = 4
 };
