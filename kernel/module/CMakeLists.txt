@@ -200,6 +200,7 @@ target_sources(std
         std/bit.cpp
         std/string.cpp
         std/vector.cpp
+        std/bufer.cpp
 )
 
 target_link_libraries(std
@@ -294,6 +295,8 @@ target_sources(filesystem
         filesystem/utility.cpp
         filesystem/file.cpp
         filesystem/dir_struct.cpp
+        filesystem/path.cpp
+        filesystem/path_struct.cpp
 )
 
 target_link_libraries(filesystem
@@ -308,6 +311,7 @@ target_link_libraries(filesystem
         string
         super_block
         interrupt
+        optional
 )
 
 

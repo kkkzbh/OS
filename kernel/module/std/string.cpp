@@ -188,8 +188,6 @@ export namespace std
     requires CharT<range_value_t<R>>
     string_view(R&& r) -> string_view<range_value_t<R>>;
 
-    string_view(char* str) -> string_view<char>;
-
 }
 
 export auto constexpr operator""sv(char const* str,size_t sz) -> std::string_view<char const>   // NOLINT

@@ -19,7 +19,13 @@ import filesystem;
 import file;
 
 // 根目录
-auto root = dir{};
+export auto root = dir{};
+
+export auto search_dir_entry(partition* part,dir* pdir,std::string_view<char const> name,dir_entry* dir_e) -> bool;
+
+export auto dir_close(dir* dir) -> void;
+
+export auto dir_open(partition* part,u32 inode_no) -> dir*;
 
 auto open_root_dir(partition* part) -> void
 {
@@ -37,7 +43,7 @@ auto dir_open(partition* part,u32 inode_no) -> dir*
 
 // 在分区part内的pdir目录内寻找名为name的文件或目录
 // 找到返回true，并将目录项存入dir_e，否则返回false
-auto search_dir_entry(partition* part,dir* pdir,std::str auto name,dir_entry* dir_e)
+auto search_dir_entry(partition* part,dir* pdir,std::string_view<char const> name,dir_entry* dir_e) -> bool
 {
     auto constexpr block_cnt = 140;     // 12个直接块 + 128个一级间接块
     // 12个直接块 + 128个间接块共560字节
@@ -77,7 +83,7 @@ auto search_dir_entry(partition* part,dir* pdir,std::str auto name,dir_entry* di
             ++p_de;
         }
         p_de = (dir_entry*)buf;
-        std::subrange(buf,SECTOR_SIZE) | std::fill[0];
+        std::subrange(buf,buf + SECTOR_SIZE) | std::fill[0];
     }
     delete all_blocks;
     delete[] buf;

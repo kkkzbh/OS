@@ -119,3 +119,4 @@ auto bitmap_sync(partition* part,u32 bi,bitmap_type btmp) -> void
         }
     }
 }
+
