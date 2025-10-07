@@ -38,6 +38,9 @@ export namespace std
 
         string_view(nullptr_t) = delete("can not use nullptr constructor string_view");
 
+        constexpr operator string_view<Char const>()
+        { return { s,sz }; }
+
         auto constexpr operator=(string_view const&) -> string_view& = default;
 
         auto constexpr begin(this auto&& self) -> decltype(auto)
