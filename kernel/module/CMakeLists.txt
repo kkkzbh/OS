@@ -201,6 +201,7 @@ target_sources(std
         std/string.cpp
         std/vector.cpp
         std/bufer.cpp
+        std/scope.cpp
 )
 
 target_link_libraries(std
@@ -293,6 +294,8 @@ target_sources(filesystem
         filesystem/fs.cpp
         filesystem/init.cpp
         filesystem/utility.cpp
+        filesystem/file_manager.cpp
+        filesystem/file_struct.cpp
         filesystem/file.cpp
         filesystem/dir_struct.cpp
         filesystem/path.cpp

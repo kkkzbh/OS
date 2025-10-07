@@ -17,9 +17,9 @@ export namespace std
 
         vector() = default;
 
-        explicit vector(integral auto n) : vector(n,T{}) {}
+        explicit vector(integral auto n) : a(new T[n]{}),bound(a + n),it(bound) {}
 
-        vector(integral auto n,T const& value) : a(new T[n]),bound(a + n),it(bound)
+        vector(integral auto n,T const& value) : vector(n)
         {
             *this | fill[value];
         }
@@ -34,6 +34,11 @@ export namespace std
             other.a = nullptr;
             other.bound = nullptr;
             other.it = nullptr;
+        }
+
+        explicit constexpr operator bool() const
+        {
+            return bool(a);
         }
 
         template<random_range R>
