@@ -23,14 +23,11 @@ import file.manager;
 export auto root = dir{};
 
 export auto search_dir_entry(partition* part,dir* pdir,std::string_view<char const> name,dir_entry* dir_e) -> bool;
-
 export auto dir_close(dir* dir) -> void;
-
 export auto dir_open(partition* part,u32 inode_no) -> dir*;
-
 export auto create_dir_entry(std::str auto filename,u32 inode_no,file_type type,dir_entry* p_de) -> void;
-
 export auto sync_dir_entry(dir* parent_dir,dir_entry* p_de,void* buf) -> bool;
+export auto open_root_dir(partition* part) -> void;
 
 auto open_root_dir(partition* part) -> void
 {
