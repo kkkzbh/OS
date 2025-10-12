@@ -23,10 +23,15 @@ export enum struct file_type : u8
     directory
 };
 
-export enum struct oflags : u8      // 打开文件的选项
+export enum struct open_flags : u8      // 打开文件的选项
 {
     read,
     write,
     rdwr,
     create = 4
 };
+
+export auto constexpr operator+(open_flags flags)
+{
+    return __underlying_type(open_flags)(flags);
+}

@@ -13,6 +13,8 @@ import algorithm;
 import filesystem;
 import ide.part;
 import list;
+import dir;
+import file.manager;
 
 export auto filesystem_init() -> void
 {
@@ -53,5 +55,14 @@ export auto filesystem_init() -> void
     partition_list | std::apply_until[([=](list::node& nd) {
         return mount(&nd,default_part);
     })];
+
+    // 将当前分区的根目录打开
+    open_root_dir(cur_part);
+
+    // 初始化文件表
+    for(auto i : std::iota[MAX_FILE_OPEN]) {
+        file_table[i].node = nullptr;
+    }
+
     delete sb;
 }

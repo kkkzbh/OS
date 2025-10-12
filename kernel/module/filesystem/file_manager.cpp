@@ -23,7 +23,7 @@ export auto inode_bitmap_alloc(partition* part) -> optional<i32>;
 export auto get_free_slot_in_global() -> optional<i32>;
 export auto pcb_fd_install(i32 i) -> optional<i32>;
 
-auto constexpr MAX_FILE_OPEN = 32;      // 系统可打开的最大文件数
+export auto constexpr MAX_FILE_OPEN = 32;      // 系统可打开的最大文件数
 
 export auto file_table = std::array<file_manager,MAX_FILE_OPEN>{};
 

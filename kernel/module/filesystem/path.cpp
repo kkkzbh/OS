@@ -18,7 +18,8 @@ import optional;
 
 namespace path
 {
-
+    export auto depth(char const* pathname) -> size_t;
+    export auto search(char const* pathname,search_record* search_record) -> optional<int>;
 }
 
 namespace path
