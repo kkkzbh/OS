@@ -1,4 +1,6 @@
+module;
 
+#include <assert.h>
 
 export module file.manager;
 
@@ -59,6 +61,7 @@ auto pcb_fd_install(i32 i) -> optional<i32>
         console::println("exceed max open files_per_proc!");
         return {};
     }
+    cur->fd_table[local_fd_idx.get()] = i;
     return local_fd_idx.get();
 }
 
@@ -106,3 +109,11 @@ auto bitmap_sync(partition* part,u32 bi,bitmap_type btmp) -> void
     }
 }
 
+// 将文件描述符转换为文件表的下标
+export auto fdi_local_to_global(u32 local_fd) -> u32
+{
+    auto cur =running_thread();
+    auto global_fd = cur->fd_table[local_fd];
+    ASSERT(global_fd >= 0 and global_fd < MAX_FILE_OPEN);
+    return global_fd;
+}
