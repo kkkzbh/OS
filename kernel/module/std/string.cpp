@@ -137,7 +137,7 @@ export namespace std
                         return x[i] - y[i];
                     }
                 }
-                return 0;
+                return int(x.size() - y.size());
             }();
             if(ret == 0) {
                 return equal;
