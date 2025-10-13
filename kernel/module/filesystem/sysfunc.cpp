@@ -1,0 +1,82 @@
+module;
+
+#include <assert.h>
+#include <string.h>
+
+export module filesystem.syscall;
+
+import string;
+import string.format;
+import filesystem.utility;
+import optional;
+import console;
+import dir;
+import path;
+import path.structure;
+import file;
+import file.manager;
+import schedule;
+
+// 打开或创建文件成功后，返回文件描述符
+export auto open(std::string_view<char const> pathname,open_flags flags) -> optional<i32>
+{
+    if(pathname.back() == '/') { // 不支持打开目录
+        console::println("can't open a directory {}",pathname);
+        return {};
+    }
+    ASSERT(+flags <= 7);
+    auto sr = path::search_record{};
+    auto depth = path::depth(pathname.data());
+    auto found = path::search(pathname.data(),&sr);
+    if(sr.type == file_type::directory) {
+        console::println("can't open a directory with open(), use opendir() to instead");
+        dir_close(sr.parent_dir);
+        return {};
+    }
+    auto cnt = path::depth(sr.path.data());
+    // 先判断是否把pathname的各层目录都访问到了，即是否在某个中间目录失败
+    if(cnt != depth) { // 说明某个中间目录不存在
+        console::println("cannot access {}: Not a directory, subpath {} isn't exist",pathname,sr.path);
+        dir_close(sr.parent_dir);
+        return {};
+    }
+    // 如果在最后一个路径上没找到，并且不是要创建文件
+    if(not found and not (+flags & +open_flags::create)) {
+        console::println("in path {}, file {}  isn't exist",sr.path,strrchr(sr.path.data(),'/') + 1);
+        dir_close(sr.parent_dir);
+        return {};
+    }
+    if(found and +flags & +open_flags::create) { // 要创建的文件已经存在
+        console::println("{} has already exist!",pathname);
+        dir_close(sr.parent_dir);
+        return {};
+    }
+    auto inode_no = *found;
+    // 返回的fd是任务pcb->fd_table数组中的元素下标，而非全局file_table中的下标
+    switch(+flags & +open_flags::create) {
+        case +open_flags::create: {
+            console::println("creating file");
+            auto fd = file_create(sr.parent_dir,strrchr(pathname.data(),'/') + 1,+flags);
+            dir_close(sr.parent_dir);
+            return fd;
+        } default: {    // 其余情况均为打开已存在文件
+            auto fd = file_open(inode_no,flags);
+            return fd;
+        }
+    }
+
+    return {};
+
+}
+
+// 关闭文件
+export auto close(i32 fdi) -> bool
+{
+    if(fdi <= 2) {
+        return false;
+    }
+    auto global_fdi = fdi_local_to_global(fdi);
+    auto ret = file_close(&file_table[global_fdi]);
+    running_thread()->fd_table[fdi] = -1; // 使这个文件描述符位可用
+    return ret;
+}

@@ -300,6 +300,7 @@ target_sources(filesystem
         filesystem/dir_struct.cpp
         filesystem/path.cpp
         filesystem/path_struct.cpp
+        filesystem/sysfunc.cpp
 )
 
 target_link_libraries(filesystem
@@ -315,6 +316,7 @@ target_link_libraries(filesystem
         super_block
         interrupt
         optional
+        format
 )
 
 

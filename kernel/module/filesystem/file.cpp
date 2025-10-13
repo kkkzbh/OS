@@ -2,6 +2,7 @@ module;
 
 #include <assert.h>
 #include <string.h>
+#include <interrupt.h>
 
 export module file;
 
@@ -20,9 +21,11 @@ import optional;
 import scope;
 import path.structure;
 import path;
+import string.format;
+import array.format;
 
 // 创建文件，成功则返回文件描述符
-auto file_create(dir* parent_dir,std::string_view<char const> filename,u8 flag) -> optional<i32>
+export auto file_create(dir* parent_dir,std::string_view<char const> filename,u8 flag) -> optional<i32>
 {
     auto scope_state = true;
 
@@ -108,51 +111,43 @@ auto file_create(dir* parent_dir,std::string_view<char const> filename,u8 flag) 
 
 }
 
-// 打开或创建文件成功后，返回文件描述符
-auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32>
+// 打开编号为inode_no的inode对应的文件，返回文件描述符
+export auto file_open(u32 inode_no, open_flags flag) -> optional<i32>
 {
-    if(pathname.back() == '/') { // 不支持打开目录
-        console::println("can't open a directory {}",pathname);
+    auto fd_idx = get_free_slot_in_global();
+    if(not fd_idx) {
+        console::println("exceed max open files");
         return {};
     }
-    ASSERT(flags <= 7);
-    auto sr = path::search_record{};
-    auto depth = path::depth(pathname.data());
-    auto found = path::search(pathname.data(),&sr);
-    if(sr.type == file_type::directory) {
-        console::println("can't open a directory with open(), use opendir() to instead");
-        dir_close(sr.parent_dir);
-        return {};
-    }
-    auto cnt = path::depth(sr.path.data());
-    // 先判断是否把pathname的各层目录都访问到了，即是否在某个中间目录失败
-    if(cnt != depth) { // 说明某个中间目录不存在
-        console::println("cannot access {}: Not a directory, subpath {} isn't exist",pathname,sr.path);
-        dir_close(sr.parent_dir);
-        return {};
-    }
-    // 如果在最后一个路径上没找到，并且不是要创建文件
-    if(not found and not (flags & +open_flags::create)) {
-        console::println("in path {}, file {}  isn't exist",sr.path,strrchr(sr.path.data(),'/') + 1);
-        dir_close(sr.parent_dir);
-        return {};
-    }
-    if(found and flags & +open_flags::create) { // 要创建的文件已经存在
-        console::println("{} has already exist!",pathname);
-        dir_close(sr.parent_dir);
-        return {};
-    }
-
-    // 返回的fd是任务pcb->fd_table数组中的元素下标，而非全局file_table中的下标
-    switch(flags & +open_flags::create) {
-        case +open_flags::create: {
-            console::println("creating file");
-            auto fd = file_create(sr.parent_dir,strrchr(pathname.data(),'/') + 1,flags);
-            dir_close(sr.parent_dir);
-            return fd;
+    auto fdi = *fd_idx;
+    file_table[fdi].node = inode_open(cur_part,inode_no);
+    file_table[fdi].pos = 0;    // 每次打开文件将指针为0，即指向文件开头
+    file_table[fdi].flag = +flag;
+    auto& write_deny = file_table[fdi].node->wdeny;
+    if(+flag & +open_flags::write or +flag & +open_flags::rdwr) {
+        // 写要考虑是否有其他进程正在写，读不考虑write_deny
+        auto old_status = intr_disable();
+        if(not write_deny) {   // 当前没有其他进程写这个文件
+            write_deny = true;  // 占用该文件
+            intr_set_status(old_status);
+        } else {    // 若已经有占用，直接失败返回
+            intr_set_status(old_status);
+            console::println("file can't be write now, the file are being writed, try again later");
+            return {};
         }
     }
+    // 读或创建，不用考虑write_deny
+    return pcb_fd_install(fdi);
+}
 
-    return {};
-
+// 关闭文件，成功返回true，失败返回false
+export auto file_close(file_manager* file) -> bool
+{
+    if(file == nullptr) {
+        return false;
+    }
+    file->node->wdeny = false;
+    inode_close(file->node);
+    file->node = nullptr;   // 恢复inode状态，使文件结构可用
+    return true;
 }
