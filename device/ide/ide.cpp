@@ -13,7 +13,7 @@ import semaphore;
 import array;
 import sleep;
 import lock_guard;
-import printf;
+import format;
 import bit;
 import console;
 import algorithm;
@@ -253,7 +253,7 @@ auto ide_read(disk* hd,u32 lba,void* buf,u32 sec_cnt) -> void
         // 醒来后检测是否可读
         if(not busy_wait(hd)) {
             auto error = std::array<char,64>{};
-            std::sprintf(error.data(),"{} read sector {} failed!!!\n",hd->name,lba);
+            std::format_to(error.data(),"{} read sector {} failed!!!\n",hd->name,lba);
             PANIC(error.data());
         }
         // 把数据从硬盘的缓冲区读出
@@ -276,7 +276,7 @@ auto ide_write(disk* hd,u32 lba,void* buf,u32 sec_cnt) -> void
         cmd_out(hd->my_channel,CMD_WRITE_SECTOR);
         if(not busy_wait(hd)) {
             auto error = std::array<char,64>{};
-            std::sprintf(error.data(),"{} write sector {} failed!!!!!!\n",hd->name,lba);
+            std::format_to(error.data(),"{} write sector {} failed!!!!!!\n",hd->name,lba);
             PANIC(error.data());
         }
         // 写入数据到硬盘
@@ -296,7 +296,7 @@ auto identify_disk(disk* hd) -> void
     hd->my_channel->disk_done.acquire();
     if(not busy_wait(hd)) {
         auto error = std::array<char,64>{};
-        std::sprintf(error.data(),"{} identify failed!!!!!!\n",hd->name);
+        std::format_to(error.data(),"{} identify failed!!!!!!\n",hd->name);
         PANIC(error.data());
     }
     read_from_sector(hd,id_info.data(),1);

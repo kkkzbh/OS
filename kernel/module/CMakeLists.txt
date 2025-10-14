@@ -160,7 +160,6 @@ target_sources(user
         user/syscall_init.cpp
         user/utility.cpp
         user/getpid.cpp
-        user/write.cpp
         user/printf.cpp
 )
 
@@ -173,6 +172,7 @@ target_link_libraries(user
         assert
         format
         console
+        filesystem
 )
 
 add_library(format)

@@ -105,7 +105,7 @@ target_link_libraries(ide
         std
         console
         assert
-        user
+        format
         kernel_utility
         sleep
         interrupt

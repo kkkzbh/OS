@@ -5,6 +5,8 @@ export module printf;
 import format;
 import utility;
 import sys;
+import file.structure;
+
 
 namespace std
 {
@@ -13,7 +15,7 @@ namespace std
     {
         char buf[1024]{};
         format_to(buf,format,forward<Args>(args)...);
-        return std::write(buf);
+        return std::write(stdout,buf,std::size(buf)).value_or(-1);
     }
 
     export template<typename... Args>

@@ -46,6 +46,14 @@ struct optional
     explicit constexpr operator bool() const
     { return has; }
 
+    auto constexpr value_or(auto sb)
+    {
+        if(not has) {
+            return sb;
+        }
+        return value;
+    }
+
 private:
     bool has = false;
     T value;
