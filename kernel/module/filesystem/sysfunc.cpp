@@ -108,3 +108,14 @@ export auto write(i32 fd,void const* buf,u32 count) -> optional<i32>
     console::println("sys_write: not allowed to write file without flag rdwr or write");
     return {};
 }
+
+export auto read(i32 fd,void* buf,u32 count) -> optional<i32>
+{
+    if(fd < 0) {
+        console::println("sys_read: fd error! fd should be greater_equal 0");
+        return {};
+    }
+    ASSERT(buf);
+    auto global_fd = fdi_local_to_global(fd);
+    return file_read(&file_table[global_fd],buf,count);
+}
