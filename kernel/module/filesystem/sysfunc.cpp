@@ -119,3 +119,36 @@ export auto read(i32 fd,void* buf,u32 count) -> optional<i32>
     auto global_fd = fdi_local_to_global(fd);
     return file_read(&file_table[global_fd],buf,count);
 }
+
+// 重置用于文件读写操作的偏移指针，成功时返回新的偏移量
+export auto lseek(i32 fd,i32 offset,whence flag) -> optional<i32>
+{
+    if(fd < 0) {
+        console::println("sys_lseek: fd:(value {}) error",fd);
+        return {};
+    }
+    auto global_fd = fdi_local_to_global(fd);
+    auto pf = &file_table[global_fd];
+    auto new_pos = [&] {
+        using enum whence;
+        switch(flag) {
+            case set: {
+                return offset;
+            } case cur: {
+                return i32(pf->pos) + offset;
+            } case end: {
+                // offset应该是负值
+                return i32(pf->node->size) + offset;
+            } default: {
+                PANIC("whence error!");
+            }
+        }
+        // unreachable
+    }(); // NOLINT
+    if(new_pos < 0 or new_pos >= i32(pf->node->size)) {
+        console::println("the seek pos is error! value({}), which size is {}",new_pos,pf->node->size);
+        return {};
+    }
+    pf->pos = new_pos;
+    return pf->pos;
+}

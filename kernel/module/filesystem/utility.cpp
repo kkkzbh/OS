@@ -31,7 +31,19 @@ export enum struct open_flags : u8      // 打开文件的选项
     create = 4
 };
 
+export enum struct whence : u8
+{
+    set,
+    cur,
+    end
+};
+
 export auto constexpr operator+(open_flags flags)
 {
     return __underlying_type(open_flags)(flags);
+}
+
+export auto constexpr operator+(whence flags)
+{
+    return __underlying_type(whence)(flags);
 }
