@@ -14,34 +14,18 @@ import filesystem.utility;
 import algorithm;
 import schedule;
 import vector;
-
-export struct inode
-{
-
-    u32 no;                 // inode编号
-    u32 size = 0;               // 文件指文件大小，目录指所有目录项的大小之和
-
-    u32 open_cnts = 0;          // 记录文件被打开的次数
-    bool wdeny = false;             // 写文件不能并行，写时要检查该标识
-
-    std::array<u32,13> sectors{}; // [0-11]直接块 12存一级间接块指针 (二三级间接块指针暂不实现)
-    list::node tag;         // 用于加入已打开的inode列表，主要用于缓存文件
-};
-
-// 用来存储inode的位置
-struct inode_position
-{
-    bool two_sec;    // inode是否跨越2个扇区
-    u32 sec_lba;     // inode所在的扇区号
-    u32 off_size;    // inode在扇区内的字节偏移
-};
+import buffer;
+import inode.structure;
+import file.manager;
+import filesystem;
+import file.structure;
 
 export auto inode_open(partition* part,u32 inode_no) -> inode*;
 export auto inode_close(inode* node) -> void;
 export auto inode_sync(partition* part,inode* node,void* buf) -> void;
 
 // 获取inode所在扇区和扇区内的偏移量
-auto inode_locate(partition* part,u32 inode_no) -> inode_position
+export auto inode_locate(partition* part,u32 inode_no) -> inode_position
 {
     // inode_table在硬盘上是连续的
     ASSERT(inode_no < 4096); // 目前仅支持4096个inode
@@ -132,4 +116,58 @@ auto inode_close(inode* node) -> void
         cur->pgdir = bak;
     }
     intr_set_status(old_status);
+}
+
+// 将硬盘分区part上的inode清空(数据为0) 主要用于调试，实际无必要
+auto inode_delete(partition* part,u32 inode_no,void* buf) -> void
+{
+    ASSERT(inode_no < 4096);
+    auto inode_pos = inode_locate(part,inode_no);
+    auto& [two_sec,sec_lba,off_size] = inode_pos;
+    ASSERT(sec_lba <= part->start_lba + part->sec_cnt);
+    auto buffer = (char*)(buf);
+    // 将原硬盘上的内容先读出来
+    ide_read(part->my_disk,sec_lba,buffer,1 + two_sec);
+    // 将inode清空
+    *(inode*)(buffer + off_size) = {};
+    // 用清空后的内存数据覆盖硬盘
+    ide_write(part->my_disk,sec_lba,buffer,1 + two_sec);
+}
+
+// 回收inode的数据块和inode本身
+auto inode_release(partition* part,u32 inode_no)
+{
+    auto node = inode_open(part,inode_no);
+    ASSERT(node->no == inode_no);
+    // 回收inode占用的所有块
+    auto all_blocks = std::array<u32,128 + 12>{};
+    for(auto i : std::iota[12]) {
+        all_blocks[i] = node->sectors[i];
+    }
+    auto block_cnt = 12;
+    if(node->sectors.back() != 0) {
+        block_cnt = 140;
+        ide_read(part->my_disk,node->sectors.back(),all_blocks.data() + 12,1);
+        // 回收一级间接块表占用的扇区
+        auto block_bitmap_idx = node->sectors.back() - part->sb->data_start_lba;
+        ASSERT(block_bitmap_idx != 0);
+        part->block.set(block_bitmap_idx,false);
+        bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+    }
+    for(auto i : std::iota[block_cnt]) {
+        if(all_blocks[i] == 0) {
+            continue;
+        }
+        auto block_bitmap_idx = all_blocks[i] - part->sb->data_start_lba;
+        ASSERT(block_bitmap_idx > 0);
+        part->block.set(block_bitmap_idx,false);
+        bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+    }
+    // 回收inode所占用的inode
+    part->inode.set(inode_no,false);
+    bitmap_sync(cur_part,inode_no,bitmap_type::inode);
+
+    auto iobuf = std::vector(1024,char{});
+    inode_delete(part,inode_no,iobuf.data());   // 实现中会对数据清0，实则并不需要
+    inode_close(node);
 }

@@ -2,7 +2,7 @@
 export module file.structure;
 
 import filesystem.utility;
-import inode;
+import inode.structure;
 
 export struct file_manager
 {

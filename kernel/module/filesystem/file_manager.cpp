@@ -5,14 +5,13 @@ module;
 export module file.manager;
 
 import filesystem.utility;
-import inode;
+
 import array;
 import optional;
 import algorithm;
 import console;
 import schedule;
 import ide;
-import dir.structure;
 import string;
 import vector;
 import filesystem;
@@ -24,6 +23,7 @@ export auto bitmap_sync(partition* part,u32 bi,bitmap_type btmp) -> void;
 export auto inode_bitmap_alloc(partition* part) -> optional<i32>;
 export auto get_free_slot_in_global() -> optional<i32>;
 export auto pcb_fd_install(i32 i) -> optional<i32>;
+export auto bitmap_sync(partition* part,u32 bi,bitmap_type btmp) -> void;
 
 export auto constexpr MAX_FILE_OPEN = 32;      // 系统可打开的最大文件数
 
