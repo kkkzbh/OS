@@ -25,6 +25,8 @@ namespace std
 
         constexpr explicit buffer(char* s) : buffer(s,strlen(s)) {}
 
+        constexpr explicit buffer(void* s) : buffer((char*)(s)) {}
+
         template<typename T>
         constexpr buffer(string_view<T> str) requires (same_as<T,char> or same_as<T,char unsigned>)
         : buffer(str.data(),str.size()) {}
