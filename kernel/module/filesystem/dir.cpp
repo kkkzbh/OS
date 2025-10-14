@@ -28,6 +28,7 @@ export auto dir_open(partition* part,u32 inode_no) -> dir*;
 export auto create_dir_entry(std::str auto filename,u32 inode_no,file_type type,dir_entry* p_de) -> void;
 export auto sync_dir_entry(dir* parent_dir,dir_entry* p_de,void* buf) -> bool;
 export auto open_root_dir(partition* part) -> void;
+export auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> bool;
 
 auto open_root_dir(partition* part) -> void
 {
@@ -189,3 +190,106 @@ auto sync_dir_entry(dir* parent_dir,dir_entry* p_de,void* buf) -> bool
     console::println("directory is full!");
     return false;
 }
+
+// 把分区part目录pdir中编号为inode_no的目录项删除
+auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> bool
+{
+    auto dir_inode = pdir->node;
+    auto all_blocks = std::array<u32,128 + 12>{};
+    // 收集目录块全部地址
+    for(auto block_idx : std::iota[12]) {
+        all_blocks[block_idx] = dir_inode->sectors[block_idx];
+    }
+    if(dir_inode->sectors.back() != 0) {
+        ide_read(part->my_disk,dir_inode->sectors.back(),all_blocks.data() + 12,1);
+    }
+    // 目录项在存储时保证不跨扇区
+    auto dir_entry_size = part->sb->dir_entry_size;
+    // 每扇区最大的目录项数目
+    auto dir_entrys_per_sec = SECTOR_SIZE / dir_entry_size;
+    auto dir_e = (dir_entry*)(iobuf);
+    auto is_dir_first_block = false;    // 目录的第1个块
+
+    for(auto block_idx : std::iota[140]) {
+        if(all_blocks[block_idx] == 0) {
+            continue;
+        }
+        memset(iobuf,0,SECTOR_SIZE);
+        // 读取扇区，获得目录项
+        ide_read(part->my_disk,all_blocks[block_idx],iobuf,1);
+        is_dir_first_block = false;
+        // 遍历所有的目录项
+        auto dir_entry_cnt = 0;
+        auto dir_entry_found = (dir_entry*)(nullptr);
+        for(auto dir_entry_idx : std::iota[dir_entrys_per_sec]) {
+            auto& entry = dir_e[dir_entry_idx];
+            if(entry.type == file_type::unknown) {
+                continue;
+            }
+            auto filename = std::string_view{ entry.filename };
+            if(filename == "."sv) {
+                is_dir_first_block = true;
+            } else if(filename != ".."sv) {
+                // 统计此扇区内的目录项个数，用来判断删除目录项后是否回收该扇区
+                ++dir_entry_cnt;
+                if(entry.inode_no == inode_no) {
+                    // 确保目录中只有一个编号为inode_n的inode
+                    ASSERT(dir_entry_found == nullptr);
+                    // 找到该i结点，就记录
+                    dir_entry_found = dir_e + dir_entry_idx;
+                }
+            }
+        }
+        // 如果这个扇区没找到，就继续去下个扇区找
+        if(dir_entry_found == nullptr) {
+            continue;
+        }
+        // 在此扇区中找到目录项后，清除该目录项并判断是回收扇区
+        ASSERT(dir_entry_cnt >= 1);
+        // 除了目录第1个扇区外，若该扇区上只有该目录项自己，则将整个扇区回收
+        if(dir_entry_cnt == 1 and not is_dir_first_block) {
+            // 在块位图回收该块
+            auto block_bitmap_idx = all_blocks[block_idx] - part->sb->data_start_lba;
+            part->block.set(block_bitmap_idx,false);
+            bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+
+            // 将块地址从数组sectors或索引表中去掉
+            if(block_idx < 12) {
+                dir_inode->sectors[block_idx] = 0;
+            } else {    // 在一级间接索引表中擦除该间接块地址
+                // 先判断一级间接索引表中间块的数量，如果仅有这1个间接块，连同间接索引表所在的块一同回收
+                auto indirect_blocks = 0;
+                for(auto indirect_block_idx : std::iota[12,140]) {
+                    indirect_blocks += all_blocks[indirect_block_idx] != 0;
+                }
+                ASSERT(indirect_blocks >= 1);   // 包括当前间接块
+                if(indirect_blocks > 1) {
+                    // 间接索引表还包括其他间接块，仅在索引表中擦除这个间接块地址
+                    all_blocks[block_idx] = 0;
+                    ide_write(part->my_disk,dir_inode->sectors.back(),all_blocks.data() + 12,1);
+                } else {    // 间接索引表就当前这1个间接块
+                    // 直接把间接索引表所在的块回收，然后擦除简介索引表块地址
+                    block_bitmap_idx = dir_inode->sectors.back() - part->sb->data_start_lba;
+                    part->block.set(block_idx,false);
+                    bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+                    // 将间接索引表地址清0
+                    dir_inode->sectors.back() = 0;
+                }
+            }
+        } else {    // 仅将该目录项清空
+            *dir_entry_found = {};
+            ide_write(part->my_disk,all_blocks[block_idx],iobuf,1);
+        }
+
+        // 更新i结点信息并同步到硬盘
+        ASSERT(dir_inode->size >= dir_entry_size);
+        dir_inode->size -= dir_entry_size;
+        memset(iobuf,0,SECTOR_SIZE * 2);
+        inode_sync(part,dir_inode,iobuf);
+        return true;
+    }
+
+    // 所有块中都没找到返回false，一般为search_file出错
+    return false;
+}
+

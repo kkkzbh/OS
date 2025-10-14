@@ -6,17 +6,17 @@ import kernel;
 
 auto main() -> void
 {
-    auto fd = *open("/file3",open_flags::rdwr);
+    auto fd = *open("/file3",+open_flags::rdwr | +open_flags::create);
     console::println("fd: {}",fd);
     auto str = "Hello World"sv;
-    auto cnt = optional{ 0 }; // write(fd,str.data(),str.size());
+    auto cnt = write(fd,str.data(),str.size());
     close(fd);
     console::println("write {} bytes",*cnt);
     console::println("{} close now",fd);
 
     auto buf = std::array<char,512>{};
 
-    fd = *open("/file3",open_flags::read);
+    fd = *open("/file3",+open_flags::read);
     console::println("read_fd: {}",fd);
     cnt = read(fd,buf.data(),buf.size());
     console::println("read: {}",buf);
@@ -27,5 +27,7 @@ auto main() -> void
     console::println("re-read: {}",buf);
     close(fd);
 
+    auto ok = unlink("/file3");
+    console::println("unline /file3: state {}",ok ? "yes" : "no");
 
 }

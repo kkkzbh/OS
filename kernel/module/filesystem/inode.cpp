@@ -23,6 +23,7 @@ import file.structure;
 export auto inode_open(partition* part,u32 inode_no) -> inode*;
 export auto inode_close(inode* node) -> void;
 export auto inode_sync(partition* part,inode* node,void* buf) -> void;
+export auto inode_release(partition* part,u32 inode_no);
 
 // 获取inode所在扇区和扇区内的偏移量
 export auto inode_locate(partition* part,u32 inode_no) -> inode_position

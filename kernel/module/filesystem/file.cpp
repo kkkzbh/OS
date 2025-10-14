@@ -115,7 +115,7 @@ export auto file_create(dir* parent_dir,std::string_view<char const> filename,u8
 }
 
 // 打开编号为inode_no的inode对应的文件，返回文件描述符
-export auto file_open(u32 inode_no, open_flags flag) -> optional<i32>
+export auto file_open(u32 inode_no, u8 flag) -> optional<i32>
 {
     auto fd_idx = get_free_slot_in_global();
     if(not fd_idx) {
