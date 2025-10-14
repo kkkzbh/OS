@@ -7,9 +7,9 @@ export module syscall.init;
 
 import syscall.utility;
 import getpid;
-import write;
 import malloc;
 import free;
+import filesystem.syscall;
 
 export auto syscall_init();
 

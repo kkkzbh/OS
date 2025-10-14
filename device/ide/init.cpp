@@ -9,7 +9,7 @@ export module ide.init;
 import ide;
 import console;
 import utility;
-import printf;
+import format;
 import lock_guard;
 import ide.intr;
 import format;
@@ -25,7 +25,7 @@ export auto ide_init() -> void
 
     for(auto i = 0; i != channel_cnt; ++i) {
         auto channel = &channels[i];
-        std::sprintf(channel->name,"ide{}",i);
+        std::format_to(channel->name,"ide{}",i);
         // 为每个ide通道初始化端口基址及中断向量
         switch(i) {
             case 0: {

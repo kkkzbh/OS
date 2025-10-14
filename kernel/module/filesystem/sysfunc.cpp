@@ -16,6 +16,10 @@ import path.structure;
 import file;
 import file.manager;
 import schedule;
+import file.structure;
+import array;
+import algorithm;
+import array.format;
 
 // 打开或创建文件成功后，返回文件描述符
 export auto open(std::string_view<char const> pathname,open_flags flags) -> optional<i32>
@@ -79,4 +83,28 @@ export auto close(i32 fdi) -> bool
     auto ret = file_close(&file_table[global_fdi]);
     running_thread()->fd_table[fdi] = -1; // 使这个文件描述符位可用
     return ret;
+}
+
+// 将buf中连续count个字节写入文件描述符fd，返回写入的字节数
+export auto write(i32 fd,void const* buf,u32 count) -> optional<i32>
+{
+    if(fd < 0) {
+        console::println("sys_write: fd error!");
+        return {};
+    }
+    auto buffer = std::subrange{ (char const*)(buf),(char const*)(buf) + count };
+    if(fd == stdout) {
+        auto a = std::array<char,1024>{};
+        ASSERT(count <= 1024);
+        a | std::copy[buffer];
+        console::println("{}",a);
+        return count;
+    }
+    auto global_fd = fdi_local_to_global(fd);
+    auto& [pos,flag,node] = file_table[global_fd];
+    if(+flag & +open_flags::write or +flag & +open_flags::rdwr) {
+        return file_write(&file_table[global_fd],buf,count);
+    }
+    console::println("sys_write: not allowed to write file without flag rdwr or write");
+    return {};
 }

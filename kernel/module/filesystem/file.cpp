@@ -23,6 +23,8 @@ import path.structure;
 import path;
 import string.format;
 import array.format;
+import ide;
+import buffer;
 
 // 创建文件，成功则返回文件描述符
 export auto file_create(dir* parent_dir,std::string_view<char const> filename,u8 flag) -> optional<i32>
@@ -150,4 +152,173 @@ export auto file_close(file_manager* file) -> bool
     inode_close(file->node);
     file->node = nullptr;   // 恢复inode状态，使文件结构可用
     return true;
+}
+
+// 把buf中的count个字节写入file，成功返回写入的字节数
+export auto file_write(file_manager* file,void const* buf,u32 count) -> optional<i32>
+{
+    // 文件目前最大只支持 512 * 140 = 71680字节
+    if((file->node->size + count) > (BLOCK_SIZE * 140)) {
+        console::println("exceed max file_size 76180 bytes,write file failed");
+        return {};
+    }
+    auto iobuf = std::vector(512,char{});
+    if(not iobuf) {
+        console::println("file_write: sys_malloc for iobuf failed");
+        return {};
+    }
+                                // 间接 128块 直接12块
+    auto all_blocks = std::vector((BLOCK_SIZE + 48) / sizeof(u32),u32{}); // 用来记录文件所有的块地址
+    if(not all_blocks) {
+        console::println("file_write: sys_malloc for all_blocks failed");
+        return {};
+    }
+
+    // 判断文件是否是第一次写，如果是，先为其分配一个块
+    if(file->node->sectors[0] == 0) {
+        auto v1 = block_bitmap_alloc(cur_part);
+        if(not v1) {
+            console::println("file_write: block_bitmap_alloc failed");
+            return {};
+        }
+        auto block_lba = *v1;
+        file->node->sectors[0] = block_lba;
+        // 每分配一个块就同步到硬盘
+        auto block_bitmap_idx = block_lba - cur_part->sb->data_start_lba;
+        ASSERT(block_bitmap_idx);
+        bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+    }
+
+    // 写入count个字节前，该文件已经占用的块数
+    auto file_has_used_blocks = file->node->size / BLOCK_SIZE + 1;
+
+    // 存储count个字节后，该文件将占用的块数
+    auto file_will_use_blocks = (file->node->size + count) / BLOCK_SIZE + 1;
+    ASSERT(file_will_use_blocks <= 140);
+
+    // 通过此增量判断是否需要分配扇区
+    auto add_blocks = file_will_use_blocks - file_has_used_blocks;
+
+    // 将写文件所用到的块地址收集到all_blocks，系统中块大小等于扇区大小。
+    if(add_blocks == 0) {
+        if(file_will_use_blocks <= 12) {  // 如果在12块以内
+            auto block_idx = file_has_used_blocks - 1;
+            // 指向最后一个已有数据的扇区
+            all_blocks[block_idx] = file->node->sectors[block_idx];
+        } else {
+            // 未写入新数据之前已经占用了间接块，需要将间接块地址读进来
+            ASSERT(file->node->sectors.back() != 0);
+            auto indirect_block_table = file->node->sectors.back();
+            ide_read(cur_part->my_disk, indirect_block_table,all_blocks.data() + 12,1);
+        }
+    } else {
+        // 若有增量，涉及分配新扇区以及是否分配一级间接块表
+        // 1. 12个块直接够用
+        if(file_will_use_blocks <= 12) {
+            // 将有剩余空间的可继续用的扇区地址写入all_blocks
+            auto block_idx = file_has_used_blocks - 1;
+            ASSERT(file->node->sectors[block_idx] != 0);
+            all_blocks[block_idx] = file->node->sectors[block_idx];
+            // 再将未来要用的扇区分配好写入all_blocks
+            for(auto i : std::iota[file_has_used_blocks,file_will_use_blocks]) {
+                auto block_lba = block_bitmap_alloc(cur_part);
+                if(not block_lba) {
+                    console::println("file_write: block_bitmap_alloc for situation 1 failed");
+                    return {};
+                }
+                // 写文件时，不因该存在块未使用，但已分配扇区的情况，当文件删除，块地址就会清零
+                ASSERT(file->node->sectors[i] == 0);    // 确保尚未分配扇区地址
+                auto& sectors = file->node->sectors;
+                sectors[i] = all_blocks[i] = *block_lba;
+                // 每分配一个块就将位图同步到硬盘
+                auto block_bitmap_idx = *block_lba - cur_part->sb->data_start_lba;
+                bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+            }
+        } else if(file_has_used_blocks <= 12 and file_will_use_blocks > 12) { // 情况 2
+            // 先将有剩余空间的可继续用的扇区地址收集到all_blocks
+            auto block_idx = file_has_used_blocks - 1;
+            auto& sectors = file->node->sectors;
+            all_blocks[block_idx] = sectors[block_idx];
+            // 创建一级间接块表
+            auto block_lba = block_bitmap_alloc(cur_part);
+            if(not block_lba) {
+                console::println("file_write: block_bitmap_alloc for situation 2 failed");
+                return {};
+            }
+            // 确保一级间接表尚未分配
+            ASSERT(sectors.back() == 0);
+            // 分配一级间接块索引表
+            auto indirect_block_table = sectors.back() = *block_lba;
+            for(auto i : std::iota[file_has_used_blocks,file_will_use_blocks]) {
+                block_lba = block_bitmap_alloc(cur_part);
+                if(not block_lba) {
+                    console::println("file_write: block_bitmap_alloc for situation 2 failed");
+                    return {};
+                }
+                if(i < 12) {
+                    // 新创建的0 ~ 11块直接存入all_blocks数组
+                    ASSERT(sectors[i] == 0);    // 确保尚未分配扇区地址
+                    sectors[i] = all_blocks[i] = *block_lba;
+                } else {
+                    // 间接块只写入到all_blocks数值中，待全部分配完后一次性同步到硬盘
+                    all_blocks[i] = *block_lba;
+                }
+                // 每分配一个块就将位图同步到硬盘
+                auto block_bitmap_idx = *block_lba - cur_part->sb->data_start_lba;
+                bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+            }
+            // 同步一级间接块表到硬盘
+            ide_write(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+        } else if(file_has_used_blocks > 12) {  // 情况 3
+            auto& sectors = file->node->sectors;
+            // 确保已经具备了一级间接块表
+            ASSERT(sectors.back() != 0);
+            // 获取一级间接块表地址
+            auto indirect_block_table = sectors.back();
+            // 已使用的间接块也将被读入all_blocks，无需单独收录
+            ide_read(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1); // 获取所有间接块地址
+            for(auto i : std::iota[file_has_used_blocks,file_will_use_blocks]) {
+                auto block_lba = block_bitmap_alloc(cur_part);
+                if(not block_lba) {
+                    console::println("file_write: block_bitmap_alloc for situation 3 failed");
+                    return {};
+                }
+                all_blocks[i] = *block_lba;
+                // 每分配一个块就将位图同步到硬盘
+                auto block_bitmap_idx = *block_lba - cur_part->sb->data_start_lba;
+                bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+            }
+            // 同步一级间接块表到硬盘
+            ide_write(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+        }
+    }
+
+    // 用到的块地址已经收集到all_blocks中，下面开始写数据
+    auto first_write_block = true;  // 含有剩余空间的块标识
+    file->pos = file->node->size - 1;   // 记录pos，写文件时实时更新
+    auto src = (char const*)(buf);
+    auto bytes_written = 0;
+    for(auto size_left = count; bytes_written < count; ) {
+        iobuf | std::fill[char{}];
+        auto sec_idx = file->node->size / BLOCK_SIZE;
+        auto sec_lba = all_blocks[sec_idx];
+        auto sec_off_bytes = file->node->size % BLOCK_SIZE;
+        auto sec_left_bytes = BLOCK_SIZE - sec_off_bytes;
+        // 判断此次写入磁盘的数据大小
+        auto chunk_size = std::min(size_left,sec_left_bytes);
+        if(first_write_block) {
+            ide_read(cur_part->my_disk,sec_lba,iobuf.data(),1);
+            first_write_block = false;
+        }
+        memcpy(iobuf.data() + sec_off_bytes,src,chunk_size);
+        ide_write(cur_part->my_disk,sec_lba,iobuf.data(),1);
+        console::println("file write at lba {x}",sec_lba);  // 调试信息，可去
+        src += chunk_size;
+        file->node->size += chunk_size;
+        file->pos += chunk_size;
+        bytes_written += chunk_size;
+        size_left -= chunk_size;
+    }
+    inode_sync(cur_part,file->node,iobuf.data());
+    return bytes_written;
 }

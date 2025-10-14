@@ -3,6 +3,7 @@
 export module sys;
 
 import syscall.utility;
+import optional;
 
 namespace std
 {
@@ -49,9 +50,9 @@ namespace std
         return syscall(+sysid::getpid);
     }
 
-    export auto write(char const* str) -> u32
+    export auto write(i32 fd,void const* buf,u32 count) -> optional<i32>
     {
-        return syscall(+sysid::write,str);
+        return syscall(+sysid::write,fd,buf,count);
     }
 
     export auto malloc(size_t sz) -> void*
