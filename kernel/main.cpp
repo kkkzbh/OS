@@ -9,7 +9,7 @@ auto main() -> void
     auto fd = *open("/file3",open_flags::rdwr);
     console::println("fd: {}",fd);
     auto str = "Hello World"sv;
-    auto cnt = write(fd,str.data(),str.size());
+    auto cnt = optional{ 0 }; // write(fd,str.data(),str.size());
     close(fd);
     console::println("write {} bytes",*cnt);
     console::println("{} close now",fd);
@@ -21,5 +21,9 @@ auto main() -> void
     cnt = read(fd,buf.data(),buf.size());
     console::println("read: {}",buf);
     console::println("the read len is {}",*cnt);
+    lseek(fd,2,whence::set);
+    buf = {};
+    cnt = read(fd,buf.data(),12);
+    console::println("re-read: {}",buf);
     close(fd);
 }
