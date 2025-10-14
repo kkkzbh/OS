@@ -322,3 +322,85 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
     inode_sync(cur_part,file->node,iobuf.data());
     return bytes_written;
 }
+
+// 从文件file中读取count个字节写入buf，返回读取的字节数
+export auto file_read(file_manager* file,void* buf,u32 count) -> optional<i32>
+{
+    auto a = std::buffer{ (char*)(buf) };
+    auto size_left = count;
+    auto size = count;
+    // 如果要读取的字节数超过了文件可读的剩余量，就用剩余量作为待读取的字节数
+    if((file->pos + count) > file->node->size) {
+        size = file->node->size - file->pos;
+        size_left = size;
+        if(size == 0) {     // 如果没什么读的，到文件尾，直接返回
+            return {};
+        }
+    }
+    auto iobuf = std::vector(BLOCK_SIZE,char{});
+    if(not iobuf) {
+        console::println("file_read: sys_malloc for iobuf failed");
+        return {};
+    }
+    auto all_blocks = std::vector((BLOCK_SIZE + 48) / sizeof(u32),u32{});
+    if(not all_blocks) {
+        console::println("file_read: sys_malloc for all_blocks failed");
+        return {};
+    }
+    auto block_read_start_idx = file->pos / BLOCK_SIZE; // 数据所在块起始地址
+    auto block_read_end_idx = (file->pos + size) / BLOCK_SIZE; // 数据所在块终止地址
+
+    // 如果增量为0
+    auto read_blocks = block_read_end_idx - block_read_start_idx;
+    ASSERT(block_read_start_idx < 139 and block_read_end_idx < 139);
+
+    if(read_blocks == 0) {   // 在同一扇区内读数据
+        ASSERT(block_read_start_idx == block_read_end_idx);
+        if(block_read_end_idx < 12) {   // 待读取的数据在12个直接块内
+            auto block_idx = block_read_end_idx;
+            all_blocks[block_idx] = file->node->sectors[block_idx];
+        } else {    // 用到了一级间接块表，需要将表中间接块读进来
+            auto indirect_block_table = file->node->sectors.back();
+            ide_read(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+        }
+    } else {    // 要读多个块
+        if(block_read_end_idx < 12) {   // 数据结束所在的块属于直接块
+            for(auto block_idx : std::iota[block_read_start_idx,block_read_end_idx]) {
+                all_blocks[block_idx] = file->node->sectors[block_idx];
+            }
+        } else if(block_read_start_idx < 12 and block_read_end_idx >= 12) {
+            // 待读入的数据块跨越直接块和间接块两类
+            // 先将直接块地址写入all_blocks
+            for(auto i : std::iota[block_read_start_idx,12]) {
+                all_blocks[i] = file->node->sectors[i];
+            }
+            // 确保已经分配了一级间接块表
+            ASSERT(file->node->sectors.back() != 0);
+            // 再将间接块地址写入all_blocks
+            auto indirect_block_table = file->node->sectors.back();
+            ide_read(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+        } else {    // 数据块在间接块中
+            // 确保已经分配了一级间接块表
+            ASSERT(file->node->sectors.back() != 0);
+            auto indirect_block_table = file->node->sectors.back();
+            ide_read(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+        }
+    }
+
+    // 用到的块地址已经收集到all_blocks中，下面开始读数据
+    auto bytes_read = 0;
+    while(bytes_read < size) {  // 读完为止
+        auto sec_idx = file->pos / BLOCK_SIZE;
+        auto sec_lba = all_blocks[sec_idx];
+        auto sec_off_bytes = file->pos % BLOCK_SIZE;
+        auto sec_left_bytes = BLOCK_SIZE - sec_off_bytes;
+        auto chunk_size = std::min(size_left,sec_left_bytes);
+        iobuf | std::fill[char{}];
+        ide_read(cur_part->my_disk,sec_lba,iobuf.data(),1);
+        a += std::string_view{ iobuf.data() + sec_off_bytes,chunk_size };
+        file->pos += chunk_size;
+        bytes_read += chunk_size;
+        size_left -= chunk_size;
+    }
+    return bytes_read;
+}

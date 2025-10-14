@@ -13,4 +13,13 @@ auto main() -> void
     close(fd);
     console::println("write {} bytes",*cnt);
     console::println("{} close now",fd);
+
+    auto buf = std::array<char,512>{};
+
+    fd = *open("/file3",open_flags::read);
+    console::println("read_fd: {}",fd);
+    cnt = read(fd,buf.data(),buf.size());
+    console::println("read: {}",buf);
+    console::println("the read len is {}",*cnt);
+    close(fd);
 }
