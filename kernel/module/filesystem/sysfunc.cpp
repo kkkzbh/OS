@@ -20,9 +20,12 @@ import file.structure;
 import array;
 import algorithm;
 import array.format;
+import vector;
+import filesystem;
+import inode;
 
 // 打开或创建文件成功后，返回文件描述符
-export auto open(std::string_view<char const> pathname,open_flags flags) -> optional<i32>
+export auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32>
 {
     if(pathname.back() == '/') { // 不支持打开目录
         console::println("can't open a directory {}",pathname);
@@ -151,4 +154,52 @@ export auto lseek(i32 fd,i32 offset,whence flag) -> optional<i32>
     }
     pf->pos = new_pos;
     return pf->pos;
+}
+
+// 删除文件(非目录)，成功返回true
+export auto unlink(std::string_view<char const> pathname) -> bool
+{
+    ASSERT(pathname.size() < MAX_PATH_LEN);
+    // 先检查待删除的文件是否存在
+    auto sr = path::search_record{};
+    auto inode_no_opt = path::search(pathname.data(),&sr);
+    if(not inode_no_opt) {
+        console::println("file {} not found!",pathname);
+        dir_close(sr.parent_dir);
+        return false;
+    }
+    auto inode_no = *inode_no_opt;
+    ASSERT(inode_no != 0);
+    if(sr.type == file_type::directory) {
+        console::println (
+            "can't delete a directory with unlink(),"
+            "use rmdir() to instead"
+        );
+        dir_close(sr.parent_dir);
+        return false;
+    }
+
+    // 检查是否在已打开文件列表(文件表)中
+    auto found = std::iota[MAX_FILE_OPEN] | std::first[([&](auto i) {
+        auto& [pos,flag,node] = file_table[i];
+        return node and inode_no == node->no;
+    })];
+    if(found) {
+        dir_close(sr.parent_dir);
+        console::println("file {} is in use, not allow to delete!\n",pathname);
+        return false;
+    }
+    ASSERT(not found);
+    auto iobuf = std::vector(SECTOR_SIZE + SECTOR_SIZE,char{});
+    if(not iobuf) {
+        dir_close(sr.parent_dir);
+        console::println("sys_unlink: malloc for iobuf failed!");
+        return {};
+    }
+
+    auto partent_dir = sr.parent_dir;
+    delete_dir_entry(cur_part,partent_dir,inode_no,iobuf.data());
+    inode_release(cur_part,inode_no);
+    dir_close(sr.parent_dir);
+    return true;
 }
