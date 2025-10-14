@@ -43,7 +43,7 @@ struct reference
 
     explicit constexpr operator bool() const
     {
-        return get();
+        return bool(it);
     }
 
     [[nodiscard]]
