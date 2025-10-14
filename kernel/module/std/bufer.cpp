@@ -6,6 +6,7 @@ export module buffer;
 
 import utility;
 import string;
+import algorithm;
 
 namespace std
 {
@@ -80,12 +81,14 @@ namespace std
         constexpr explicit operator string_view<char>()
         { return { buf,sz }; }
 
-        auto constexpr operator+=(str auto s) -> buffer&
-        { return *this += s.data(); }
-
         template<random_range R> requires CharT<range_value_t<R>>
         auto constexpr operator+=(R&& r) -> buffer&
-        { return *this += (&*std::begin(r)); }
+        {
+            auto len = std::size(r);
+            std::subrange{ buf + sz,buf + sz + len } | std::copy[r];
+            sz += len;
+            return *this;
+        }
 
         char* buf = nullptr;
         size_t sz = 0;
