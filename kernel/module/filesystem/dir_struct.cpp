@@ -2,7 +2,7 @@
 
 export module dir.structure;
 
-import inode;
+import inode.structure;
 import filesystem.utility;
 import array;
 

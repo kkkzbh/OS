@@ -15,6 +15,7 @@ import vector;
 import file.manager;
 import file.structure;
 import filesystem;
+import inode.structure;
 import inode;
 import algorithm;
 import optional;

@@ -7,7 +7,7 @@ export module filesystem;
 import ide;
 import utility;
 import filesystem.utility;
-import inode;
+import inode.structure;
 import super_block;
 import dir.structure;
 import console;
