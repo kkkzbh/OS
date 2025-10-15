@@ -33,7 +33,7 @@ auto main() -> void
     auto dir = "/kkkzbh/code";
     ok = mkdir(dir);
     console::println("the dir {} create {}",dir,ok ? "successful!" : "failed!");
-    auto dir2 = "/kkkzbh/";
+    auto dir2 = "/kkkzbh";
     ok = mkdir(dir2);
     console::println("the dir {} create {}",dir2,ok ? "successful!" : "failed!");
     if(not ok) {
