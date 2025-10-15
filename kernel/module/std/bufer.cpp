@@ -77,7 +77,14 @@ namespace std
         auto constexpr operator+=(char const* str) -> buffer&
         {
             strcat(buf + sz,str);
+            sz += strlen(str);
             return *this;
+        }
+
+        template<size_t N>
+        auto constexpr operator+=(this auto&& self,char const (&arr)[N]) -> buffer&
+        {
+            return self += (char const*)(arr);
         }
 
         constexpr explicit operator string_view<char>()
@@ -90,6 +97,11 @@ namespace std
             std::subrange{ buf + sz,buf + sz + len } | std::copy[r];
             sz += len;
             return *this;
+        }
+
+        auto constexpr clear() -> void
+        {
+            buf[sz = 0] = '\0';
         }
 
         char* buf = nullptr;

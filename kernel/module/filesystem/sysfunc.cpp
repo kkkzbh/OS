@@ -23,6 +23,10 @@ import array.format;
 import vector;
 import filesystem;
 import inode;
+import scope;
+import inode.structure;
+import dir.structure;
+import ide;
 
 // 打开或创建文件成功后，返回文件描述符
 export auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32>
@@ -201,5 +205,95 @@ export auto unlink(std::string_view<char const> pathname) -> bool
     delete_dir_entry(cur_part,partent_dir,inode_no,iobuf.data());
     inode_release(cur_part,inode_no);
     dir_close(sr.parent_dir);
+    return true;
+}
+
+export auto mkdir(std::string_view<char const> pathname) -> bool
+{
+    auto active = true; // 用于回滚的scope使用
+    auto iobuf = std::vector(SECTOR_SIZE * 2,char{});
+    if(not iobuf) {
+        console::println("sys_mkdir: sys_malloc for iobuf failed!");
+        return false;
+    }
+    auto sr = path::search_record{};
+    auto inode_no_opt = path::search(pathname.data(),&sr);
+    auto close_parent_dir = scope_exit {
+        [&] {
+            dir_close(sr.parent_dir);
+        },
+        active
+    };
+    if(inode_no_opt) {      // 如果找到了同名目录或文件，失败返回
+        console::println("sys_mkdir: file or directory {} exist!",pathname);
+        return false;
+    }
+    // 如果没有找到，也要判断是否是某个中间目录不存在
+    if(path::depth(pathname.data()) != path::depth(sr.path.data())) {
+        // 说明没有访问到全部的路径，某个中间目录是不存在的
+        console::println("sys_mkdir: cann't access {}: Not a directory, subpath {} isn't exist",pathname,sr.path);
+        return false;
+    }
+    auto parent_dir = sr.parent_dir;
+    // 目录名称后面可能有字符'/'，但是sr.path是不带的
+    auto dirname = std::string_view{ strrchr(sr.path.data(),'/') + 1 };
+    auto inode_no = inode_bitmap_alloc(cur_part).value_or(-1);
+    if(inode_no == -1) {
+        console::println("sys_mkdir: allocate inode failed");
+        return false;
+    }
+    auto free_bitmap_alloc = scope_exit {
+        [&] {
+            cur_part->inode.set(inode_no,false);
+        },
+        active
+    };
+    auto node = inode(inode_no);
+    auto block_lba = block_bitmap_alloc(cur_part).value_or(-1);
+    if(block_lba == -1) {
+        console::println("sys_mkdir: block_bitmap_alloc for create directory failed!");
+        return {};
+    }
+    node.sectors.front() = block_lba;
+    // 每分配一个块就将位图同步到硬盘
+    auto block_bitmap_idx = block_lba - cur_part->sb->data_start_lba;
+    ASSERT(block_bitmap_idx != 0);
+    bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
+
+    // 将当前目录项"." ".." 写入目录
+    iobuf | std::fill[decltype(iobuf)::value_type{}];
+    auto p_de = (dir_entry*)(iobuf.data());
+    p_de->filename | std::copy["."];
+    p_de->inode_no = inode_no;
+    p_de->type = file_type::directory;
+    ++p_de;
+    p_de->filename | std::copy[".."];
+    p_de->inode_no = parent_dir->node->no;
+    p_de->type = file_type::directory;
+    ide_write(cur_part->my_disk,node.sectors.front(),iobuf.data(),1);
+    node.size = 2 * cur_part->sb->dir_entry_size;
+
+    // 在父目录中添加自己的目录项
+    auto entry = dir_entry{};
+    create_dir_entry(dirname,inode_no,file_type::directory,&entry);
+    iobuf | std::fill[0];
+    // 将block_bitmap通过bitmap_sync同步到硬盘
+    if(not sync_dir_entry(parent_dir,&entry,iobuf.data())) {
+        console::println("sys_mkdir: sync_dir_entry to disk failed!");
+        return false;   // 如果这里返回可能会引起块泄露！！*******************************
+    }
+
+    // 父目录的inode同步到硬盘
+    iobuf | std::fill[0];
+    inode_sync(cur_part,parent_dir->node,iobuf.data());
+    // 将新创建目录的inode同步到硬盘
+    iobuf | std::fill[0];
+    inode_sync(cur_part,&node,iobuf.data());
+    // 将inode位图同步到硬盘
+    bitmap_sync(cur_part,inode_no,bitmap_type::inode);
+    // 关闭所创建目录的父目录
+    dir_close(sr.parent_dir);
+    // 取消回滚
+    active = false;
     return true;
 }
