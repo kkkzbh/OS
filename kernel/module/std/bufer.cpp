@@ -91,12 +91,10 @@ namespace std
         { return { buf,sz }; }
 
         template<random_range R> requires CharT<range_value_t<R>>
-        auto constexpr operator+=(R&& r) -> buffer&
+        auto constexpr operator+=(this auto&& self,R&& r) -> buffer&
         {
-            auto len = std::size(r);
-            std::subrange{ buf + sz,buf + sz + len } | std::copy[r];
-            sz += len;
-            return *this;
+            auto it = r.data();
+            return self += it;
         }
 
         auto constexpr clear() -> void
