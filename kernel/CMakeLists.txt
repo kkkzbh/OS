@@ -183,5 +183,5 @@ add_custom_command(TARGET kernel POST_BUILD
     VERBATIM
 )
 
-add_disk_target(write_kernel ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped 9 251)
+add_disk_target(write_kernel ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped 9 300)
 add_dependencies(write_kernel kernel)

@@ -149,7 +149,15 @@ p_mode_start:
 
     mov eax, KERNEL_START_SECTOR    ; kernel.bin所在的扇区号
     mov ebx, KERNEL_BIN_BASE_ADDR   ; 磁盘读出后写入内存的起始地址
-    mov ecx, 251                    ; 读取的扇区数
+    mov ecx, 255                    ; 读取的扇区数
+
+    call rd_disk_m_32
+
+    mov eax, KERNEL_START_SECTOR
+    add eax, 255
+    mov ebx, KERNEL_BIN_BASE_ADDR
+    add ebx, 0x1FE00
+    mov ecx, 45
 
     call rd_disk_m_32
     
