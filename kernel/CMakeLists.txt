@@ -157,16 +157,17 @@ target_link_libraries(kernel
 # 设置编译选项 - 添加调试信息
 
 target_compile_options(kernel PRIVATE
-        $<$<COMPILE_LANGUAGE:C>:-g;-O0>
-        $<$<COMPILE_LANGUAGE:CXX>:-g;-O0>
+        $<$<COMPILE_LANGUAGE:C>:-Os;-fdata-sections;-ffunction-sections>
+        $<$<COMPILE_LANGUAGE:CXX>:-Os;-fdata-sections;-ffunction-sections>
         $<$<COMPILE_LANGUAGE:ASM>:-gdwarf-2>
 )
 
 # 设置链接器选项 - 修复入口点问题 (现代写法)
 target_link_options(kernel PRIVATE
-    "-nostartfiles"
-    "-Wl,-Ttext,0xC0001500"
-    "-Wl,-e,kkkzbh"
+        "-nostartfiles"
+        "-Wl,-Ttext,0xC0001500"
+        "-Wl,-e,kkkzbh"
+        "-Wl,--gc-sections"
 )
 
 add_library(kernel_utility INTERFACE)
