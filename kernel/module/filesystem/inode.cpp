@@ -78,6 +78,7 @@ auto inode_open(partition* part,u32 inode_no) -> inode*
         })]
     };
     if(node) {
+        ++node.get()->open_cnts;
         return node.get();
     }
 
