@@ -18,6 +18,7 @@ import dir.structure;
 import filesystem;
 import file.structure;
 import file.manager;
+import vector;
 
 // 根目录
 export auto root = dir{};
@@ -30,6 +31,8 @@ export auto sync_dir_entry(dir* parent_dir,dir_entry* p_de,void* buf) -> bool;
 export auto open_root_dir(partition* part) -> void;
 export auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> bool;
 export auto dir_read(dir* dir) -> dir_entry*;
+export auto dir_is_empty(dir* dir) -> bool;
+export auto dir_remove(dir* parent_dir,dir* child_dir) -> bool;
 
 auto open_root_dir(partition* part) -> void
 {
@@ -334,4 +337,32 @@ auto dir_read(dir* dir) -> dir_entry*
         }
     }
     return nullptr; // 没找到，返回空指针表示没有目录项了
+}
+
+// 判断目录是否为空
+auto dir_is_empty(dir* dir) -> bool
+{
+    auto dir_inode = dir->node;
+    // 如果目录下只有.和..两个目录项，则为空的
+    return dir_inode->size == cur_part->sb->dir_entry_size * 2;
+}
+
+// 在父目录里删除子目录
+auto dir_remove(dir* parent_dir,dir* child_dir) -> bool
+{
+    auto child_dir_inode = child_dir->node;
+    // 空目录只在sectors.front()中有扇区，其他都应为空
+    for(auto block_idx : std::iota[1,13]) {
+        ASSERT(child_dir_inode->sectors[block_idx] == 0);
+    }
+    auto iobuf = std::vector(SECTOR_SIZE * 2,char{});
+    if(not iobuf) {
+        console::println("dir_remove: malloc for iobuf failed!");
+        return false;
+    }
+    // 在父目录parent_dir中删除子目录child_dir对应的目录项
+    delete_dir_entry(cur_part,parent_dir,child_dir_inode->no,iobuf.data());
+    // 回收inode中sector所占用的扇区
+    inode_release(cur_part,child_dir_inode->no);
+    return true;
 }

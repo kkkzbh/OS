@@ -110,5 +110,60 @@ export namespace test
             console::println("close {} failed!",dirname);
         }
     }
+
+    // 测试删除目录
+    auto t5() -> void
+    {
+        console::println("xxx:> ls /kkkzbh");
+        auto dir = opendir("/kkkzbh");
+        for(auto dir_e = (dir_entry*)(nullptr); (dir_e = readdir(dir)); ) {
+            auto type = [&] {
+                if(dir_e->type == file_type::regular) {
+                    return "regular"sv;
+                }
+                return "directory"sv;
+            }();
+            console::println("    {}    {}",type,dir_e->filename);
+        }
+        console::println("xxx:> ls /kkkzbh/files");
+        auto dir2 = opendir("/kkkzbh/files");
+        for(auto dir_e = (dir_entry*)(nullptr); (dir_e = readdir(dir2)); ) {
+            auto type = [&] {
+                if(dir_e->type == file_type::regular) {
+                    return "regular"sv;
+                }
+                return "directory"sv;
+            }();
+            console::println("    {}    {}",type,dir_e->filename);
+        }
+        console::println("xxx:> rmdir /kkkzbh/files");
+        auto ok = rmdir("/kkkzbh/files");
+        console::println("xxx:> mkdir /kkkzbh/empty");
+        auto ok2 = mkdir("/kkkzbh/empty");
+        console::println("xxx:> ls /kkkzbh");
+        rewinddir(dir);
+        for(auto dir_e = (dir_entry*)(nullptr); (dir_e = readdir(dir)); ) {
+            auto type = [&] {
+                if(dir_e->type == file_type::regular) {
+                    return "regular"sv;
+                }
+                return "directory"sv;
+            }();
+            console::println("    {}    {}",type,dir_e->filename);
+        }
+        console::println("xxx:> rmdir /kkkzbh/empty");
+        rmdir("/kkkzbh/empty");
+        console::println("xxx:> ls /kkkzbh");
+        rewinddir(dir);
+        for(auto dir_e = (dir_entry*)(nullptr); (dir_e = readdir(dir)); ) {
+            auto type = [&] {
+                if(dir_e->type == file_type::regular) {
+                    return "regular"sv;
+                }
+                return "directory"sv;
+            }();
+            console::println("    {}    {}",type,dir_e->filename);
+        }
+    }
 }
 

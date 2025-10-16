@@ -275,7 +275,7 @@ export auto mkdir(std::string_view<char const> pathname) -> bool
 
     // 在父目录中添加自己的目录项
     auto entry = dir_entry{};
-    create_dir_entry(pathname,inode_no,file_type::directory,&entry);
+    create_dir_entry(pname,inode_no,file_type::directory,&entry);
     iobuf | std::fill[0];
     // 将block_bitmap通过bitmap_sync同步到硬盘
     if(not sync_dir_entry(parent_dir,&entry,iobuf.data())) {
@@ -314,7 +314,7 @@ export auto opendir(std::string_view<char const> pathname) -> dir*
         [&] {
             dir_close(sr.parent_dir);
         },
-        active
+        active  // 恒 true
     };
     if(inode_no == -1) {
         console::println("open {} filed, the subpath {} is not exist!",pathname,sr.path);
@@ -348,4 +348,35 @@ export auto readdir(dir* dir) -> dir_entry*
 export auto rewinddir(dir* dir) -> void
 {
     dir->pos = 0;
+}
+
+// 删除空目录
+export auto rmdir(std::string_view<char const> pathname) -> bool
+{
+    // 先检查删除的文件是否存在
+    auto sr = path::search_record{};
+    auto inode_no = path::search(pathname.data(),&sr).value_or(-1);
+    ASSERT(inode_no != 0);
+    auto active = true;
+    auto close_parent_dir = scope_exit {
+        [&] {
+            dir_close(sr.parent_dir);
+        },
+        active
+    };
+    if(inode_no == -1) {
+        console::println("In {}, subpath {} not exist!",pathname,sr.path);
+        return false;
+    }
+    if(sr.type == file_type::regular) {
+        console::println("{} is regular file!",pathname);
+        return false;
+    }
+    auto dir = dir_open(cur_part,inode_no);
+    if(not dir_is_empty(dir)) { // 如果目录非空 不可删除
+        console::println("dir {} is not empty, it is not allowed to delete a nonempty directory!",pathname);
+        return false;
+    }
+    active = false;
+    return dir_remove(sr.parent_dir,dir);
 }
