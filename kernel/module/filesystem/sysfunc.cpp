@@ -236,7 +236,7 @@ export auto mkdir(std::string_view<char const> pathname) -> bool
     }
     auto parent_dir = sr.parent_dir;
     // 目录名称后面可能有字符'/'，但是sr.path是不带的
-    auto dirname = std::string_view{ strrchr(sr.path.data(),'/') + 1 };
+    auto pname = std::string_view{ strrchr(sr.path.data(),'/') + 1 };
     auto inode_no = inode_bitmap_alloc(cur_part).value_or(-1);
     if(inode_no == -1) {
         console::println("sys_mkdir: allocate inode failed");
@@ -275,7 +275,7 @@ export auto mkdir(std::string_view<char const> pathname) -> bool
 
     // 在父目录中添加自己的目录项
     auto entry = dir_entry{};
-    create_dir_entry(dirname,inode_no,file_type::directory,&entry);
+    create_dir_entry(pathname,inode_no,file_type::directory,&entry);
     iobuf | std::fill[0];
     // 将block_bitmap通过bitmap_sync同步到硬盘
     if(not sync_dir_entry(parent_dir,&entry,iobuf.data())) {
@@ -295,5 +295,44 @@ export auto mkdir(std::string_view<char const> pathname) -> bool
     dir_close(sr.parent_dir);
     // 取消回滚
     active = false;
+    return true;
+}
+
+// 打开目录，返回 dir*，失败返回空指针
+export auto opendir(std::string_view<char const> pathname) -> dir*
+{
+    ASSERT(pathname.size() < MAX_PATH_LEN);
+    // 如果是根目录直接返回根目录
+    if(pathname == "/"sv or pathname == "/."sv) {
+        return &root;
+    }
+    // 确保该目录是存在的
+    auto sr = path::search_record{};
+    auto inode_no = path::search(pathname.data(),&sr).value_or(-1);
+    auto active = true;
+    auto close_parent_dir = scope_exit {
+        [&] {
+            dir_close(sr.parent_dir);
+        },
+        active
+    };
+    if(inode_no == -1) {
+        console::println("open {} filed, the subpath {} is not exist!",pathname,sr.path);
+        return nullptr;
+    }
+    if(sr.type == file_type::regular) {
+        console::println("{} is a regular file!",pathname);
+        return nullptr;
+    }
+    return dir_open(cur_part,inode_no);
+}
+
+//关闭目录dir，成功返回true
+export auto closedir(dir* dir) -> bool
+{
+    if(dir == nullptr) {
+        return false;
+    }
+    dir_close(dir);
     return true;
 }
