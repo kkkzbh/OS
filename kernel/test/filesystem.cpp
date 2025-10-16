@@ -116,6 +116,13 @@ export namespace test
     {
         console::println("xxx:> ls /kkkzbh");
         auto dir = opendir("/kkkzbh");
+        auto constexpr active = true;
+        auto close_dir = scope_exit {
+            [&] {
+                dir_close(dir);
+            },
+            active
+        };
         for(auto dir_e = (dir_entry*)(nullptr); (dir_e = readdir(dir)); ) {
             auto type = [&] {
                 if(dir_e->type == file_type::regular) {
@@ -127,6 +134,12 @@ export namespace test
         }
         console::println("xxx:> ls /kkkzbh/files");
         auto dir2 = opendir("/kkkzbh/files");
+        auto close_dir2 = scope_exit {
+            [&] {
+                dir_close(dir2);
+            },
+            active
+        };
         for(auto dir_e = (dir_entry*)(nullptr); (dir_e = readdir(dir2)); ) {
             auto type = [&] {
                 if(dir_e->type == file_type::regular) {
@@ -178,6 +191,42 @@ export namespace test
         console::println("xxx:> pwd");
         getcwd(cwd_buf.data(),32);
         console::println("{}",cwd_buf);
+    }
+
+    // 测试stat函数，查看文件属性
+    auto t7() -> void
+    {
+        auto st = stat_t{};
+        stat("/",&st);
+        console::println(" \"/\" info");
+        console::println("i_no:{}",st.ino);
+        console::println("size:{}",st.size);
+        console::println("filetype:{}",st.type == file_type::directory ? "directory" : "regular");
+        stat("/kkkzbh",&st);
+        console::println(" \"/kkkzbh\" info");
+        console::println("i_no:{}",st.ino);
+        console::println("size:{}",st.size);
+        console::println("filetype:{}",st.type == file_type::directory ? "directory" : "regular");\
+        console::println("xxx:> ls /kkkzbh");
+
+        auto dir = opendir("/kkkzbh");
+        auto constexpr active = true;
+        auto close_dir = scope_exit {
+            [&] {
+                dir_close(dir);
+            },
+            active
+        };
+        for(auto dir_e = (dir_entry*)(nullptr); (dir_e = readdir(dir)); ) {
+            auto type = [&] {
+                if(dir_e->type == file_type::regular) {
+                    return "regular"sv;
+                }
+                return "directory"sv;
+            }();
+            console::println("    {}    {}",type,dir_e->filename);
+        }
+
     }
 
 }

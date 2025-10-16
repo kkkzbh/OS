@@ -28,6 +28,7 @@ import inode.structure;
 import dir.structure;
 import ide;
 import buffer;
+import stat.structure;
 
 // 打开或创建文件成功后，返回文件描述符
 export auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32>
@@ -442,5 +443,35 @@ export auto chdir(std::string_view<char const> path) -> bool
         return false;
     }
     running_thread()->cwd_inode_no = inode_no;  // 更改线程的工作目录
+    return true;
+}
+
+// 在buf中填充文件结构相关信息
+export auto stat(std::string_view<char const> path,stat_t* buf) -> bool
+{
+    if(path == "/"sv or path == "/."sv or path == "/.."sv) {    // 如果直接查看根目录
+        buf->type = file_type::directory;
+        buf->ino = 0;
+        buf->size = root.node->size;
+        return true;
+    }
+    auto sr = path::search_record{};
+    auto inode_no = path::search(path.data(),&sr).value_or(-1);
+    auto constexpr active = true;
+    auto close_parent_dir = scope_exit {
+        [&] {
+            dir_close(sr.parent_dir);
+        },
+        active
+    };
+    if(inode_no == -1) {
+        console::println("sys_stat: {} not found",path);
+        return false;
+    }
+    auto obj_inode = inode_open(cur_part,inode_no);
+    buf->size = obj_inode->size;
+    inode_close(obj_inode);
+    buf->type = sr.type;
+    buf->ino = inode_no;
     return true;
 }

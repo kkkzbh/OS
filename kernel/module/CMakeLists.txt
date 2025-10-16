@@ -303,6 +303,7 @@ target_sources(filesystem
         filesystem/sysfunc.cpp
         filesystem/inode_free.cpp
         filesystem/inode_structure.cpp
+        filesystem/stat_struct.cpp
 )
 
 target_link_libraries(filesystem
