@@ -22,7 +22,7 @@ struct scope_exit
     auto operator=(scope_exit const&) -> scope_exit& = delete;
 
     F f;
-    bool& active;
+    bool const& active;
 };
 
 export template<typename Lam>
