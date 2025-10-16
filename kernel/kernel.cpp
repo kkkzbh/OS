@@ -26,3 +26,6 @@ export import filesystem.utility;
 export import filesystem.syscall;
 export import optional;
 export import dir.structure;
+export import stat.structure;
+export import scope;
+export import dir;
