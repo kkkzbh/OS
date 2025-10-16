@@ -25,3 +25,4 @@ export import file;
 export import filesystem.utility;
 export import filesystem.syscall;
 export import optional;
+export import dir.structure;

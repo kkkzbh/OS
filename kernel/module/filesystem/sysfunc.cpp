@@ -336,3 +336,16 @@ export auto closedir(dir* dir) -> bool
     dir_close(dir);
     return true;
 }
+
+// 读取dir的一个目录项，成功返回目录项地址，失败或到目录尾返回nullptr
+export auto readdir(dir* dir) -> dir_entry*
+{
+    ASSERT(dir != nullptr);
+    return dir_read(dir);
+}
+
+// 把目录dir的指针pos置0
+export auto rewinddir(dir* dir) -> void
+{
+    dir->pos = 0;
+}

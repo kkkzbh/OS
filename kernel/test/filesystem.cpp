@@ -83,5 +83,32 @@ export namespace test
             console::println("{} close successful!",dirname);
         }
     }
+
+    // 主要测试读目录项
+    auto t4() -> void
+    {
+        auto dirname = "/kkkzbh/files"sv;
+        auto pdir = opendir(dirname);
+        if(not pdir) {
+            console::println("can't open {}",dirname);
+            return;
+        }
+        console::println("open {} successful!",dirname);
+        for(auto dir_e = (dir_entry*)(nullptr); (dir_e = readdir(pdir)); ) {
+            auto type = [&] {
+                if(dir_e->type == file_type::regular) {
+                    return "regular"sv;
+                }
+                return "directory"sv;
+            }();
+            console::println("    {}    {}",type,dir_e->filename);
+        }
+        auto ok = closedir(pdir);
+        if(ok) {
+            console::println("close {} successful!",dirname);
+        } else {
+            console::println("close {} failed!",dirname);
+        }
+    }
 }
 

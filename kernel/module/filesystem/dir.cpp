@@ -29,6 +29,7 @@ export auto create_dir_entry(std::str auto filename,u32 inode_no,file_type type,
 export auto sync_dir_entry(dir* parent_dir,dir_entry* p_de,void* buf) -> bool;
 export auto open_root_dir(partition* part) -> void;
 export auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> bool;
+export auto dir_read(dir* dir) -> dir_entry*;
 
 auto open_root_dir(partition* part) -> void
 {
@@ -293,3 +294,44 @@ auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> boo
     return false;
 }
 
+// 读取目录，成功返回一个目录项，失败返回nullptr
+auto dir_read(dir* dir) -> dir_entry*
+{
+    auto dir_e = (dir_entry*)(dir->buf.data());
+    auto dir_inode = dir->node;
+    auto all_blocks = std::array<u32,128 + 12>{};
+    auto block_cnt = 12;
+    for(auto block_idx : std::iota[12]) {
+        all_blocks[block_idx] = dir_inode->sectors[block_idx];
+    }
+    if(dir_inode->sectors.back() != 0) { // 若含有一级间接块表
+        ide_read(cur_part->my_disk,dir_inode->sectors.back(),all_blocks.data() + 12,1);
+        block_cnt = 140;
+    }
+    auto dir_entry_size = cur_part->sb->dir_entry_size;
+    auto dir_entrys_per_sec = SECTOR_SIZE / dir_entry_size; // 1个扇区可容纳的目录项个数
+
+    auto block_idx = 0;
+    auto cur_dir_entry_pos = 0;     // 记录当前目录的偏移，要与目录实际偏移对应
+    while(dir->pos < dir_inode->size) {
+        if(all_blocks[block_idx] == 0) {    // 如果此地址块是空块，直接下一块
+            ++block_idx;
+            continue;
+        }
+        dir->buf | std::fill[0];
+        ide_read(cur_part->my_disk,all_blocks[block_idx],dir_e,1);
+        for(auto dir_entry_idx : std::iota[dir_entrys_per_sec]) {   // 遍历扇区内所有目录项
+            if(dir_e[dir_entry_idx].type == file_type::unknown) {   // 如果是未知目录项
+                continue;
+            }
+            if(cur_dir_entry_pos < dir->pos) {  // 如果当前的偏移还不是目录偏移，这里判断防止返回已经返回过的目录项
+                cur_dir_entry_pos += dir_entry_size;
+                continue;
+            }
+            ASSERT(cur_dir_entry_pos == dir->pos);
+            dir->pos += dir_entry_size;     // 更新为新位置，下一个要返回目录项的地址
+            return dir_e + dir_entry_idx;   // 返回这个目录项
+        }
+    }
+    return nullptr; // 没找到，返回空指针表示没有目录项了
+}
