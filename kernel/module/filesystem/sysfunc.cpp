@@ -27,6 +27,7 @@ import scope;
 import inode.structure;
 import dir.structure;
 import ide;
+import buffer;
 
 // 打开或创建文件成功后，返回文件描述符
 export auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32>
@@ -379,4 +380,67 @@ export auto rmdir(std::string_view<char const> pathname) -> bool
     }
     active = false;
     return dir_remove(sr.parent_dir,dir);
+}
+
+// 把当前的工作目录绝对路径写入buf, size是buf的大小
+// 当buff为nullptr时，由操作系统分配存储工作路径的空间并返回地址，失败返回nullptr
+export auto getcwd(char* buf,size_t size) -> char*
+{
+    ASSERT(buf != nullptr); // 这个函数要保证非空，有用户线程掉调则有上层向操作系统申请
+    auto iobuf = std::vector(SECTOR_SIZE,char{});
+    if(not iobuf) {
+        return nullptr;
+    }
+    auto cur_thread = running_thread();
+    auto child_inode_no = cur_thread->cwd_inode_no;
+    ASSERT(child_inode_no < 4096);  // 最大支持4086个inode
+    // 如果当前是根目录，直接返回 '/'
+    if(child_inode_no == 0) {
+        buf[0] = '/';
+        buf[1] = '\0';
+        return buf;
+    }
+    auto full_path_reverse = std::array<char,MAX_PATH_LEN>{};   // 用来做全路径缓冲区
+
+    memset(buf,0,size);
+    // 从下往上逐层找父目录，直到找到根目录为止
+    while(child_inode_no != 0) { // 不是根目录
+        auto parent_inode_no = get_parent_dir_inode_no(child_inode_no,iobuf.data());
+        // 如果没有找到名字，直接退出
+        if(not get_child_dir_name(parent_inode_no,child_inode_no,full_path_reverse.data(),iobuf.data())) {
+            return nullptr;
+        }
+        child_inode_no = parent_inode_no;
+    }
+    // 此时full_path_reserve中的路径是反着的 需要正回来
+    ASSERT(strlen(full_path_reverse.data()) <= size);
+    auto buffer = std::buffer{ buf };
+    while(auto last_slash = strrchr(full_path_reverse.data(),'/')) {
+        buffer += last_slash;
+        *last_slash = '\0';
+    }
+    return buf;
+}
+
+// 更改当前工作目录为绝对路径path
+export auto chdir(std::string_view<char const> path) -> bool
+{
+    auto sr = path::search_record{};
+    auto inode_no = path::search(path.data(),&sr).value_or(-1);
+    auto constexpr active = true;
+    auto close_parent_dir = scope_exit {
+        [&] {
+            dir_close(sr.parent_dir);
+        },
+        active
+    };
+    if(inode_no == -1) {
+        return false;
+    }
+    if(sr.type != file_type::directory) {
+        console::println("sys_chdir: {} is regular file or other!",path);
+        return false;
+    }
+    running_thread()->cwd_inode_no = inode_no;  // 更改线程的工作目录
+    return true;
 }

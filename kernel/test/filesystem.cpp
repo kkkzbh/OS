@@ -165,5 +165,20 @@ export namespace test
             console::println("    {}    {}",type,dir_e->filename);
         }
     }
+
+    // 测试更改当前目录和查看当前目录
+    auto t6() -> void
+    {
+        auto cwd_buf = std::array<char,32>{};
+        console::println("xxx:> pwd");
+        getcwd(cwd_buf.data(),32);
+        console::println("{}",cwd_buf);
+        console::println("xxx:> cd /kkkzbh");
+        chdir("/kkkzbh");
+        console::println("xxx:> pwd");
+        getcwd(cwd_buf.data(),32);
+        console::println("{}",cwd_buf);
+    }
+
 }
 

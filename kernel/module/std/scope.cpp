@@ -9,7 +9,7 @@ struct scope_exit
 {
 
     template<typename Lam>
-    explicit scope_exit(Lam&& fn,bool& act) : f(std::forward<Lam>(fn)),active(act) {}
+    explicit scope_exit(Lam&& fn,bool const& act) : f(std::forward<Lam>(fn)),active(act) {}
 
     ~scope_exit()
     {
@@ -26,4 +26,4 @@ struct scope_exit
 };
 
 export template<typename Lam>
-scope_exit(Lam,bool&) -> scope_exit<Lam>;
+scope_exit(Lam,bool const&) -> scope_exit<Lam>;
