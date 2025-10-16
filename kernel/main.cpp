@@ -7,5 +7,5 @@ import test.filesystem;
 
 auto main() -> void
 {
-    test::t3();
+    test::t4();
 }
