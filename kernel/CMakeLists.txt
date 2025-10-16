@@ -109,19 +109,16 @@ target_link_libraries(init
         filesystem
 )
 
-add_library(os
-        start.cpp
-)
+add_library(kernel_module)
 
-target_sources(os
+target_sources(kernel_module
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
-        main.cpp
         kernel.cpp
 )
 
-target_link_libraries(os
+target_link_libraries(kernel_module
         PRIVATE
         stdio
         interrupt
@@ -133,6 +130,23 @@ target_link_libraries(os
         std
         time
         stdfmt
+)
+
+add_library(os
+        start.cpp
+)
+
+target_sources(os
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        main.cpp
+)
+
+target_link_libraries(os
+        PRIVATE
+        kernel_module
+        test_os
 )
 
 # 创建内核可执行文件
@@ -185,3 +199,5 @@ add_custom_command(TARGET kernel POST_BUILD
 
 add_disk_target(write_kernel ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped 9 300)
 add_dependencies(write_kernel kernel)
+
+add_subdirectory(test)
