@@ -59,6 +59,7 @@ auto init_thread(task* pthread,char const* name,u8 prio) -> void
     pthread->fd_table = { 0,1,2 }; // 0 1 2 分别为 标准输入 输出 错误
     pthread->fd_table[3,MAX_FILES_OPEN_PER_PROC] | std::fill[-1]; // 其余置 -1 NOLINT
     pthread->pgdir = nullptr;
+    pthread->cwd_inode_no = 0;  // 任务的默认工作目录为根目录
     pthread->stack_magic = 0x19870916;
     strcpy(pthread->name,name);
 }

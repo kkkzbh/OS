@@ -173,3 +173,4 @@ auto inode_release(partition* part,u32 inode_no)
     inode_delete(part,inode_no,iobuf.data());   // 实现中会对数据清0，实则并不需要
     inode_close(node);
 }
+

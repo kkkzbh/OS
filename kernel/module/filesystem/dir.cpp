@@ -33,6 +33,8 @@ export auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf)
 export auto dir_read(dir* dir) -> dir_entry*;
 export auto dir_is_empty(dir* dir) -> bool;
 export auto dir_remove(dir* parent_dir,dir* child_dir) -> bool;
+export auto get_parent_dir_inode_no(u32 child_inode_no,void* iobuf) -> u32;
+export auto get_child_dir_name(u32 p_inode_no,u32 c_inode_no,char* path,void* iobuf) -> bool;
 
 auto open_root_dir(partition* part) -> void
 {
@@ -365,4 +367,54 @@ auto dir_remove(dir* parent_dir,dir* child_dir) -> bool
     // 回收inode中sector所占用的扇区
     inode_release(cur_part,child_dir_inode->no);
     return true;
+}
+
+// 获取父目录的inode编号
+auto get_parent_dir_inode_no(u32 child_inode_no,void* iobuf) -> u32
+{
+    auto child_dir_inode = inode_open(cur_part,child_inode_no);
+    // 目录中的目录项..中包括父目录的inode编号，..位于目录的第0块
+    auto block_lba = child_dir_inode->sectors.front();
+    ASSERT(block_lba >= cur_part->sb->data_start_lba);
+    inode_close(child_dir_inode);
+    ide_read(cur_part->my_disk,block_lba,iobuf,1);
+    auto dir_e = (dir_entry*)(iobuf);
+    // 第0个目录项是"."，第一个是".."
+    ASSERT(dir_e[1].inode_no < 4096 and dir_e[1].type == file_type::directory);
+    return dir_e[1].inode_no;
+}
+
+// 在inode编号为p_inode_no的目录中查找inode编号为c_inode_no的子目录的名字，将名字写入缓冲区path
+auto get_child_dir_name(u32 p_inode_no,u32 c_inode_no,char* path,void* iobuf) -> bool
+{
+    auto parent_dir_inode = inode_open(cur_part,p_inode_no);
+    // 填充all_blocks，将该目录所占的扇区地址全部写入all_blocks
+    auto block_cnt = 12;
+    auto all_blocks = std::array<u32,128 + 12>{};
+    for(auto block_idx : std::iota[12]) {
+        all_blocks[block_idx] = parent_dir_inode->sectors[block_idx];
+    }
+    if(parent_dir_inode->sectors.back() != 0) { // 如果包含了一级间接表
+        ide_read(cur_part->my_disk,parent_dir_inode->sectors.back(),all_blocks.data() + 12,1);
+        block_cnt = 140;
+    }
+    inode_close(parent_dir_inode);
+    auto dir_e = (dir_entry*)(iobuf);
+    auto dir_entry_size = cur_part->sb->dir_entry_size;
+    auto dir_entrys_per_sec = 512 / dir_entry_size;
+    for(auto block_idx : std::iota[block_cnt]) {    // 遍历所有块
+        if(not all_blocks[block_idx]) { // 如果该块为空
+            continue;
+        }
+        ide_read(cur_part->my_disk,all_blocks[block_idx],iobuf,1);  // 读入该块
+        for(auto dir_e_idx : std::iota[dir_entrys_per_sec]) {   // 遍历每个目录项
+            if(dir_e[dir_e_idx].inode_no != c_inode_no) {   // 查找目录本身
+                continue;
+            }
+            strcat(path,"/");
+            strcat(path,dir_e[dir_e_idx].filename.data());
+            return true;
+        }
+    }
+    return false;
 }

@@ -72,6 +72,7 @@ export struct task
     u32* pgdir;             // 进程自己页目录表的虚拟地址
     virtual_addr userprog_vaddr;    // 用户进程的虚拟地址
     mem_block_desc u_block_desc[DESC_CNT];
+    u32 cwd_inode_no;       // 进程所在的工作目录的inode编号
     u32 stack_magic;        // 栈的边界标记，防止溢出
 };
 
