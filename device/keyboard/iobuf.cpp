@@ -6,12 +6,12 @@ export module iobuf;
 
 import ioqueue;
 
-auto buf = ioqueue{};
+export auto ioqbuf = ioqueue{};
 
 extern "C" auto solve(char c) -> void
 {
-    if(not buf.full()) { // 如果键盘缓冲区没满
+    if(not ioqbuf.full()) { // 如果键盘缓冲区没满
         putchar(c);
-        buf.put(c);
+        ioqbuf.put(c);
     }
 }
