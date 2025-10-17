@@ -77,4 +77,14 @@ namespace std
         return syscall(+sysid::read,fd,buf,count);
     }
 
+    export auto clear() -> void
+    {
+        syscall(+sysid::clear);
+    }
+
+    export auto putchar(int c) -> void
+    {
+        syscall(+sysid::putchar,c);
+    }
+
 }

@@ -12,6 +12,8 @@ export enum struct sysid : int
     free,
     fork,
     read,
+    clear,
+    putchar,
 };
 
 export auto constexpr operator+(sysid i) -> int
