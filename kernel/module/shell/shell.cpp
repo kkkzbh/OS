@@ -27,6 +27,42 @@ auto prompt() -> void
     std::print("[k@kkkzbh {}]$ ", cwd_cache);
 }
 
+// 分析字符串cmd中以token为分隔符的单词，将各单词的指针存入argv数组，返回argc
+auto cmd_parse(char* cmd,char** argv,char token) -> i32
+{
+    ASSERT(cmd);
+    for(auto arg_idx : std::iota[MAX_ARG_NR]) {
+        argv[arg_idx] = nullptr;
+    }
+    auto argc = 0;
+    for(auto next = cmd; *next; ++argc) {  // 外层循环处理整个命令行
+        // 去除命令行或参数之间的token
+        while(*next == token) {
+            ++next;
+        }
+        // 处理最后一个参数后接空格的情况，比如 "ls dir2  "
+        if(*next == 0) {
+            break;
+        }
+        argv[argc] = next;
+        while(*next and *next != token) {   // 内层循环处理命令行中每个命令字及参数
+            ++next;
+        }
+        // 如果是token字符(而非空终止)
+        if(*next) {
+            *next++ = '\0'; // 令其空终止，作为一个单词的结束，并将next指向下一个字符
+        }
+        // 避免argv数组访问越界
+        if(argc > MAX_ARG_NR) {
+            return -1;
+        }
+    }
+    return argc;
+}
+
+auto argv = std::array<char*,MAX_ARG_NR>{}; // 全局变量，为了以后exec的程序可访问参数
+auto argc = -1;
+
 // 从键盘缓冲区最多读入count个字节到buf
 auto readline(char* buf, i32 count) -> void
 {
@@ -77,6 +113,15 @@ export auto shell() -> void
         if(cmd_line[0] == '\0') {   // 只键入了一个回车
             continue;
         }
+        argc = cmd_parse(cmd_line.data(),argv.data(),' ');
+        if(argc == -1) {
+            std::print("num of arguments exceed {}\n",MAX_ARG_NR);
+            continue;
+        }
+        for(auto arg_idx : std::iota[argc]) {
+            std::print("{} ",argv[arg_idx]);
+        }
+        std::print("\n");
     }
     PANIC("shell: should not be here");
 }
