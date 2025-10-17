@@ -107,7 +107,7 @@ export auto write(i32 fd,void const* buf,u32 count) -> i32
         auto a = std::array<char,1024>{};
         ASSERT(count <= 1024);
         a | std::copy[buffer];
-        console::println("{}",a);
+        console::print("{}",a);
         return count;
     }
     auto global_fd = fdi_local_to_global(fd);
