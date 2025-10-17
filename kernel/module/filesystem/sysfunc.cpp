@@ -32,11 +32,12 @@ import stat.structure;
 import iobuf;
 
 // 打开或创建文件成功后，返回文件描述符
-export auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32>
+export auto open(char const* ptr_pathname,u8 flags) -> i32
 {
+    auto pathname = std::string_view{ ptr_pathname };
     if(pathname.back() == '/') { // 不支持打开目录
         console::println("can't open a directory {}",pathname);
-        return {};
+        return -1;
     }
     ASSERT(+flags <= 7);
     auto sr = path::search_record{};
@@ -45,25 +46,25 @@ export auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32
     if(sr.type == file_type::directory) {
         console::println("can't open a directory with open(), use opendir() to instead");
         dir_close(sr.parent_dir);
-        return {};
+        return -1;
     }
     auto cnt = path::depth(sr.path.data());
     // 先判断是否把pathname的各层目录都访问到了，即是否在某个中间目录失败
     if(cnt != depth) { // 说明某个中间目录不存在
         console::println("cannot access {}: Not a directory, subpath {} isn't exist",pathname,sr.path);
         dir_close(sr.parent_dir);
-        return {};
+        return -1;
     }
     // 如果在最后一个路径上没找到，并且不是要创建文件
     if(not found and not (+flags & +open_flags::create)) {
         console::println("in path {}, file {}  isn't exist",sr.path,strrchr(sr.path.data(),'/') + 1);
         dir_close(sr.parent_dir);
-        return {};
+        return -1;
     }
     if(found and +flags & +open_flags::create) { // 要创建的文件已经存在
         console::println("{} has already exist!",pathname);
         dir_close(sr.parent_dir);
-        return {};
+        return -1;
     }
     auto inode_no = *found;
     // 返回的fd是任务pcb->fd_table数组中的元素下标，而非全局file_table中的下标
@@ -72,14 +73,14 @@ export auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32
             console::println("creating file");
             auto fd = file_create(sr.parent_dir,strrchr(pathname.data(),'/') + 1,+flags);
             dir_close(sr.parent_dir);
-            return fd;
+            return fd.value_or(-1);
         } default: {    // 其余情况均为打开已存在文件
             auto fd = file_open(inode_no,flags);
-            return fd;
+            return fd.value_or(-1);
         }
     }
 
-    return {};
+    return -1;
 
 }
 
@@ -138,12 +139,12 @@ export auto read(i32 fd,void* buf,u32 count) -> i32
     return file_read(&file_table[global_fd],buf,count).value_or(-1);
 }
 
-// 重置用于文件读写操作的偏移指针，成功时返回新的偏移量
-export auto lseek(i32 fd,i32 offset,whence flag) -> optional<i32>
+// 重置用于文件读写操作的偏移指针，成功时返回新的偏移量，失败返回-1
+export auto lseek(i32 fd,i32 offset,whence flag) -> i32
 {
     if(fd < 0) {
         console::println("sys_lseek: fd:(value {}) error",fd);
-        return {};
+        return -1;
     }
     auto global_fd = fdi_local_to_global(fd);
     auto pf = &file_table[global_fd];
@@ -165,15 +166,16 @@ export auto lseek(i32 fd,i32 offset,whence flag) -> optional<i32>
     }(); // NOLINT
     if(new_pos < 0 or new_pos >= i32(pf->node->size)) {
         console::println("the seek pos is error! value({}), which size is {}",new_pos,pf->node->size);
-        return {};
+        return -1;
     }
     pf->pos = new_pos;
     return pf->pos;
 }
 
 // 删除文件(非目录)，成功返回true
-export auto unlink(std::string_view<char const> pathname) -> bool
+export auto unlink(char const* ptr_pathname) -> bool
 {
+    auto pathname = std::string_view{ ptr_pathname };
     ASSERT(pathname.size() < MAX_PATH_LEN);
     // 先检查待删除的文件是否存在
     auto sr = path::search_record{};
@@ -219,8 +221,9 @@ export auto unlink(std::string_view<char const> pathname) -> bool
     return true;
 }
 
-export auto mkdir(std::string_view<char const> pathname) -> bool
+export auto mkdir(char const* ptr_pathname) -> bool
 {
+    auto pathname = std::string_view{ ptr_pathname };
     auto active = true; // 用于回滚的scope使用
     auto iobuf = std::vector(SECTOR_SIZE * 2,char{});
     if(not iobuf) {
@@ -310,8 +313,9 @@ export auto mkdir(std::string_view<char const> pathname) -> bool
 }
 
 // 打开目录，返回 dir*，失败返回空指针
-export auto opendir(std::string_view<char const> pathname) -> dir*
+export auto opendir(char const* ptr_pathname) -> dir*
 {
+    auto pathname = std::string_view{ ptr_pathname };
     ASSERT(pathname.size() < MAX_PATH_LEN);
     // 如果是根目录直接返回根目录
     if(pathname == "/"sv or pathname == "/."sv) {
@@ -362,8 +366,9 @@ export auto rewinddir(dir* dir) -> void
 }
 
 // 删除空目录
-export auto rmdir(std::string_view<char const> pathname) -> bool
+export auto rmdir(char const* ptr_pathname) -> bool
 {
+    auto pathname = std::string_view{ ptr_pathname };
     // 先检查删除的文件是否存在
     auto sr = path::search_record{};
     auto inode_no = path::search(pathname.data(),&sr).value_or(-1);
@@ -433,8 +438,9 @@ export auto getcwd(char* buf,size_t size) -> char*
 }
 
 // 更改当前工作目录为绝对路径path
-export auto chdir(std::string_view<char const> path) -> bool
+export auto chdir(char const* ptr_path) -> bool
 {
+    auto path = std::string_view{ ptr_path };
     auto sr = path::search_record{};
     auto inode_no = path::search(path.data(),&sr).value_or(-1);
     auto constexpr active = true;
@@ -456,8 +462,9 @@ export auto chdir(std::string_view<char const> path) -> bool
 }
 
 // 在buf中填充文件结构相关信息
-export auto stat(std::string_view<char const> path,stat_t* buf) -> bool
+export auto stat(char const* ptr_path,stat_t* buf) -> bool
 {
+    auto path = std::string_view{ ptr_path };
     if(path == "/"sv or path == "/."sv or path == "/.."sv) {    // 如果直接查看根目录
         buf->type = file_type::directory;
         buf->ino = 0;
