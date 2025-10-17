@@ -1,6 +1,7 @@
 module;
 
 #include <stdio.h>
+#include <assert.h>
 
 export module thread.init;
 
@@ -9,6 +10,7 @@ import schedule;
 import process;
 import sys;
 import print;
+import shell;
 
 export auto thread_init() -> void;
 
@@ -16,15 +18,14 @@ export auto thread_init() -> void;
 auto init() -> void
 {
     auto ret_pid = std::fork();
-    if(ret_pid) {
-        std::print("I am father, my pid is {}, child pid is {}\n",std::getpid(),ret_pid);
-    } else {
-        std::print("I am child, my pid is {}, ret pid is {}\n",std::getpid(),ret_pid);
-    }
-    std::print("hehehehehe\n  212112333 \n");
-    while(true) {
+    if(ret_pid) {   // 父进程
+        while(true) {
 
+        }
+    } else {    // 子进程
+        shell();
     }
+    PANIC("init: should not be here");
 }
 
 auto thread_init() -> void

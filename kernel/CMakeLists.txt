@@ -149,6 +149,7 @@ target_link_libraries(os
         PRIVATE
         kernel_module
         test_os
+        stdio
 )
 
 # 创建内核可执行文件

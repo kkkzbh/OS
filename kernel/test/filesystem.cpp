@@ -23,7 +23,7 @@ export namespace test
         console::println("read_fd: {}",fd);
         auto cnt2 = read(fd,buf.data(),buf.size());
         console::println("read: {}",buf);
-        console::println("the read len is {}",*cnt2);
+        console::println("the read len is {}",cnt2);
         lseek(fd,2,whence::set);
         buf = {};
         cnt2 = read(fd,buf.data(),12);
