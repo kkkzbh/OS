@@ -12,8 +12,8 @@ namespace std
     template<std::unsigned_integral T> // 无符号整形转字符串 成功转尾指针，失败行为未定义
     auto to_chars(char* &first,T val,int base = 10) -> void
     {
-        auto lv = val % base;
-        auto hv = val / base;
+        auto lv = T(val % base);
+        auto hv = T(val / base);
         if(hv) {
             to_chars(first,hv,base);
         }
