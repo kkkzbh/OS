@@ -1,6 +1,6 @@
 
 
-export module printf;
+export module print;
 
 import format;
 import utility;
@@ -11,7 +11,7 @@ import file.structure;
 namespace std
 {
     export template<typename... Args>
-    auto printf(char const* format,Args&&... args) -> u32
+    auto print(char const* format,Args&&... args) -> u32
     {
         char buf[1024]{};
         format_to(buf,format,forward<Args>(args)...);
