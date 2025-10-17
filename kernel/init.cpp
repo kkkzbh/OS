@@ -5,13 +5,13 @@
 #include <assert.h>
 #include <keyboard.h>
 
-
-import thread;
 import alloc;
 import tss;
 import syscall.init;
 import ide.init;
 import filesystem.init;
+import console;
+import thread.init;
 
 auto call_global_constructors() -> void
 {
@@ -24,7 +24,7 @@ auto call_global_constructors() -> void
 
 }
 
-void init_all()
+auto init_all() -> void
 {
     puts("init_all\n");
     call_global_constructors(); // 调用C++全局构造函数

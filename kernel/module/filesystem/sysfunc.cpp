@@ -95,11 +95,11 @@ export auto close(i32 fdi) -> bool
 }
 
 // 将buf中连续count个字节写入文件描述符fd，返回写入的字节数
-export auto write(i32 fd,void const* buf,u32 count) -> optional<i32>
+export auto write(i32 fd,void const* buf,u32 count) -> i32
 {
     if(fd < 0) {
-        console::println("sys_write: fd error!");
-        return {};
+        console::println("sys_write: fd(value: {}) error!",fd);
+        return -1;
     }
     auto buffer = std::subrange{ (char const*)(buf),(char const*)(buf) + count };
     if(fd == stdout) {
@@ -112,10 +112,10 @@ export auto write(i32 fd,void const* buf,u32 count) -> optional<i32>
     auto global_fd = fdi_local_to_global(fd);
     auto& [pos,flag,node] = file_table[global_fd];
     if(+flag & +open_flags::write or +flag & +open_flags::rdwr) {
-        return file_write(&file_table[global_fd],buf,count);
+        return file_write(&file_table[global_fd],buf,count).value_or(-1);
     }
     console::println("sys_write: not allowed to write file without flag rdwr or write");
-    return {};
+    return -1;
 }
 
 export auto read(i32 fd,void* buf,u32 count) -> optional<i32>

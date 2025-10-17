@@ -135,7 +135,6 @@ target_sources(thread
         thread/utility.cppm
         thread/stack.cppm
         thread/exec.cppm
-        thread/init.cppm
         thread/process.cpp
 )
 
@@ -150,6 +149,22 @@ target_link_libraries(thread
         sync_alloc
 )
 
+add_library(thread_init)
+
+target_sources(thread_init
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        thread/init.cppm
+)
+
+target_link_libraries(thread_init PRIVATE
+        stdio
+        thread
+        console
+        user
+)
+
 add_library(user)
 
 target_sources(user
@@ -161,6 +176,7 @@ target_sources(user
         user/utility.cpp
         user/getpid.cpp
         user/printf.cpp
+        user/fork.cpp
 )
 
 target_link_libraries(user
@@ -173,6 +189,7 @@ target_link_libraries(user
         format
         console
         filesystem
+        thread
 )
 
 add_library(format)

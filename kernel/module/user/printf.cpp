@@ -1,4 +1,6 @@
+module;
 
+#include <string.h>
 
 export module print;
 
@@ -15,7 +17,7 @@ namespace std
     {
         char buf[1024]{};
         format_to(buf,format,forward<Args>(args)...);
-        return std::write(stdout,buf,std::size(buf)).value_or(-1);
+        return std::write(stdout,buf,strlen(buf));
     }
 
     export template<typename... Args>

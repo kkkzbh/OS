@@ -20,7 +20,7 @@ export auto process_execute(void* filename,char const* name) -> void;
 
 auto constexpr USER_STACK3_VADDR = 0xc0000000 - 0x1000;
 
-auto constexpr USER_VADDR_START  = 0x8048000;
+export auto constexpr USER_VADDR_START  = 0x8048000;
 
 auto constexpr default_prio      = 31;
 

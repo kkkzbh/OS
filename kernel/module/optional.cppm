@@ -55,6 +55,6 @@ struct optional
     }
 
 private:
-    bool has = false;
     T value;
+    bool has = false;
 };

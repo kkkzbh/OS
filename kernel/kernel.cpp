@@ -7,7 +7,7 @@ export import thread;
 export import process;
 export import sys;
 export import syscall.init;
-export import printf;
+export import print;
 export import getpid;
 export import malloc;
 export import list;

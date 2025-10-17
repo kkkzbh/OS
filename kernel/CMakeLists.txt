@@ -107,6 +107,8 @@ target_link_libraries(init
         user
         ide
         filesystem
+        console
+        thread_init
 )
 
 add_library(kernel_module)
