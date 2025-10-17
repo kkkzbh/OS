@@ -14,6 +14,20 @@ export enum struct sysid : int
     read,
     clear,
     putchar,
+    getcwd,
+    open,
+    close,
+    lseek,
+    unlink,
+    mkdir,
+    opendir,
+    closedir,
+    chdir,
+    rmdir,
+    readdir,
+    rewinddir,
+    stat,
+    ps
 };
 
 export auto constexpr operator+(sysid i) -> int

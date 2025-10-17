@@ -6,6 +6,10 @@ export module sys;
 
 import syscall.utility;
 import optional;
+import string;
+import filesystem.utility;
+import dir.structure;
+import stat.structure;
 
 namespace std
 {
@@ -85,6 +89,71 @@ namespace std
     export auto putchar(int c) -> void
     {
         syscall(+sysid::putchar,c);
+    }
+
+    export auto getcwd(char* buf,size_t size) -> char*
+    {
+        return (char*)syscall(+sysid::getcwd,buf,size);
+    }
+
+    export auto open(std::string_view<char const> pathname,u8 flags) -> i32
+    {
+        return syscall(+sysid::open,pathname.data(),flags);
+    }
+
+    export auto close(i32 fdi) -> bool
+    {
+        return syscall(+sysid::close,fdi);
+    }
+
+    export auto lseek(i32 fd,i32 offset,whence flag) -> i32
+    {
+        return syscall(+sysid::lseek,fd,offset,flag);
+    }
+
+    export auto unlink(std::string_view<char const> pathname) -> bool
+    {
+        return syscall(+sysid::unlink,pathname.data());
+    }
+
+    export auto mkdir(std::string_view<char const> pathname) -> bool
+    {
+        return syscall(+sysid::mkdir,pathname.data());
+    }
+
+    export auto opendir(std::string_view<char const> pathname) -> dir*
+    {
+        return (dir*)syscall(+sysid::opendir,pathname.data());
+    }
+
+    export auto closedir(dir* dir) -> bool
+    {
+        return syscall(+sysid::closedir,dir);
+    }
+
+    export auto chdir(std::string_view<char const> path) -> bool
+    {
+        return syscall(+sysid::chdir,path.data());
+    }
+
+    export auto rmdir(std::string_view<char const> pathname) -> bool
+    {
+        return syscall(+sysid::rmdir,pathname.data());
+    }
+
+    export auto readdir(dir* dir) -> dir_entry*
+    {
+        return (dir_entry*)syscall(+sysid::readdir,dir);
+    }
+
+    export auto rewinddir(dir* dir) -> void
+    {
+        syscall(+sysid::rewinddir,dir);
+    }
+
+    export auto stat(std::string_view<char const> path,stat_t* buf) -> bool
+    {
+        return syscall(+sysid::stat,path.data(),buf);
     }
 
 }
