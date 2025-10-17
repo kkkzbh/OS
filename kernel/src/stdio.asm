@@ -7,6 +7,7 @@ SELECTOR_VIDEO equ (0x0003 << 3) + TI_GDT + RPL0
 global putchar
 global puts
 global puthex
+global clear
 
 section .data
 buf dq 0  ; 8个字节的缓冲 用于数字到字符的转换
@@ -184,3 +185,40 @@ puthex:
     jl .put_each_num
     popad 
     ret
+
+clear:
+    pushad
+    ; 由于用户程序的cpl为3，显存段的 dpl为0
+    ; 故用于显存段的选择子gs在低于自己特权的环境中为0
+    ; 导致用户程序再次进入中断时，gs为0
+    ; 故直接在puts中每次都为gs赋值
+    mov ax, SELECTOR_VIDEO  ; 不能把立即数直接送入gs，要由ax中转
+    mov gs, ax 
+
+    mov ebx, 0
+    mov ecx, 80 * 25
+
+.cls:
+    mov word [gs:ebx], 0x0720  ; 0x0720 黑底白字的空格键 (20是空格 07是黑景白字)
+    add ebx, 2 
+    loop .cls 
+    mov ebx, 0
+
+.set_cursor     ; 直接把set_cursor搬过来用 (cv上方代码)
+    mov dx, 0x03D4  ; 索引寄存器
+    mov al, 0x0e
+    out dx, al 
+    mov dx, 0x03D5
+    mov al, bh  ; 高8位光标位置
+    out dx, al 
+
+    mov dx, 0x03D4
+    mov al, 0x0F
+    out dx, al 
+    mov dx, 0x03D5 
+    mov al, bl 
+    out dx, al 
+
+    popad 
+    ret
+

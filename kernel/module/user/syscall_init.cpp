@@ -14,7 +14,6 @@ import fork;
 
 export auto syscall_init();
 
-
 auto constexpr syscall_nr = 32;
 
 using sysfunc = void*;
@@ -31,5 +30,7 @@ auto syscall_init()
     syscall_table[+sysid::free] = (sysfunc)free;
     syscall_table[+sysid::fork] = (sysfunc)fork;
     syscall_table[+sysid::read] = (sysfunc)read;
+    syscall_table[+sysid::clear] = (sysfunc)clear;
+    syscall_table[+sysid::putchar] = (sysfunc)putchar;
     puts("syscall_init done\n");
 }
