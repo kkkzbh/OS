@@ -34,6 +34,19 @@ auto readline(char* buf, i32 count) -> void
     auto it = buf;
     while(std::read(stdin,it,1) != -1 and (it - buf) < count) {
         switch(*it) {   // 在不出错的情况下，找到回车符才返回
+            case 'l' - 'a': {   // 处理ctrl+l 清屏
+                *it = '\0';     // 1. 先将当前的字符置0
+                std::clear();   // 2. 清空屏幕
+                prompt();       // 3. 打印提示符
+                std::print("{}",buf);   // 4. 再将之前键入的内容再次打印
+                break;
+            } case 'u' - 'a': { // ctrl+u 清掉输入
+                while(buf != it) {
+                    std::putchar('\b');
+                    *it-- = '\0';
+                }
+                break;
+            }
             case '\n':
             case '\r': {
                 *it = '\0';    // 添加cmd_line的终止字符

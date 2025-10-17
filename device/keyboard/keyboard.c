@@ -158,6 +158,9 @@ void static intr_keyboard_handler()
         }
         auto index = (u8)(scancode &= 0x00ff); // 取8位 针对高字节e0
         auto c = keymap[index][shift];
+        if(ctrl_down_last && (c == 'l' || c == 'u')) {
+            c -= 'a';   // 处理 ctrl+l 和 ctrl+u 的快捷键
+        }
         if(c) { // 处理 ASCII 不为0的键  (所有控制字符提前处理为0)
             solve(c); // 处理 c
             return;
