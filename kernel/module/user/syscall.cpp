@@ -72,4 +72,9 @@ namespace std
         return syscall(+sysid::fork);
     }
 
+    export auto read(i32 fd,void* buf,u32 count) -> i32
+    {
+        return syscall(+sysid::read,fd,buf,count);
+    }
+
 }

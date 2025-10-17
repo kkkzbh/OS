@@ -30,5 +30,6 @@ auto syscall_init()
     syscall_table[+sysid::malloc] = (sysfunc)malloc;
     syscall_table[+sysid::free] = (sysfunc)free;
     syscall_table[+sysid::fork] = (sysfunc)fork;
+    syscall_table[+sysid::read] = (sysfunc)read;
     puts("syscall_init done\n");
 }

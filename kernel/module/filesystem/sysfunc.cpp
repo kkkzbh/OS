@@ -29,6 +29,7 @@ import dir.structure;
 import ide;
 import buffer;
 import stat.structure;
+import iobuf;
 
 // 打开或创建文件成功后，返回文件描述符
 export auto open(std::string_view<char const> pathname,u8 flags) -> optional<i32>
@@ -94,7 +95,7 @@ export auto close(i32 fdi) -> bool
     return ret;
 }
 
-// 将buf中连续count个字节写入文件描述符fd，返回写入的字节数
+// 将buf中连续count个字节写入文件描述符fd，返回写入的字节数，写入失败返回-1
 export auto write(i32 fd,void const* buf,u32 count) -> i32
 {
     if(fd < 0) {
@@ -118,15 +119,23 @@ export auto write(i32 fd,void const* buf,u32 count) -> i32
     return -1;
 }
 
-export auto read(i32 fd,void* buf,u32 count) -> optional<i32>
+// 从文件描述符fd指向的文件中读取count个字节到buf，若成功则返回读出的字节数，到文件尾返回-1
+export auto read(i32 fd,void* buf,u32 count) -> i32
 {
-    if(fd < 0) {
-        console::println("sys_read: fd error! fd should be greater_equal 0");
+    if(fd < 0 or fd == stdout or fd == stderr) {
+        console::println("sys_read: fd(value: {}) error! fd should be greater_equal 0",fd);
         return {};
     }
     ASSERT(buf);
+    if(fd == stdin) {
+        auto it = (char*)buf;
+        for(auto bytes_read : std::iota[count]) {
+            *it++ = ioqbuf.get();
+        }
+        return count == 0 ? -1 : count;
+    }
     auto global_fd = fdi_local_to_global(fd);
-    return file_read(&file_table[global_fd],buf,count);
+    return file_read(&file_table[global_fd],buf,count).value_or(-1);
 }
 
 // 重置用于文件读写操作的偏移指针，成功时返回新的偏移量
