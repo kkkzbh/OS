@@ -1,7 +1,7 @@
 
 
 
-void init_all();
+auto init_all() -> void;
 auto main() -> void;
 
 

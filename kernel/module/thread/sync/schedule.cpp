@@ -14,16 +14,13 @@ import list;
 import memory;
 
 export auto schedule() -> void;
-
 export auto running_thread() -> task*;
-
 export auto thread_block(thread_status stu) -> void;
-
 export auto thread_unblock(task* pthread) -> void;
-
 export auto idle(void* arg) -> void;
-
 export auto thread_yield() -> void;
+export auto page_dir_active(task const* pthread) -> void;
+
 
 auto process_activate(task const* pthread) -> void;
 

@@ -10,6 +10,7 @@ import getpid;
 import malloc;
 import free;
 import filesystem.syscall;
+import fork;
 
 export auto syscall_init();
 
@@ -28,5 +29,6 @@ auto syscall_init()
     syscall_table[+sysid::write] = (sysfunc)write;
     syscall_table[+sysid::malloc] = (sysfunc)malloc;
     syscall_table[+sysid::free] = (sysfunc)free;
+    syscall_table[+sysid::fork] = (sysfunc)fork;
     puts("syscall_init done\n");
 }

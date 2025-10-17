@@ -1,4 +1,6 @@
+module;
 
+#include <stdio.h>
 
 export module sys;
 
@@ -50,7 +52,7 @@ namespace std
         return syscall(+sysid::getpid);
     }
 
-    export auto write(i32 fd,void const* buf,u32 count) -> optional<i32>
+    export auto write(i32 fd,void const* buf,u32 count) -> i32
     {
         return syscall(+sysid::write,fd,buf,count);
     }
@@ -63,6 +65,11 @@ namespace std
     export auto free(void* ptr) -> void
     {
         syscall(+sysid::free,ptr);
+    }
+
+    export auto fork() -> pid_t
+    {
+        return syscall(+sysid::fork);
     }
 
 }
