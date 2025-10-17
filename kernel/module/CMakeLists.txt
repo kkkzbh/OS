@@ -163,6 +163,7 @@ target_link_libraries(thread_init PRIVATE
         thread
         console
         user
+        shell
 )
 
 add_library(user)
@@ -337,6 +338,7 @@ target_link_libraries(filesystem
         interrupt
         optional
         format
+        keyboard
 )
 
 
@@ -368,4 +370,23 @@ target_link_libraries(ref
         PRIVATE
         utility
         optional
+)
+
+
+add_library(shell)
+
+target_sources(shell
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        shell/shell.cpp
+)
+
+target_link_libraries(shell
+        PRIVATE
+        std_array
+        stdfmt
+        assert
+        filesystem
+        user
 )
