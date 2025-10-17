@@ -9,7 +9,7 @@ export namespace test
     // 测试 打开 关闭 删除 写入 文件
     auto t1() -> void
     {
-        auto fd = *open("/file3",+open_flags::rdwr | +open_flags::create);
+        auto fd = open("/file3",+open_flags::rdwr | +open_flags::create);
         console::println("fd: {}",fd);
         auto str = "Hello World"sv;
         auto cnt = write(fd,str.data(),str.size());
@@ -19,7 +19,7 @@ export namespace test
 
         auto buf = std::array<char,512>{};
 
-        fd = *open("/file3",+open_flags::read);
+        fd = open("/file3",+open_flags::read);
         console::println("read_fd: {}",fd);
         auto cnt2 = read(fd,buf.data(),buf.size());
         console::println("read: {}",buf);
@@ -51,7 +51,7 @@ export namespace test
         auto dir3 = "/kkkzbh/files";
         ok = mkdir(dir3);
         console::println("the dir {} create {}",dir3,ok ? "successful!" : "failed!");
-        auto fd = open("/kkkzbh/files/file1",+open_flags::create | +open_flags::rdwr).value_or(-1);
+        auto fd = open("/kkkzbh/files/file1",+open_flags::create | +open_flags::rdwr);
         if(fd == -1) {
             console::println("open /kkkzbh/files/file1 failed!");
         } else {
