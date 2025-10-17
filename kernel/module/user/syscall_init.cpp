@@ -24,13 +24,27 @@ extern "C" sysfunc syscall_table[syscall_nr]{};
 auto syscall_init()
 {
     puts("syscall_init start\n");
-    syscall_table[+sysid::getpid] = (sysfunc)getpid;
-    syscall_table[+sysid::write] = (sysfunc)write;
-    syscall_table[+sysid::malloc] = (sysfunc)malloc;
-    syscall_table[+sysid::free] = (sysfunc)free;
-    syscall_table[+sysid::fork] = (sysfunc)fork;
-    syscall_table[+sysid::read] = (sysfunc)read;
-    syscall_table[+sysid::clear] = (sysfunc)clear;
-    syscall_table[+sysid::putchar] = (sysfunc)putchar;
+    #define install(X) syscall_table[+sysid::X] = (sysfunc)X
+    install(getpid);
+    install(write);
+    install(malloc);
+    install(free);
+    install(fork);
+    install(read);
+    install(clear);
+    install(putchar);
+    install(getcwd);
+    install(open);
+    install(close);
+    install(lseek);
+    install(unlink);
+    install(mkdir);
+    install(opendir);
+    install(closedir);
+    install(chdir);
+    install(rmdir);
+    install(readdir);
+    install(rewinddir);
+    install(stat);
     puts("syscall_init done\n");
 }
