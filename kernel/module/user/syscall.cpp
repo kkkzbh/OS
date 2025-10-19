@@ -156,4 +156,9 @@ namespace std
         return syscall(+sysid::stat,path.data(),buf);
     }
 
+    export auto ps() -> void
+    {
+        syscall(+sysid::ps);
+    }
+
 }

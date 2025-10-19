@@ -46,5 +46,6 @@ auto syscall_init()
     install(readdir);
     install(rewinddir);
     install(stat);
+    install(ps);
     puts("syscall_init done\n");
 }

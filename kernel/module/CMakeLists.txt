@@ -178,6 +178,7 @@ target_sources(user
         user/getpid.cpp
         user/printf.cpp
         user/fork.cpp
+        user/ps.cpp
 )
 
 target_link_libraries(user

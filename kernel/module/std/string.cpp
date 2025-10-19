@@ -58,6 +58,11 @@ export namespace std
             return self.s[idx];
         }
 
+        auto constexpr operator[](this auto&& self,size_t x,size_t y) -> decltype(auto)
+        {
+            return self.substr(x,y - x);
+        }
+
         auto constexpr front(this auto&& self) -> decltype(auto)
         {
             return self[0];
