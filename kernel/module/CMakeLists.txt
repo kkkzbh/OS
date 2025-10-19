@@ -381,6 +381,7 @@ target_sources(shell
         FILE_SET CXX_MODULES
         FILES
         shell/shell.cpp
+        shell/builtin.cpp
 )
 
 target_link_libraries(shell

@@ -11,6 +11,7 @@ import malloc;
 import free;
 import filesystem.syscall;
 import fork;
+import ps;
 
 export auto syscall_init();
 
