@@ -157,7 +157,7 @@ p_mode_start:
     add eax, 255
     mov ebx, KERNEL_BIN_BASE_ADDR
     add ebx, 0x1FE00
-    mov ecx, 45
+    mov ecx, 145
 
     call rd_disk_m_32
     
