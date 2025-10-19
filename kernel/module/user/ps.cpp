@@ -40,9 +40,9 @@ auto pad_print(char* buf,u32 size,void const* ptr,char format) -> void
 }
 
 // 用于在list函数中的回调函数，用于针对线程队列的处理
-auto thread_info(list::node* pelem) -> void
+auto thread_info(list::node& pelem) -> void
 {
-    auto pthread = find_task_by_all(pelem);
+    auto pthread = find_task_by_all(&pelem);
     auto out_pad = std::array<char,20>{};
     pad_print(out_pad.data(),out_pad.size(),&pthread->pid,'d');
     if(pthread->parent_pid == -1) {
@@ -83,7 +83,7 @@ auto thread_info(list::node* pelem) -> void
     write(stdout,out_pad.data(),sz + 1);
 }
 
-auto ps() -> void
+export auto ps() -> void
 {
     auto title = "PID           PPID            STAT        TICKS       COMMAND\n"sv;
     write(stdout,title.data(),title.size());

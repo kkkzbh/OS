@@ -11,20 +11,23 @@ import file.structure;
 import algorithm;
 import sys;
 import utility;
+import filesystem.utility;
+import shell.builtin;
 
-auto constexpr cmd_len = 128;       // 最大支持键入128个字符的cli输入
 auto constexpr MAX_ARG_NR = 16;     // 加上命令名外，最多支持15个参数
 
 // 存储键入的命令
-auto cmd_line = std::array<char,cmd_len>{};
+auto cmd_line = std::array<char,MAX_PATH_LEN>{};
+// 存储最终绝对路径
+auto final_path = std::array<char,MAX_PATH_LEN>{};
 
 // 用来记录当前目录，是当前目录的缓存，每次cd都会更新
-auto cwd_cache = std::array<char,64>{};
+auto cwd_cache = std::array<char,MAX_PATH_LEN>{};
 
 // 输出提示符
 auto prompt() -> void
 {
-    std::print("[k@kkkzbh {}]$ ", cwd_cache);
+    std::print("k@kkkzbh {}$ > ", cwd_cache);
 }
 
 // 分析字符串cmd中以token为分隔符的单词，将各单词的指针存入argv数组，返回argc
@@ -109,6 +112,7 @@ export auto shell() -> void
     while(true) {
         prompt();
         cmd_line = {};
+        final_path = {};
         readline(cmd_line.data(),cmd_line.size());
         if(cmd_line[0] == '\0') {   // 只键入了一个回车
             continue;
@@ -118,7 +122,9 @@ export auto shell() -> void
             std::print("num of arguments exceed {}\n",MAX_ARG_NR);
             continue;
         }
+        auto buf = std::array<char,MAX_PATH_LEN>{};
         for(auto arg_idx : std::iota[argc]) {
+            make_clear_abs_path(argv[arg_idx],buf.data());
             std::print("{} ",argv[arg_idx]);
         }
         std::print("\n");
