@@ -30,10 +30,6 @@ namespace std
 
         constexpr explicit buffer(void* s) : buffer((char*)(s)) {}
 
-        template<typename T>
-        constexpr buffer(string_view<T> str) requires (same_as<T,char> or same_as<T,char unsigned>)
-        : buffer(str.data(),str.size()) {}
-
         constexpr buffer(buffer const&) = delete;
 
         auto constexpr operator=(buffer const&) -> buffer& = delete;
@@ -90,7 +86,7 @@ namespace std
             return self += (char const*)(arr);
         }
 
-        constexpr explicit operator string_view<char>()
+        constexpr operator string_view<char>()
         { return { buf,sz }; }
 
         template<random_range R> requires CharT<range_value_t<R>>
