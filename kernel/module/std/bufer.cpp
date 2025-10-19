@@ -21,7 +21,10 @@ namespace std
         requires (same_as<range_value_t<R>,char> or same_as<range_value_t<R>,char unsigned>)
         constexpr explicit buffer(R&& r) : buf(&*std::begin(r)),sz(strlen(&*std::begin(r))) {}
 
-        constexpr buffer(char* s,size_t len) : buf(s),sz(len) {}
+        constexpr buffer(char* s,size_t len) : buf(s),sz(len)
+        {
+            buf[len] = '\0';
+        }
 
         constexpr explicit buffer(char* s) : buffer(s,strlen(s)) {}
 
@@ -35,7 +38,7 @@ namespace std
 
         auto constexpr operator=(buffer const&) -> buffer& = delete;
 
-        constexpr explicit buffer(buffer&& b) noexcept : buf(b.buf),sz(b.sz)
+        constexpr explicit buffer(buffer&& b) noexcept : buffer(b.buf,b.sz)
         { b.buf = nullptr; }
 
         auto constexpr operator=(buffer&& b) noexcept -> buffer&
