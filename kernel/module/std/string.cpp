@@ -11,12 +11,20 @@ import optional;
 
 export namespace std
 {
+
     template<typename T>
     concept CharT = std::same_as<T,char> or
-                    std::same_as<T,char const> or
-                    std::same_as<T,unsigned char> or
-                    std::same_as<T,unsigned char const>;
+                std::same_as<T,char const> or
+                std::same_as<T,unsigned char> or
+                std::same_as<T,unsigned char const> or
+                std::same_as<T,char signed> or
+                std::same_as<T,char signed const>;
 
+    template<CharT Char>
+    struct string_view;
+
+    auto constexpr operator==(string_view<char const> x,string_view<char const> y) -> bool;
+    auto constexpr operator==(string_view<char const> x,decltype(nullptr))-> bool;
 
     template<CharT Char>
     struct string_view
@@ -38,19 +46,19 @@ export namespace std
 
         string_view(nullptr_t) = delete("can not use nullptr constructor string_view");
 
-        constexpr operator string_view<Char const>()
+        constexpr operator string_view<char const>() const
         { return { s,sz }; }
 
         auto constexpr operator=(string_view const&) -> string_view& = default;
 
         auto constexpr begin(this auto&& self) -> decltype(auto)
         {
-            return self.s;
+            return iterator{ self.s };
         }
 
         auto constexpr end(this auto&& self) -> decltype(auto)
         {
-            return self.s + self.sz;
+            return iterator{ self.s + self.sz };
         }
 
         auto constexpr operator[](this auto&& self,size_t idx) -> decltype(auto)
@@ -122,48 +130,17 @@ export namespace std
             return *this;
         }
 
-        auto friend constexpr operator==(string_view<Char const> x,string_view<Char const> y) -> bool
+        auto constexpr starts_with(string_view<char const> sv) const noexcept -> bool
         {
-            return x <=> y == 0;
+            return size() >= sv.size() and string_view<char const>{ s,sv.size() } == sv;
         }
 
-        auto friend constexpr operator==(string_view<Char const> x,decltype(nullptr))-> bool
+        auto constexpr ends_with(string_view<char const> sv) const noexcept -> bool
         {
-            return x.s == nullptr;
+            return size() >= sv.size() and string_view<char const>{ s + (size() - sv.size()),sv.size() } == sv;
         }
 
-        auto friend constexpr operator<=>(string_view<Char const> x,string_view<Char const> y) -> strong_ordering
-        {
-            using enum strong_ordering;
-            auto bound = std::min(x.size(),y.size());
-            auto ret = [=] {
-                for(auto i = 0; i != bound; ++i) {
-                    if(x[i] != y[i]) {
-                        return x[i] - y[i];
-                    }
-                }
-                return int(x.size() - y.size());
-            }();
-            if(ret == 0) {
-                return equal;
-            }
-            if(ret < 0) {
-                return less;
-            }
-            return greater;
-        }
-
-        auto constexpr starts_with(string_view<Char const> sv) const noexcept -> bool
-        {
-            return string_view{ s,min(size(),sv.size()) } == sv;
-        }
-
-        auto constexpr ends_with(string_view<Char const> sv) const noexcept -> bool
-        {
-            return size() >= sv.size() and string_view{ s + (size() - sv.size()),sz - sv.size() } == sv;
-        }
-
-        auto constexpr find(string_view<Char const> sv,size_t pos = 0) const noexcept -> optional<size_t>
+        auto constexpr find(string_view<char const> sv,size_t pos = 0) const noexcept -> optional<size_t>
         {
             auto i = pos;
             auto bound = sz - sv.size() + 1;
@@ -177,7 +154,7 @@ export namespace std
             return nullopt;
         }
 
-        auto constexpr contains(string_view<Char const> sv) const noexcept -> bool
+        auto constexpr contains(string_view<char const> sv) const noexcept -> bool
         {
             return find(sv);
         }
@@ -185,6 +162,43 @@ export namespace std
         Char* s = nullptr;
         size_t sz = 0;
     };
+
+    auto constexpr operator<=>(string_view<char const> x,string_view<char const> y) -> strong_ordering
+    {
+        using enum strong_ordering;
+        auto bound = std::min(x.size(),y.size());
+        return [=] {
+            for(auto i = 0; i != bound; ++i) {
+                if(x[i] == y[i]) {
+                    continue;
+                }
+                if(x[i] < y[i]) {
+                    return less;
+                }
+                return greater;
+            }
+            if(x.size() < y.size()) {
+                return less;
+            }
+            if(x.size() > y.size()) {
+                return greater;
+            }
+            return equal;
+        }();
+    }
+
+    auto constexpr operator==(string_view<char const> x,string_view<char const> y) -> bool
+    {
+        if(x.size() != y.size()) {
+            return false;
+        }
+        return (x <=> y) == 0;
+    }
+
+    auto constexpr operator==(string_view<char const> x,decltype(nullptr))-> bool
+    {
+        return x.s == nullptr;
+    }
 
     template<typename T>
     concept str = requires(T t) {
