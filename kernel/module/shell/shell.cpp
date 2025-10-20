@@ -122,10 +122,10 @@ export auto shell() -> void
             std::print("num of arguments exceed {}\n",MAX_ARG_NR);
             continue;
         }
-        auto buf = std::array<char,MAX_PATH_LEN>{};
+        auto buf = std::array<char,128>{};
         for(auto arg_idx : std::iota[argc]) {
             make_clear_abs_path(argv[arg_idx],buf.data());
-            std::print("{} ",argv[arg_idx]);
+            std::print("{} -> {}",argv[arg_idx],buf);
         }
         std::print("\n");
     }

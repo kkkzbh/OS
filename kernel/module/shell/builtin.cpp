@@ -51,13 +51,13 @@ auto wash_path(char const* old_abs_path,char* new_abs_path) -> void
 }
 
 // 将path处理为不含..和.的绝对路径，存储在final_path
-export auto make_clear_abs_path(char const* path,char* final_path) -> void*
+export auto make_clear_abs_path(char const* path,char* final_path) -> void
 {
     auto abs_path = std::array<char,MAX_PATH_LEN>{};
     if (
         path[0] != '/'  // 输入的非绝对路径
         and std::getcwd(abs_path.data(),abs_path.size()) != nullptr // 可以获得cwd
-        and abs_path[0] != '/' and abs_path[1] != '\0'  // 当前目录非根目录
+        and not (abs_path[0] == '/' and abs_path[1] == '\0')  // 当前目录非根目录
     ) {
         strcat(abs_path.data(),"/");    // 补上'/'
     }
