@@ -290,18 +290,27 @@ export namespace std
     }
 
     template<typename R>
+    requires requires(R r) {
+        r.begin();
+    }
     auto constexpr begin(R&& r) -> auto
     {
         return r.begin();
     }
 
     template<typename R>
+    requires requires(R r) {
+        r.end();
+    }
     auto constexpr end(R&& r) -> auto
     {
         return r.end();
     }
 
     template<range R>
+    requires requires(R r) {
+        r.size();
+    }
     auto constexpr size(R&& r) -> size_t
     {
         return r.size();
