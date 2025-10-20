@@ -1,6 +1,7 @@
 module;
 
 #include <assert.h>
+#include <string.h>
 
 export module shell;
 
@@ -13,13 +14,14 @@ import sys;
 import utility;
 import filesystem.utility;
 import shell.builtin;
+import string;
+import string.format;
 
 auto constexpr MAX_ARG_NR = 16;     // 加上命令名外，最多支持15个参数
 
 // 存储键入的命令
 auto cmd_line = std::array<char,MAX_PATH_LEN>{};
-// 存储最终绝对路径
-auto final_path = std::array<char,MAX_PATH_LEN>{};
+
 
 // 用来记录当前目录，是当前目录的缓存，每次cd都会更新
 auto cwd_cache = std::array<char,MAX_PATH_LEN>{};
@@ -122,12 +124,29 @@ export auto shell() -> void
             std::print("num of arguments exceed {}\n",MAX_ARG_NR);
             continue;
         }
-        auto buf = std::array<char,128>{};
-        for(auto arg_idx : std::iota[argc]) {
-            make_clear_abs_path(argv[arg_idx],buf.data());
-            std::print("{} -> {}",argv[arg_idx],buf);
+        auto cli = std::string_view{ argv[0] };
+        if(cli == "ls"sv) {
+            builtin::ls(argc,argv.data());
+        } else if(cli == "cd"sv) {
+            if(builtin::cd(argc,argv.data())) {
+                cwd_cache = {};
+                strcpy(cwd_cache.data(),final_path.data());
+            }
+        } else if(cli == "pwd"sv) {
+            builtin::pwd(argc,argv.data());
+        } else if(cli == "ps"sv) {
+            builtin::ps(argc,argv.data());
+        } else if(cli == "clear"sv) {
+            builtin::clear(argc,argv.data());
+        } else if(cli == "mkdir"sv) {
+            builtin::mkdir(argc,argv.data());
+        } else if(cli == "rmdir"sv) {
+            builtin::rmdir(argc,argv.data());
+        } else if(cli == "rm"sv) {
+            builtin::rm(argc,argv.data());
+        } else {
+            std::print("unknown external command\n");
         }
-        std::print("\n");
     }
     PANIC("shell: should not be here");
 }

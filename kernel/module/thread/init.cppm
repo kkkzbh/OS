@@ -11,6 +11,7 @@ import process;
 import sys;
 import print;
 import shell;
+import string;
 
 export auto thread_init() -> void;
 
@@ -19,11 +20,15 @@ auto init() -> void
 {
     auto ret_pid = std::fork();
     if(ret_pid) {   // 父进程
+        shell();
         while(true) {
 
         }
     } else {    // 子进程
-        shell();
+        // std::print("Hella I em son!\n");
+        while(true) {
+
+        }
     }
     PANIC("init: should not be here");
 }
