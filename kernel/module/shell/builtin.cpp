@@ -11,6 +11,11 @@ import buffer;
 import path;
 import string;
 import sys;
+import print;
+import algorithm;
+import array.format;
+import stat.structure;
+import string.format;
 
 // 将路径old_abs_path中的..和.转换为实际路径后存入new_abs_path
 auto wash_path(char const* old_abs_path,char* new_abs_path) -> void
@@ -63,4 +68,196 @@ export auto make_clear_abs_path(char const* path,char* final_path) -> void
     }
     strcat(abs_path.data(),path);
     wash_path(abs_path.data(),final_path);
+}
+
+// 存储最终绝对路径
+export auto final_path = std::array<char,MAX_PATH_LEN>{};
+
+export namespace builtin
+{
+    auto pwd(u32 argc,char**) -> void
+    {
+        if(argc != 1) {
+            std::print("pwd: no argument support!\n");
+            return;
+        }
+        if(std::getcwd(final_path.data(),final_path.size()) == nullptr) {
+            std::print("pwd: get current work directory failed.\n");
+        }
+        std::print("{}\n",final_path);
+    }
+
+    auto cd(u32 argc,char** argv) -> char*
+    {
+        if(argc > 2) {
+            std::print("cd: only support 1 argument!\n");
+            return nullptr;
+        }
+        if(argc == 1) {     // 只是键入cd，则实现是回到根目录
+            final_path[0,2] | std::copy["/"];
+            return final_path.data();
+        }
+        make_clear_abs_path(argv[1],final_path.data());
+        if(not std::chdir(final_path.data())) {
+            std::print("cd: no such directory {}\n",final_path);
+            return nullptr;
+        }
+        return final_path.data();
+    }
+
+    auto ls(u32 argc,char** argv) -> void
+    {
+        auto long_info = false;
+        auto pathname = (char*)nullptr;
+        auto arg_path_num = 0;
+        for(auto i : std::iota[1,argc]) {   // 跳过第一个 "ls"
+            auto str = std::string_view{ argv[i] };
+            if(str.starts_with("-"sv)) {
+                if(str == "-l"sv) {
+                    long_info = true;
+                } else if(str == "-h") {
+                    std::print("usage: -l list all information about the file.\n");
+                    std::print("-h for help\n");
+                    std::print("list all files in the current dirctory if no option\n");
+                    return;
+                } else {
+                    std::print("ls: invalid option {}\n",str);
+                    std::print("Try 'ls -h' for more information.\n");
+                    return;
+                }
+            } else {    // 是路径参数
+                if(arg_path_num == 0) {
+                    arg_path_num = 1;
+                    pathname = argv[i];
+                } else {
+                    std::print("ls: only support one path\n");
+                    return;
+                }
+            }
+        }
+        if(not pathname) {  // 没有键入路径
+            // 以当前路径的绝对路径为参数
+            if(std::getcwd(final_path.data(),final_path.size())) {
+                pathname = final_path.data();
+            } else {
+                std::print("ls: getcwd for default ppath failed!\n");
+                return;
+            }
+        } else {    // 解析路径
+            make_clear_abs_path(pathname,final_path.data());
+            pathname = final_path.data();
+        }
+        auto file_stat = stat_t{};
+        if(not std::stat(pathname,&file_stat)) {
+            std::print("ls: cannot access {}: No such file or directory\n",pathname);
+            return;
+        }
+        if(file_stat.type == file_type::directory) {
+            auto dir = std::opendir(pathname);
+            auto subp = std::array<char,MAX_PATH_LEN>{};
+            auto path = std::string_view{ pathname };
+            auto lasti = path.size() - 1;
+            subp | std::copy[path];
+            auto sz = path.size();
+            if(subp[lasti] != '/') {
+                subp[lasti] = '/';
+                ++sz;
+            }
+            std::rewinddir(dir);
+            if(long_info) {
+                std::print("total: {}\n",file_stat.size);
+                while(auto dir_e = std::readdir(dir)) {
+                    auto ftype = 'd';
+                    if(dir_e->type == file_type::regular) {
+                        ftype = '-';
+                    }
+                    subp[sz] = '\0';
+                    strcat(&subp[sz],dir_e->filename.data());
+                    file_stat = {};
+                    if(not std::stat(subp,&file_stat)) {
+                        std::print("ls: cannot access {},No such file or directory\n",dir_e->filename);
+                        return;
+                    }
+                    std::print("{}  {}  {}  {}\n",ftype,dir_e->inode_no,file_stat.size,dir_e->filename);
+                }
+            } else {
+                while(auto dir_e = std::readdir(dir)) {
+                    std::print("{} ",dir_e->filename);
+                }
+                std::print("\n");
+            }
+            std::closedir(dir);
+        } else {
+            if(long_info) {
+                std::print("-  {}  {}  {}\n",file_stat.ino,file_stat.size,pathname);
+            } else {
+                std::print("{}\n",pathname);
+            }
+        }
+    }
+
+    auto ps(u32 argc,char**) -> void
+    {
+        if(argc != 1) {
+            std::print("ps: no argument support!\n");
+            return;
+        }
+        std::ps();
+    }
+
+    auto clear(u32 argc,char**) -> void
+    {
+        if(argc != 1) {
+            std::print("ps: no argument support!\n");
+            return;
+        }
+        std::clear();
+    }
+
+    auto mkdir(u32 argc,char** argv) -> bool
+    {
+        if(argc != 2) {
+            std::print("mkdir: only support 1 argument!\n");
+            return false;
+        }
+        make_clear_abs_path(argv[1],final_path.data());
+        auto path = std::string_view{ final_path };
+        if(path == "/"sv or not std::mkdir(path)) {     // 如果创建是根目录或者失败
+            std::print("mkdir: create directory {} failed.\n",argv[1]);
+            return false;
+        }
+        return true;
+    }
+
+    auto rmdir(u32 argc,char** argv) -> bool
+    {
+        if(argc != 2) {
+            std::print("rmdir: only support 1 argument!\n");
+            return false;
+        }
+        make_clear_abs_path(argv[1],final_path.data());
+        auto path = std::string_view{ final_path };
+        if(path == "/"sv or not std::rmdir(path)) {   // 如果删除根目录或者删除失败
+            std::print("rmdir: remove {} failed.\n",argv[1]);
+            return false;
+        }
+        return true;
+    }
+
+    auto rm(u32 argc,char** argv) -> bool
+    {
+        if(argc != 2) {
+            std::print("rm: only support 1 argument!\n");
+            return false;
+        }
+        make_clear_abs_path(argv[1],final_path.data());
+        auto path = std::string_view{ final_path };
+        if(path == "/"sv or not std::unlink(path)) {
+            std::print("rm: delete {} failed.\n",argv[1]);
+            return false;
+        }
+        return true;
+
+    }
+
 }
