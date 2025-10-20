@@ -122,17 +122,17 @@ export namespace std
             return *this;
         }
 
-        auto friend constexpr operator==(string_view x,string_view y) -> bool
+        auto friend constexpr operator==(string_view<Char const> x,string_view<Char const> y) -> bool
         {
             return x <=> y == 0;
         }
 
-        auto friend constexpr operator==(string_view x,decltype(nullptr))-> bool
+        auto friend constexpr operator==(string_view<Char const> x,decltype(nullptr))-> bool
         {
             return x.s == nullptr;
         }
 
-        auto friend constexpr operator<=>(string_view x,string_view y) -> strong_ordering
+        auto friend constexpr operator<=>(string_view<Char const> x,string_view<Char const> y) -> strong_ordering
         {
             using enum strong_ordering;
             auto bound = std::min(x.size(),y.size());
@@ -153,17 +153,17 @@ export namespace std
             return greater;
         }
 
-        auto constexpr starts_with(string_view sv) const noexcept -> bool
+        auto constexpr starts_with(string_view<Char const> sv) const noexcept -> bool
         {
             return string_view{ s,min(size(),sv.size()) } == sv;
         }
 
-        auto constexpr ends_with(string_view sv) const noexcept -> bool
+        auto constexpr ends_with(string_view<Char const> sv) const noexcept -> bool
         {
             return size() >= sv.size() and string_view{ s + (size() - sv.size()),sz - sv.size() } == sv;
         }
 
-        auto constexpr find(string_view sv,size_t pos = 0) const noexcept -> optional<size_t>
+        auto constexpr find(string_view<Char const> sv,size_t pos = 0) const noexcept -> optional<size_t>
         {
             auto i = pos;
             auto bound = sz - sv.size() + 1;
@@ -177,7 +177,7 @@ export namespace std
             return nullopt;
         }
 
-        auto constexpr contains(string_view sv) const noexcept -> bool
+        auto constexpr contains(string_view<Char const> sv) const noexcept -> bool
         {
             return find(sv);
         }
