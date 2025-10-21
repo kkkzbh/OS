@@ -16,6 +16,7 @@ import filesystem.utility;
 import shell.builtin;
 import string;
 import string.format;
+import stat.structure;
 
 auto constexpr MAX_ARG_NR = 16;     // 加上命令名外，最多支持15个参数
 
@@ -145,7 +146,25 @@ export auto shell() -> void
         } else if(cli == "rm"sv) {
             builtin::rm(argc,argv.data());
         } else {
-            std::print("unknown external command\n");
+            auto pid = std::fork();
+            if(pid) {   // 让父进程停下，否则会清空final_path
+                while(true) {
+
+                }
+            } else {
+                make_clear_abs_path(argv[0],final_path.data());
+                argv[0] = final_path.data();
+                auto file_stat = stat_t{};
+                if(not std::stat(argv[0],&file_stat)) { // 判断文件是否存在
+                    std::print("shell: cannot access {}, No such file or directory!\n",argv[0]);
+                } else {
+                    std::exec(argv[0],argv.data());
+                }
+                while(true) {
+
+                }
+            }
+            argv | std::fill[nullptr];  // 清空，但是不必要
         }
     }
     PANIC("shell: should not be here");

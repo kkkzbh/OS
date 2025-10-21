@@ -155,7 +155,7 @@ auto load(char const* pathname) -> i32
 }
 
 // 用path指向的程序替换当前进程
-export auto exec(char const* path,char const* argv[]) -> i32
+export auto exec(char const* path,char* argv[]) -> i32
 {
     auto argc = 0u;
     while(argv[argc]) {
