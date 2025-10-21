@@ -20,7 +20,7 @@ struct reference
     constexpr reference() = default;
 
     template<typename U>
-    explicit constexpr reference(U&& r) : it(reference::construct(std::forward<U>(r))) {}
+    constexpr reference(U&& r) : it(reference::construct(std::forward<U>(r))) {}
 
     constexpr reference(reference const&) = default;
 
@@ -48,33 +48,13 @@ struct reference
 
     [[nodiscard]]
     auto friend constexpr
-    operator==(reference x, reference y) -> bool
-    { return x.get() == y.get(); }
-
-    [[nodiscard]]
-    auto friend constexpr
     operator==(reference x, T const& y) -> bool
     { return x.get() == y; }
 
     [[nodiscard]]
     auto friend constexpr
-    operator==(reference x, reference<T const> y) -> bool
-    { return x.get() == y.get(); }
-
-    [[nodiscard]]
-    auto friend constexpr
-    operator<=>(reference x, reference y) -> std::strong_ordering
-    { return x.get() <=> y.get(); }
-
-    [[nodiscard]]
-    auto friend constexpr
     operator<=>(reference x, T const& y) -> std::strong_ordering
     { return x.get() <=> y; }
-
-    [[nodiscard]]
-    auto friend constexpr
-    operator<=>(reference x, reference<T const> y) -> std::strong_ordering
-    { return x.get() <=> y.get(); }
 
     T* it = nullptr;
 };
@@ -86,7 +66,7 @@ struct reference<T&&>
 
     constexpr reference() = default;
 
-    explicit constexpr reference(T&& v) : it(std::move(v)) {}
+    constexpr reference(T&& v) : it(std::move(v)) {}
 
     constexpr reference(reference&&) = default;
 
@@ -114,33 +94,14 @@ struct reference<T&&>
 
     [[nodiscard]]
     auto friend constexpr
-    operator==(reference x, reference y) -> bool
-    { return x.get() == y.get(); }
-
-    [[nodiscard]]
-    auto friend constexpr
     operator==(reference x, T const& y) -> bool
     { return x.get() == y; }
 
-    [[nodiscard]]
-    auto friend constexpr
-    operator==(reference x, reference<T const&&> y) -> bool
-    { return x.get() == y.get(); }
-
-    [[nodiscard]]
-    auto friend constexpr
-    operator<=>(reference x, reference y) -> std::strong_ordering
-    { return x.get() <=> y.get(); }
 
     [[nodiscard]]
     auto friend constexpr
     operator<=>(reference x, T const& y) -> std::strong_ordering
     { return x.get() <=> y; }
-
-    [[nodiscard]]
-    auto friend constexpr
-    operator<=>(reference x, reference<T const&&> y) -> std::strong_ordering
-    { return x.get() <=> y.get(); }
 
     optional<T> it;
 };
@@ -149,6 +110,12 @@ template<typename T,typename U>
 auto constexpr operator==(reference<T> const& r1,reference<U> const& r2) -> bool
 {
     return r1.get() == r2.get();
+}
+
+template<typename T,typename U>
+auto constexpr operator<=>(reference<T> const& r1,reference<U> const& r2) -> std::strong_ordering
+{
+    return r1.get() <=> r2.get();
 }
 
 template<typename T>

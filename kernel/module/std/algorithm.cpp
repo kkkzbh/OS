@@ -172,8 +172,8 @@ namespace std
     auto constexpr bind(Func func,Args const&... args) -> auto
     {
         return bind_function {
-            [f = move(func),&args...]<typename T>(T&& v) mutable -> decltype(auto) {
-                return f(forward<T>(v),args...);
+            [f = move(func),...args = ref(args)]<typename T>(T&& v) mutable -> decltype(auto) {
+                return f(forward<T>(v),args.get()...);
             }
         };
     }

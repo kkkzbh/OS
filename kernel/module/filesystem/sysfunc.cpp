@@ -277,11 +277,11 @@ export auto mkdir(char const* ptr_pathname) -> bool
     // 将当前目录项"." ".." 写入目录
     iobuf | std::fill[decltype(iobuf)::value_type{}];
     auto p_de = (dir_entry*)(iobuf.data());
-    p_de->filename | std::copy["."];
+    p_de->filename | std::copy["."sv];
     p_de->inode_no = inode_no;
     p_de->type = file_type::directory;
     ++p_de;
-    p_de->filename | std::copy[".."];
+    p_de->filename | std::copy[".."sv];
     p_de->inode_no = parent_dir->node->no;
     p_de->type = file_type::directory;
     ide_write(cur_part->my_disk,node.sectors.front(),iobuf.data(),1);

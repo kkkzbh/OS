@@ -144,7 +144,7 @@ export namespace std
         {
             auto i = pos;
             auto bound = sz - sv.size() + 1;
-            auto my = *this->remove_prefix(i);
+            auto my = this->remove_prefix(i);
             my.sz = sv.size();
             for(; i < bound; ++i,++my.s) {
                 if(my == sv) {
