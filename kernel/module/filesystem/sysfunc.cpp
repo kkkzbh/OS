@@ -173,7 +173,7 @@ export auto lseek(i32 fd,i32 offset,whence flag) -> i32
 }
 
 // 删除文件(非目录)，成功返回true
-export auto unlink(char const* ptr_pathname) -> bool
+export auto unlink(char const* ptr_pathname) -> int
 {
     auto pathname = std::string_view{ ptr_pathname };
     ASSERT(pathname.size() < MAX_PATH_LEN);
@@ -221,7 +221,7 @@ export auto unlink(char const* ptr_pathname) -> bool
     return true;
 }
 
-export auto mkdir(char const* ptr_pathname) -> bool
+export auto mkdir(char const* ptr_pathname) -> int
 {
     auto pathname = std::string_view{ ptr_pathname };
     auto active = true; // 用于回滚的scope使用
@@ -343,7 +343,7 @@ export auto opendir(char const* ptr_pathname) -> dir*
 }
 
 //关闭目录dir，成功返回true
-export auto closedir(dir* dir) -> bool
+export auto closedir(dir* dir) -> int
 {
     if(dir == nullptr) {
         return false;
@@ -366,7 +366,7 @@ export auto rewinddir(dir* dir) -> void
 }
 
 // 删除空目录
-export auto rmdir(char const* ptr_pathname) -> bool
+export auto rmdir(char const* ptr_pathname) -> int
 {
     auto pathname = std::string_view{ ptr_pathname };
     // 先检查删除的文件是否存在
@@ -438,7 +438,7 @@ export auto getcwd(char* buf,size_t size) -> char*
 }
 
 // 更改当前工作目录为绝对路径path
-export auto chdir(char const* ptr_path) -> bool
+export auto chdir(char const* ptr_path) -> int
 {
     auto path = std::string_view{ ptr_path };
     auto sr = path::search_record{};
@@ -462,7 +462,7 @@ export auto chdir(char const* ptr_path) -> bool
 }
 
 // 在buf中填充文件结构相关信息
-export auto stat(char const* ptr_path,stat_t* buf) -> bool
+export auto stat(char const* ptr_path,stat_t* buf) -> int
 {
     auto path = std::string_view{ ptr_path };
     if(path == "/"sv or path == "/."sv or path == "/.."sv) {    // 如果直接查看根目录
