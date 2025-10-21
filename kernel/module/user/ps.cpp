@@ -15,6 +15,7 @@ import list;
 import task;
 import array;
 import schedule;
+import print;
 
 // 以填充空格的方式输出buf
 auto pad_print(char* buf,u32 size,void const* ptr,char format) -> void
@@ -26,16 +27,23 @@ auto pad_print(char* buf,u32 size,void const* ptr,char format) -> void
             out_pad_0idx = std::format_to(buf,"{}",(char const*)ptr);
             break;
         } case 'd': {   // 16位
-            out_pad_0idx = std::format_to(buf,"{}",*(i16 const*)buf);
+            out_pad_0idx = std::format_to(buf,"{}",*(i16 const*)ptr);
             break;
         } case 'x': {
-            out_pad_0idx = std::format_to(buf,"{}",*(u32 const*)buf);
+            out_pad_0idx = std::format_to(buf,"{}",*(u32 const*)ptr);
             break;
         } default: {
             PANIC("The format is error!");
         }
     }
-    std::string_view{ buf,size }[out_pad_0idx,size] | std::fill[' '];   // NOLINT 用空格填充剩余部分
+    auto buffer = std::string_view{ buf,size };
+    // buffer[out_pad_0idx,size - 1] | std::fill[' '];   // NOLINT 会爆栈
+    // for(auto i : std::iota[out_pad_0idx,size - 1]) {  // NOLINT 接着爆
+    //     buffer[i] = ' ';
+    // }
+    for(auto i = out_pad_0idx; i != size - 1; ++i) {
+        buffer[i] = ' ';
+    }
     write(stdout,buf,size - 1);
 }
 
@@ -43,7 +51,7 @@ auto pad_print(char* buf,u32 size,void const* ptr,char format) -> void
 auto thread_info(list::node& pelem) -> void
 {
     auto pthread = find_task_by_all(&pelem);
-    auto out_pad = std::array<char,20>{};
+    auto out_pad = std::array<char,18>{};
     pad_print(out_pad.data(),out_pad.size(),&pthread->pid,'d');
     if(pthread->parent_pid == -1) {
         pad_print(out_pad.data(),out_pad.size(),"null",'s');
@@ -85,7 +93,12 @@ auto thread_info(list::node& pelem) -> void
 
 export auto ps() -> void
 {
-    auto title = "PID           PPID            STAT        TICKS       COMMAND\n"sv;
+    auto title = "PID              PPID             STAT             TICKS            COMMAND\n"sv;
     write(stdout,title.data(),title.size());
-    thread_all_list | std::apply[thread_info];
+    for(auto it = thread_all_list.head.next; it != &thread_all_list.tail; it = it->next) {
+        thread_info(*it);
+    }
+    // for(auto& nd : thread_all_list) {
+    //     thread_info(nd);
+    // }
 }

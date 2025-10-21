@@ -506,7 +506,7 @@ export namespace std
 
             auto constexpr operator*(this auto&& self) -> decltype(auto)
             {
-                return *self.it;
+                return (*self.it);
             }
 
             auto constexpr operator++() -> forward&

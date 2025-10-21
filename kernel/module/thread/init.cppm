@@ -45,5 +45,6 @@ auto thread_init() -> void
 
     // 创建idle线程
     idle_thread = thread_start("idle",10,idle,nullptr);
+
     puts("thread_init done\n");
 }

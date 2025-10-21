@@ -12,11 +12,14 @@ import file.structure;
 
 namespace std
 {
+
+    char buf[1024]{};
+
     export template<typename... Args>
     auto print(char const* format,Args&&... args) -> u32
     {
-        char buf[1024]{};
-        format_to(buf,format,forward<Args>(args)...);
+        auto c = format_to(buf,format,forward<Args>(args)...);
+        buf[c] = '\0';
         return std::write(stdout,buf,strlen(buf));
     }
 

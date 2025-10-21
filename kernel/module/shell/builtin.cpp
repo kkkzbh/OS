@@ -94,7 +94,7 @@ export namespace builtin
             return nullptr;
         }
         if(argc == 1) {     // 只是键入cd，则实现是回到根目录
-            final_path[0,2] | std::copy["/"];
+            final_path[0,2] | std::copy["/"sv];
             return final_path.data();
         }
         make_clear_abs_path(argv[1],final_path.data());
