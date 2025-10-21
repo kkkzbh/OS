@@ -155,12 +155,11 @@ export namespace builtin
         if(file_stat.type == file_type::directory) {
             auto dir = std::opendir(pathname);
             auto subp = std::array<char,MAX_PATH_LEN>{};
-            auto path = std::string_view{ pathname };
-            auto lasti = path.size() - 1;
-            subp | std::copy[path];
-            auto sz = path.size();
+            auto sz = strlen(pathname);
+            auto lasti = sz - 1;
+            strcpy(subp.data(),pathname);
             if(subp[lasti] != '/') {
-                subp[lasti] = '/';
+                subp[sz] = '/';
                 ++sz;
             }
             std::rewinddir(dir);
