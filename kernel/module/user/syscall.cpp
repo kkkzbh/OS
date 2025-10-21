@@ -161,7 +161,7 @@ namespace std
         syscall(+sysid::ps);
     }
 
-    export auto exec(char const* path,char const* argv[]) -> i32
+    export auto exec(char const* path,char* argv[]) -> i32
     {
         return syscall(+sysid::exec);
     }
