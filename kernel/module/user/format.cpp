@@ -101,9 +101,9 @@ namespace std
     template<typename... Args>
     auto switch_table(char*& out,Args const&... args) -> auto
     {
-        return [&args...,&out](size_t idx,char c) {
+        return [&](size_t idx,char c) {
             using seq = std::index_sequence_for<Args...>;
-            return [=,&out]<size_t... Is>(std::index_sequence<Is...>) {
+            return [&]<size_t... Is>(std::index_sequence<Is...>) {
             ([&]{ if(Is == idx) format<Args>::parse(out,args...[Is],c); }(),...);
             }(seq{});
         };
