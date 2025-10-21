@@ -179,6 +179,7 @@ target_sources(user
         user/printf.cpp
         user/fork.cpp
         user/ps.cpp
+        user/exec.cpp
 )
 
 target_link_libraries(user

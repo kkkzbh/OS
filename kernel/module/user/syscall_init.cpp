@@ -12,6 +12,7 @@ import free;
 import filesystem.syscall;
 import fork;
 import ps;
+import exec;
 
 export auto syscall_init();
 
@@ -48,5 +49,6 @@ auto syscall_init()
     install(rewinddir);
     install(stat);
     install(ps);
+    install(exec);
     puts("syscall_init done\n");
 }
