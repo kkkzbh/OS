@@ -36,13 +36,8 @@ auto pad_print(char* buf,u32 size,void const* ptr,char format) -> void
             PANIC("The format is error!");
         }
     }
-    auto buffer = std::string_view{ buf,size };
-    // buffer[out_pad_0idx,size - 1] | std::fill[' '];   // NOLINT 会爆栈
-    // for(auto i : std::iota[out_pad_0idx,size - 1]) {  // NOLINT 接着爆
-    //     buffer[i] = ' ';
-    // }
     for(auto i = out_pad_0idx; i != size - 1; ++i) {
-        buffer[i] = ' ';
+        buf[i] = ' ';
     }
     write(stdout,buf,size - 1);
 }
