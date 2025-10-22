@@ -393,3 +393,5 @@ target_link_libraries(shell
         filesystem
         user
 )
+
+add_subdirectory(program)
