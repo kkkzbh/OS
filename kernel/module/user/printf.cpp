@@ -20,7 +20,16 @@ namespace std
     {
         auto c = format_to(buf,format,forward<Args>(args)...);
         buf[c] = '\0';
-        return std::write(stdout,buf,strlen(buf));
+        return std::write(stdout,buf,c);
+    }
+
+    export template<typename... Args>
+    auto pirntln(char const* format,Args&&... args) -> u32
+    {
+        auto c = format_to(buf,format,forward<Args>(args)...);
+        buf[c] = '\n';
+        buf[c + 1] = '\0';
+        return std::write(stdout,buf,c + 1);
     }
 
     export template<typename... Args>
