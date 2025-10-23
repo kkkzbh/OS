@@ -143,6 +143,7 @@ target_sources(os
         FILE_SET CXX_MODULES
         FILES
         main.cpp
+        wexe.cpp
 )
 
 target_link_libraries(os

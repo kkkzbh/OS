@@ -1,37 +1,55 @@
 
 
-add_library(libstdc++)
+add_library(u_print)
 
-target_sources(libstdc++
+target_sources(u_print
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
-        libstdcxx.cpp
+        lib/print.cpp
 )
 
-target_link_libraries(libstdc++ PRIVATE
-        std
-        std_algorithm
-        std_array
-        stdfmt
-        filesystem
+target_link_libraries(u_print PRIVATE
         user
+)
+
+add_library(stdc++)
+
+target_sources(stdc++
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        stdcxx.cpp
+)
+
+target_link_libraries(stdc++ PRIVATE
+        u_print
         INTERFACE
         new
 )
 
-add_library(program
+add_executable(program_no_arg
         program_no_arg.cpp
-        libstdcxx.cpp
 )
 
-target_sources(program
+target_sources(program_no_arg
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
 )
 
-target_link_libraries(shell
+target_link_options(program_no_arg PRIVATE
+        -e main
+)
+
+target_link_libraries(program_no_arg
         PRIVATE
-        libstdc++
+        stdc++
+)
+
+# 将 program_no_arg 写入磁盘镜像到扇区 1000，预留 100 个扇区 (50KB)
+add_disk_target(write_program_no_arg
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/program_no_arg
+    1000
+    100
 )

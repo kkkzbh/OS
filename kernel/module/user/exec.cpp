@@ -15,6 +15,7 @@ import scope;
 import schedule;
 import task;
 import thread;
+import console;
 
 namespace elf32
 {
@@ -112,6 +113,7 @@ auto load(char const* pathname) -> i32
     auto prog_header = elf32::phdr{};
     auto fd = open(pathname,+open_flags::read);
     if(fd == -1) {
+        console::println("can not open {}!",pathname);
         return 0;
     }
     auto constexpr active = true;
@@ -122,8 +124,22 @@ auto load(char const* pathname) -> i32
         active
     };
     if(read(fd,&elf_header,sizeof elf_header) != sizeof elf_header) {
+        console::println("read {} elf_header failed!",pathname);
         return 0;
     }
+
+    // // 调试信息：打印ELF头原始数据
+    // console::println("=== ELF Header Debug Info ===");
+    // console::println("ELF Magic: {:02x} {:02x} {:02x} {:02x}",
+    //     (u8)elf_header.ident[0], (u8)elf_header.ident[1], (u8)elf_header.ident[2], (u8)elf_header.ident[3]);
+    // console::println("Class: {}, Data: {}, Version: {}",
+    //     elf_header.ident[4], elf_header.ident[5], elf_header.ident[6]);
+    // console::println("Type: {}, Machine: {}, Version: {}",
+    //     elf_header.type, elf_header.machine, elf_header.version);
+    // console::println("Entry: {:#x}, Phoff: {}, Phentsize: {}, Phnum: {}",
+    //     elf_header.entry, elf_header.phoff, elf_header.phentsize, elf_header.phnum);
+    // console::println("==============================");
+
     // 检验elf头
     if (
         memcmp(elf_header.ident,"\177ELF\1\1\1",7)
@@ -133,6 +149,20 @@ auto load(char const* pathname) -> i32
         or elf_header.phnum > 1024
         or elf_header.phentsize != sizeof(elf32::phdr)
     ) {
+        console::println("{} elf_header is not correct!",pathname);
+        if(memcmp(elf_header.ident,"\177ELF\1\1\1",7)) {
+            console::println("elf_header ident not correct! Expected: \\177ELF\\1\\1\\1");
+        } else if(elf_header.type != 2) {
+            console::println("elf_header type not correct! Expected: 2 (ET_EXEC), Got: {}", elf_header.type);
+        } else if(elf_header.machine != 3) {
+            console::println("elf_header machine not correct! Expected: 3 (EM_386), Got: {}", elf_header.machine);
+        } else if(elf_header.version != 1) {
+            console::println("elf_header version not correct! Expected: 1, Got: {}", elf_header.version);
+        } else if(elf_header.phnum > 1024) {
+            console::println("elf_header phnum too large! Expected: <= 1024, Got: {}", elf_header.phnum);
+        } else if(elf_header.phentsize != sizeof(elf32::phdr)) {
+            console::println("elf_header phentsize not correct! Expected: {}, Got: {}", sizeof(elf32::phdr), elf_header.phentsize);
+        }
         return 0;
     }
     auto prog_header_offset = elf_header.phoff;
@@ -163,6 +193,7 @@ export auto exec(char const* path,char* argv[]) -> i32
     }
     auto entry_point = load(path);
     if(not entry_point) {   // 如果加载失败
+        console::println("load entry_point failed! cannot load {}",path);
         return false;
     }
     auto cur = running_thread();

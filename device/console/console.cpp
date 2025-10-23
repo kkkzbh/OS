@@ -24,11 +24,13 @@ export namespace console
 
     auto constexpr BUFSZ = 1024;
 
+    char buf[BUFSZ]{};
+
     template<typename... Args>
     auto print(char const* format,Args&&... args) -> u32
     {
-        char buf[BUFSZ]{};
         auto ret = std::format_to(buf,format,std::forward<Args>(args)...);
+        buf[ret] = '\0';
         write(buf);
         return ret;
     }
@@ -42,9 +44,9 @@ export namespace console
     template<typename... Args>
     auto println(char const* format,Args&&... args) -> u32
     {
-        char buf[BUFSZ]{};
         auto end = std::format_to(buf,format,std::forward<Args>(args)...);
         buf[end++] = '\n';
+        buf[end] = '\0';
         write(buf);
         return end;
     }

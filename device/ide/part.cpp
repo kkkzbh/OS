@@ -42,14 +42,13 @@ export auto partition_info(list::node& pelem) -> void;
 // 用于记录总扩展分区的起始lba，初始为0, partition_scan时以此为标记
 auto ext_lba_base = 0;
 
-auto p_no = 0,l_no = 0;     // 用来记录硬盘主分区和逻辑分区的下标
-
 export auto partition_list = list{};       // 用于分区的队列
 
 // 扫描hd中地址为 ext_lba 的扇区的所有分区
 auto scan_partition(disk* __hd,u32 __ext_lba) -> void
 {
-    [p_no = p_no,l_no = l_no](this auto&& self,disk* hd,u32 ext_lba) -> void {
+    auto p_no = 0,l_no = 0;     // 用来记录硬盘主分区和逻辑分区的下标
+    [&](this auto&& self,disk* hd,u32 ext_lba) -> void {
         auto bs = new boot_sector;
         ide_read(hd,ext_lba,bs,1);
         // 遍历分区表4个分区表项
