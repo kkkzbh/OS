@@ -158,7 +158,8 @@ export auto shell() -> void
                 if(not std::stat(argv[0],&file_stat)) { // 判断文件是否存在
                     std::print("shell: cannot access {}, No such file or directory!\n",argv[0]);
                 } else {
-                    std::exec(argv[0],argv.data());
+                    auto ret = std::exec(argv[0],argv.data());
+                    std::println("I am coming here! the ret value = {}",ret);
                 }
                 while(true) {
 

@@ -163,7 +163,7 @@ namespace std
 
     export auto exec(char const* path,char* argv[]) -> i32
     {
-        return syscall(+sysid::exec);
+        return syscall(+sysid::exec,path,argv);
     }
 
 }

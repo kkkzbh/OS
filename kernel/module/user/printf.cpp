@@ -24,7 +24,7 @@ namespace std
     }
 
     export template<typename... Args>
-    auto pirntln(char const* format,Args&&... args) -> u32
+    auto println(char const* format,Args&&... args) -> u32
     {
         auto c = format_to(buf,format,forward<Args>(args)...);
         buf[c] = '\n';

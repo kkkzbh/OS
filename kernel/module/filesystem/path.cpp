@@ -15,6 +15,7 @@ import buffer;
 import filesystem;
 import dir.structure;
 import optional;
+import console;
 
 namespace path
 {

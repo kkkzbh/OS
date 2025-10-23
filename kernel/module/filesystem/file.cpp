@@ -160,7 +160,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
 {
     // 文件目前最大只支持 512 * 140 = 71680字节
     if((file->node->size + count) > (BLOCK_SIZE * 140)) {
-        console::println("exceed max file_size 76180 bytes,write file failed");
+        console::println("exceed max file_size 71680 bytes,write file failed");
         return {};
     }
     auto iobuf = std::vector(512,char{});
@@ -296,7 +296,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
 
     // 用到的块地址已经收集到all_blocks中，下面开始写数据
     auto first_write_block = true;  // 含有剩余空间的块标识
-    file->pos = file->node->size - 1;   // 记录pos，写文件时实时更新
+    file->pos = file->node->size;   // 记录pos，写文件时实时更新
     auto src = (char const*)(buf);
     auto bytes_written = 0;
     for(auto size_left = count; bytes_written < count; ) {
@@ -313,7 +313,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
         }
         memcpy(iobuf.data() + sec_off_bytes,src,chunk_size);
         ide_write(cur_part->my_disk,sec_lba,iobuf.data(),1);
-        console::println("file write at lba {x}",sec_lba);  // 调试信息，可去
+        // console::println("file write at lba {x}",sec_lba);  // 调试信息，可去
         src += chunk_size;
         file->node->size += chunk_size;
         file->pos += chunk_size;
@@ -327,7 +327,6 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
 // 从文件file中读取count个字节写入buf，返回读取的字节数
 export auto file_read(file_manager* file,void* buf,u32 count) -> optional<i32>
 {
-    auto a = std::buffer{ (char*)(buf) };
     auto size_left = count;
     auto size = count;
     // 如果要读取的字节数超过了文件可读的剩余量，就用剩余量作为待读取的字节数
@@ -390,6 +389,7 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> optional<i32>
 
     // 用到的块地址已经收集到all_blocks中，下面开始读数据
     auto bytes_read = 0;
+    auto a = (char*)(buf);
     while(bytes_read < size) {  // 读完为止
         auto sec_idx = file->pos / BLOCK_SIZE;
         auto sec_lba = all_blocks[sec_idx];
@@ -398,7 +398,8 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> optional<i32>
         auto chunk_size = std::min(size_left,sec_left_bytes);
         iobuf | std::fill[char{}];
         ide_read(cur_part->my_disk,sec_lba,iobuf.data(),1);
-        a += std::string_view{ iobuf.data() + sec_off_bytes,chunk_size };
+        memcpy(a,iobuf.data() + sec_off_bytes,chunk_size);
+        a += chunk_size;
         file->pos += chunk_size;
         bytes_read += chunk_size;
         size_left -= chunk_size;

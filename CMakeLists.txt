@@ -51,6 +51,6 @@ add_subdirectory(device)
 
 # 创建完整构建目标
 add_custom_target(osbuild
-    DEPENDS write_mbr write_loader write_kernel
+    DEPENDS write_mbr write_loader write_kernel write_program_no_arg
     COMMENT "Building complete OS image"
 )
