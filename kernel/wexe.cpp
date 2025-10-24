@@ -79,7 +79,7 @@ auto std_print() -> void
 
     ide_read(sda,1000,program_buf.data(),sec_cnt);
 
-    auto constexpr target = "/bin/prog_no_arg";
+    auto constexpr target = "/bin/a";
     auto fd = open(target,+open_flags::create | +open_flags::rdwr);
     if(fd == -1) {
         console::println("can not open {}",target);
@@ -93,7 +93,6 @@ auto std_print() -> void
     }
     close(fd);
     console::println("write {}",target);
-
 }
 
 export auto write_execution() -> void

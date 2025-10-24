@@ -114,7 +114,7 @@ export auto write(i32 fd,void const* buf,u32 count) -> i32
     auto global_fd = fdi_local_to_global(fd);
     auto& [pos,flag,node] = file_table[global_fd];
     if(+flag & +open_flags::write or +flag & +open_flags::rdwr) {
-        return file_write(&file_table[global_fd],buf,count).value_or(-1);
+        return file_write(&file_table[global_fd],buf,count);
     }
     console::println("sys_write: not allowed to write file without flag rdwr or write");
     return -1;
@@ -136,7 +136,7 @@ export auto read(i32 fd,void* buf,u32 count) -> i32
         return count == 0 ? -1 : count;
     }
     auto global_fd = fdi_local_to_global(fd);
-    return file_read(&file_table[global_fd],buf,count).value_or(-1);
+    return file_read(&file_table[global_fd],buf,count);
 }
 
 // 重置用于文件读写操作的偏移指针，成功时返回新的偏移量，失败返回-1
