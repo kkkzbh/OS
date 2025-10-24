@@ -128,18 +128,6 @@ auto load(char const* pathname) -> i32
         return 0;
     }
 
-    // // 调试信息：打印ELF头原始数据
-    // console::println("=== ELF Header Debug Info ===");
-    // console::println("ELF Magic: {:02x} {:02x} {:02x} {:02x}",
-    //     (u8)elf_header.ident[0], (u8)elf_header.ident[1], (u8)elf_header.ident[2], (u8)elf_header.ident[3]);
-    // console::println("Class: {}, Data: {}, Version: {}",
-    //     elf_header.ident[4], elf_header.ident[5], elf_header.ident[6]);
-    // console::println("Type: {}, Machine: {}, Version: {}",
-    //     elf_header.type, elf_header.machine, elf_header.version);
-    // console::println("Entry: {:#x}, Phoff: {}, Phentsize: {}, Phnum: {}",
-    //     elf_header.entry, elf_header.phoff, elf_header.phentsize, elf_header.phnum);
-    // console::println("==============================");
-
     // 检验elf头
     if (
         memcmp(elf_header.ident,"\177ELF\1\1\1",7)

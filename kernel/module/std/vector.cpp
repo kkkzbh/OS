@@ -47,10 +47,10 @@ export namespace std
             *this | copy[forward<R>(r)];
         }
 
-        ~vector() noexcept
-        {
-            delete[] a;
-        }
+        // ~vector() noexcept
+        // {
+        //     delete[] a;
+        // }
 
         auto realloc(size_t n) -> void
         {

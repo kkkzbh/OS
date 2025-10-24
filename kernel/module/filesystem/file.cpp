@@ -156,23 +156,23 @@ export auto file_close(file_manager* file) -> bool
 }
 
 // 把buf中的count个字节写入file，成功返回写入的字节数
-export auto file_write(file_manager* file,void const* buf,u32 count) -> optional<i32>
+export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
 {
     // 文件目前最大只支持 512 * 140 = 71680字节
     if((file->node->size + count) > (BLOCK_SIZE * 140)) {
         console::println("exceed max file_size 71680 bytes,write file failed");
-        return {};
+        return -1;
     }
     auto iobuf = std::vector(512,char{});
     if(not iobuf) {
         console::println("file_write: sys_malloc for iobuf failed");
-        return {};
+        return -1;
     }
                                 // 间接 128块 直接12块
     auto all_blocks = std::vector((BLOCK_SIZE + 48) / sizeof(u32),u32{}); // 用来记录文件所有的块地址
     if(not all_blocks) {
         console::println("file_write: sys_malloc for all_blocks failed");
-        return {};
+        return -1;
     }
 
     // 判断文件是否是第一次写，如果是，先为其分配一个块
@@ -180,7 +180,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
         auto v1 = block_bitmap_alloc(cur_part);
         if(not v1) {
             console::println("file_write: block_bitmap_alloc failed");
-            return {};
+            return -1;
         }
         auto block_lba = *v1;
         file->node->sectors[0] = block_lba;
@@ -225,7 +225,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
                 auto block_lba = block_bitmap_alloc(cur_part);
                 if(not block_lba) {
                     console::println("file_write: block_bitmap_alloc for situation 1 failed");
-                    return {};
+                    return -1;
                 }
                 // 写文件时，不因该存在块未使用，但已分配扇区的情况，当文件删除，块地址就会清零
                 ASSERT(file->node->sectors[i] == 0);    // 确保尚未分配扇区地址
@@ -244,7 +244,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
             auto block_lba = block_bitmap_alloc(cur_part);
             if(not block_lba) {
                 console::println("file_write: block_bitmap_alloc for situation 2 failed");
-                return {};
+                return -1;
             }
             // 确保一级间接表尚未分配
             ASSERT(sectors.back() == 0);
@@ -254,7 +254,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
                 block_lba = block_bitmap_alloc(cur_part);
                 if(not block_lba) {
                     console::println("file_write: block_bitmap_alloc for situation 2 failed");
-                    return {};
+                    return -1;
                 }
                 if(i < 12) {
                     // 新创建的0 ~ 11块直接存入all_blocks数组
@@ -282,7 +282,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
                 auto block_lba = block_bitmap_alloc(cur_part);
                 if(not block_lba) {
                     console::println("file_write: block_bitmap_alloc for situation 3 failed");
-                    return {};
+                    return -1;
                 }
                 all_blocks[i] = *block_lba;
                 // 每分配一个块就将位图同步到硬盘
@@ -325,7 +325,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> optional
 }
 
 // 从文件file中读取count个字节写入buf，返回读取的字节数
-export auto file_read(file_manager* file,void* buf,u32 count) -> optional<i32>
+export auto file_read(file_manager* file,void* buf,u32 count) -> i32
 {
     auto size_left = count;
     auto size = count;
@@ -334,18 +334,18 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> optional<i32>
         size = file->node->size - file->pos;
         size_left = size;
         if(size == 0) {     // 如果没什么读的，到文件尾，直接返回
-            return {};
+            return -1;
         }
     }
     auto iobuf = std::vector(BLOCK_SIZE,char{});
     if(not iobuf) {
         console::println("file_read: sys_malloc for iobuf failed");
-        return {};
+        return -1;
     }
     auto all_blocks = std::vector((BLOCK_SIZE + 48) / sizeof(u32),u32{});
     if(not all_blocks) {
         console::println("file_read: sys_malloc for all_blocks failed");
-        return {};
+        return -1;
     }
     auto block_read_start_idx = file->pos / BLOCK_SIZE; // 数据所在块起始地址
     auto block_read_end_idx = (file->pos + size) / BLOCK_SIZE; // 数据所在块终止地址
@@ -396,7 +396,7 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> optional<i32>
         auto sec_off_bytes = file->pos % BLOCK_SIZE;
         auto sec_left_bytes = BLOCK_SIZE - sec_off_bytes;
         auto chunk_size = std::min(size_left,sec_left_bytes);
-        iobuf | std::fill[char{}];
+        memset(iobuf.data(),iobuf.size(),0);
         ide_read(cur_part->my_disk,sec_lba,iobuf.data(),1);
         memcpy(a,iobuf.data() + sec_off_bytes,chunk_size);
         a += chunk_size;
