@@ -30,7 +30,7 @@ auto operator delete[](void* ptr) noexcept -> void
     operator delete(ptr);
 }
 
-auto operator delete[](void* ptr,size_t) noexcept -> void
+auto operator delete[](void* ptr,size_t size) noexcept -> void
 {
-    operator delete(ptr);
+    operator delete(ptr,size);
 }

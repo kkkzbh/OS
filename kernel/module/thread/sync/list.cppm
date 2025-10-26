@@ -45,7 +45,7 @@ export struct list
         init();
     }
 
-    auto init() -> void
+    auto constexpr init() -> void
     {
         head = { nullptr,&tail };
         tail = { &head, nullptr };
