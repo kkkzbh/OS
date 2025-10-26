@@ -26,6 +26,10 @@ import string.format;
 import array.format;
 import ide;
 import buffer;
+import free;
+import malloc;
+import scope;
+import schedule;
 
 // 创建文件，成功则返回文件描述符
 export auto file_create(dir* parent_dir,std::string_view<char const> filename,u8 flag) -> optional<i32>
@@ -337,16 +341,29 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
             return -1;
         }
     }
-    auto iobuf = std::vector(BLOCK_SIZE,char{});
+    auto static iobuf = (char*)malloc(BLOCK_SIZE);
     if(not iobuf) {
         console::println("file_read: sys_malloc for iobuf failed");
         return -1;
     }
-    auto all_blocks = std::vector((BLOCK_SIZE + 48) / sizeof(u32),u32{});
+    auto constexpr activate = false;
+    auto free_iobuf = scope_exit {
+        [&] {
+            free(iobuf);
+        },
+        activate
+    };
+    auto static all_blocks = (u32*)malloc(BLOCK_SIZE * 48);
     if(not all_blocks) {
         console::println("file_read: sys_malloc for all_blocks failed");
         return -1;
     }
+    auto free_all_blocks = scope_exit {
+        [&] {
+            free(all_blocks);
+        },
+        activate
+    };
     auto block_read_start_idx = file->pos / BLOCK_SIZE; // 数据所在块起始地址
     auto block_read_end_idx = (file->pos + size) / BLOCK_SIZE; // 数据所在块终止地址
 
@@ -361,7 +378,7 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
             all_blocks[block_idx] = file->node->sectors[block_idx];
         } else {    // 用到了一级间接块表，需要将表中间接块读进来
             auto indirect_block_table = file->node->sectors.back();
-            ide_read(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+            ide_read(cur_part->my_disk,indirect_block_table,all_blocks + 12,1);
         }
     } else {    // 要读多个块
         if(block_read_end_idx < 12) {   // 数据结束所在的块属于直接块
@@ -378,12 +395,12 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
             ASSERT(file->node->sectors.back() != 0);
             // 再将间接块地址写入all_blocks
             auto indirect_block_table = file->node->sectors.back();
-            ide_read(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+            ide_read(cur_part->my_disk,indirect_block_table,all_blocks + 12,1);
         } else {    // 数据块在间接块中
             // 确保已经分配了一级间接块表
             ASSERT(file->node->sectors.back() != 0);
             auto indirect_block_table = file->node->sectors.back();
-            ide_read(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+            ide_read(cur_part->my_disk,indirect_block_table,all_blocks + 12,1);
         }
     }
 
@@ -392,13 +409,14 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
     auto a = (char*)(buf);
     while(bytes_read < size) {  // 读完为止
         auto sec_idx = file->pos / BLOCK_SIZE;
+        ASSERT(sec_idx < (BLOCK_SIZE * 48 / sizeof(u32)));
         auto sec_lba = all_blocks[sec_idx];
         auto sec_off_bytes = file->pos % BLOCK_SIZE;
         auto sec_left_bytes = BLOCK_SIZE - sec_off_bytes;
         auto chunk_size = std::min(size_left,sec_left_bytes);
-        memset(iobuf.data(),iobuf.size(),0);
-        ide_read(cur_part->my_disk,sec_lba,iobuf.data(),1);
-        memcpy(a,iobuf.data() + sec_off_bytes,chunk_size);
+        memset(iobuf,BLOCK_SIZE,0);
+        ide_read(cur_part->my_disk,sec_lba,iobuf,1);
+        memcpy(a,iobuf + sec_off_bytes,chunk_size);
         a += chunk_size;
         file->pos += chunk_size;
         bytes_read += chunk_size;

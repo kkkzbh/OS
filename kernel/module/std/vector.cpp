@@ -24,6 +24,20 @@ export namespace std
             *this | fill[value];
         }
 
+        auto operator=(vector const& other) -> vector&
+        {
+            resize(other.size());
+            return *this | copy[other];
+        }
+
+        auto operator=(vector&& other) noexcept -> vector&
+        {
+            std::swap(a,other.a);
+            std::swap(it,other.it);
+            std::swap(bound,other.bound);
+            return *this;
+        }
+
         vector(vector const& other) : vector(other.size())
         {
             *this | copy[other];
@@ -56,7 +70,7 @@ export namespace std
         {
             auto na = vector(n);
             na | copy[*this];
-            this->~vector();
+            delete[] a;
             *this = move(na);
         }
 

@@ -341,6 +341,7 @@ target_link_libraries(filesystem
         optional
         format
         keyboard
+        sysnew
 )
 
 
