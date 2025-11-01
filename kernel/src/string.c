@@ -80,6 +80,9 @@ char* strchr(char const* str,int ch)
             return (char*)str;
         }
     }
+    if(ch == '\0') {
+        return (char*)str;
+    }
     return nullptr;
 }
 
@@ -91,6 +94,9 @@ char* strrchr(char const* str,int ch)
         if(*str == ch) {
             ret = str;
         }
+    }
+    if(ch == '\0') {
+        return (char*)str;
     }
     return (char*)ret;
 }
