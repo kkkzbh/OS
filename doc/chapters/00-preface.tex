@@ -1,0 +1,13 @@
+\chapter*{前言}
+\addcontentsline{toc}{chapter}{前言}
+
+这是一套基于 \textbf{ctexbook} 与自定义样式的工程/教材级文档骨架，目标是：
+
+- 美观、易读，适合“书籍式”通读；
+- 代码高亮丰富（优先 \texttt{minted}，可自动降级到 \texttt{listings}）；
+- 结构清晰，便于长期维护与扩展；
+- 与仓库保持紧密联系，支持直接引用源码文件。
+
+\begin{qsbox}[title=快速开始]
+在 \texttt{doc/} 目录执行：\texttt{latexmk}；PDF 输出位于 \texttt{\_build/main.pdf}。若系统缺少 \texttt{minted}，将自动使用 \texttt{listings}。
+\end{qsbox}

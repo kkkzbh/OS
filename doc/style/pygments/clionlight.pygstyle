@@ -1,0 +1,121 @@
+% Pygments -> LaTeX style approximating JetBrains CLion Light
+% Loaded by minted as a .pygstyle (pre-generated) file
+\makeatletter
+\def\PYG@reset{\let\PYG@it=\relax \let\PYG@bf=\relax%
+    \let\PYG@ul=\relax \let\PYG@tc=\relax%
+    \let\PYG@bc=\relax \let\PYG@ff=\relax}
+\def\PYG@tok#1{\csname PYG@tok@#1\endcsname}
+\def\PYG@toks#1+{\ifx\relax#1\empty\else%
+    \PYG@tok{#1}\expandafter\PYG@toks\fi}
+\def\PYG@do#1{\PYG@bc{\PYG@tc{\PYG@ul{%
+    \PYG@it{\PYG@bf{\PYG@ff{#1}}}}}}}
+\def\PYG#1#2{\PYG@reset\PYG@toks#1+\relax+\PYG@do{#2}}
+
+% JetBrains-like palette
+% Keyword:    #0033B3  -> rgb(0.00,0.20,0.70)
+% Type:       #2675BF  -> rgb(0.15,0.46,0.75)
+% Number:     #1750EB  -> rgb(0.09,0.31,0.92)
+% String:     #067D17  -> rgb(0.02,0.49,0.09)
+% Char:       #008A00  -> rgb(0.00,0.54,0.00)
+% Comment:    #8C8C8C  -> rgb(0.55,0.55,0.55)
+% Macro/PP:   #9B2393  -> rgb(0.61,0.14,0.58)
+
+% Comments
+\@namedef{PYG@tok@c}{\def\PYG@tc##1{\textcolor[rgb]{0.55,0.55,0.55}{##1}}}
+\@namedef{PYG@tok@ch}{\def\PYG@tc##1{\textcolor[rgb]{0.55,0.55,0.55}{##1}}}
+\@namedef{PYG@tok@cm}{\def\PYG@tc##1{\textcolor[rgb]{0.55,0.55,0.55}{##1}}}
+\@namedef{PYG@tok@cpf}{\def\PYG@tc##1{\textcolor[rgb]{0.55,0.55,0.55}{##1}}}
+\@namedef{PYG@tok@c1}{\def\PYG@tc##1{\textcolor[rgb]{0.55,0.55,0.55}{##1}}}
+\@namedef{PYG@tok@cs}{\def\PYG@tc##1{\textcolor[rgb]{0.55,0.55,0.55}{##1}}}
+
+% Keywords
+\@namedef{PYG@tok@k}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.20,0.70}{##1}}}
+\@namedef{PYG@tok@kc}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.20,0.70}{##1}}}
+\@namedef{PYG@tok@kd}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.20,0.70}{##1}}}
+\@namedef{PYG@tok@kn}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.20,0.70}{##1}}}
+\@namedef{PYG@tok@kp}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.20,0.70}{##1}}}
+\@namedef{PYG@tok@kr}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.20,0.70}{##1}}}
+\@namedef{PYG@tok@kt}{\def\PYG@tc##1{\textcolor[rgb]{0.15,0.46,0.75}{##1}}}
+
+% Names (default black), highlight class/type names subtly
+\@namedef{PYG@tok@n}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@na}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@nc}{\def\PYG@tc##1{\textcolor[rgb]{0.15,0.46,0.75}{##1}}}
+\@namedef{PYG@tok@nf}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@nb}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.20,0.70}{##1}}}
+\@namedef{PYG@tok@bp}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.20,0.70}{##1}}}
+\@namedef{PYG@tok@nv}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@nt}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@nd}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@nl}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@no}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@ni}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@ne}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@fm}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@py}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@nn}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@nx}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@vc}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@vg}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@vi}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@vm}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+
+% Literals / Numbers
+\@namedef{PYG@tok@l}{\def\PYG@tc##1{\textcolor[rgb]{0.09,0.31,0.92}{##1}}}
+\@namedef{PYG@tok@m}{\def\PYG@tc##1{\textcolor[rgb]{0.09,0.31,0.92}{##1}}}
+\@namedef{PYG@tok@mb}{\def\PYG@tc##1{\textcolor[rgb]{0.09,0.31,0.92}{##1}}}
+\@namedef{PYG@tok@mf}{\def\PYG@tc##1{\textcolor[rgb]{0.09,0.31,0.92}{##1}}}
+\@namedef{PYG@tok@mh}{\def\PYG@tc##1{\textcolor[rgb]{0.09,0.31,0.92}{##1}}}
+\@namedef{PYG@tok@mi}{\def\PYG@tc##1{\textcolor[rgb]{0.09,0.31,0.92}{##1}}}
+\@namedef{PYG@tok@il}{\def\PYG@tc##1{\textcolor[rgb]{0.09,0.31,0.92}{##1}}}
+\@namedef{PYG@tok@mo}{\def\PYG@tc##1{\textcolor[rgb]{0.09,0.31,0.92}{##1}}}
+
+% Strings
+\@namedef{PYG@tok@s}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@sa}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@sb}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@dl}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@sd}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@s2}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@se}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@sh}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@si}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@sx}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@sr}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@s1}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+\@namedef{PYG@tok@ss}{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.49,0.09}{##1}}}
+
+% Character literals
+\@namedef{PYG@tok@sc}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.54,0.00}{##1}}}
+
+% Operators
+\@namedef{PYG@tok@o}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+\@namedef{PYG@tok@ow}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+
+% Preprocessor / Macros
+\@namedef{PYG@tok@cp}{\def\PYG@tc##1{\textcolor[rgb]{0.61,0.14,0.58}{##1}}}
+
+% Errors (keep readable)
+\@namedef{PYG@tok@err}{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.00}{##1}}}
+
+% Special characters
+\def\PYGZbs{\char`\\}
+\def\PYGZus{\char`\_}
+\def\PYGZob{\char`\{}
+\def\PYGZcb{\char`\}}
+\def\PYGZca{\char`\^}
+\def\PYGZam{\char`\&}
+\def\PYGZlt{\char`\<}
+\def\PYGZgt{\char`\>}
+\def\PYGZsh{\char`\#}
+\def\PYGZpc{\char`\%}
+\def\PYGZdl{\char`\$}
+\def\PYGZhy{\char`\-}
+\def\PYGZsq{\char`\'}
+\def\PYGZdq{\char`\"}
+\def\PYGZti{\char`\~}
+% for compatibility with earlier versions
+\def\PYGZat{@}
+\def\PYGZlb{[}
+\def\PYGZrb{]}
+\makeatother

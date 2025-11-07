@@ -1,0 +1,20 @@
+\chapter{内存管理}
+
+本章将逐步介绍内核内存布局、物理页分配器、分页结构与内核堆的设计权衡与实现要点。以下为一个 C++ 伪代码片段示例：
+
+\begin{codeblock}[示例：物理页分配接口]{c++}
+struct page {
+    unsigned long pfn; // page frame number
+    bool used;
+};
+
+auto alloc_page() -> page* {
+    // TODO: implement buddy or bitmap allocator
+    return nullptr;
+}
+
+auto free_page(page* p) -> void {
+    // TODO: recycle
+}
+\end{codeblock}
+

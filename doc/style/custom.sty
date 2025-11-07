@@ -1,0 +1,152 @@
+% Custom style for OS textbook-like docs (ctex + code highlighting)
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{custom}[2025/11/06 OS Docs custom style]
+
+% Core packages
+\RequirePackage{xcolor}
+\RequirePackage{fontspec}
+\RequirePackage{microtype}
+\RequirePackage{geometry}
+\RequirePackage{graphicx}
+\RequirePackage{fancyhdr}
+\RequirePackage{hyperref}
+\RequirePackage{cleveref}
+\RequirePackage{etoolbox}
+\RequirePackage{ifthen}
+\RequirePackage{longtable}
+\RequirePackage{booktabs}
+% Ensure minted sees outputdir before any dependent package may load it
+\PassOptionsToPackage{outputdir=_build}{minted}
+\RequirePackage{minted}
+% Load tcolorbox without auto-loading minted; enable minted library after
+\RequirePackage[skins,breakable,listings]{tcolorbox}
+\tcbuselibrary{minted}
+\RequirePackage{tikz}
+
+% Layout
+\geometry{margin=28mm}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{2em}
+\linespread{1.25}
+
+% Colors (low-saturation for textbook style)
+\definecolor{Gray}{HTML}{6B7280}
+\definecolor{CodeBg}{HTML}{FFFFFF}
+\definecolor{CodeFrame}{gray}{0.85}
+\definecolor{NoteBg}{HTML}{FFFFFF}
+\definecolor{WarnBg}{HTML}{FFFFFF}
+\definecolor{WarnFrame}{gray}{0.85}
+% Quick-start (purple) palette
+\definecolor{QSBack}{HTML}{F5F3FF}   % very light purple background
+\definecolor{QSFrame}{HTML}{DDD6FE}  % light purple frame
+\definecolor{QSAccent}{HTML}{7C3AED} % strong purple accent for left border/title
+% Code accents (light blue)
+\definecolor{CodeAccent}{HTML}{93C5FD} % blue-300
+% Code line number color
+\definecolor{CodeLineNumber}{HTML}{64748B} % slate-500
+% Thin separator line only (no filled gutter)
+\definecolor{GutterLine}{HTML}{93C5FD} % match CodeAccent
+
+% Fonts (no fallback: missing fonts will error)
+% Required fonts:
+%  - Latin serif: Libertinus Serif
+%  - Latin sans:  Inter
+%  - Monospace:   JetBrains Mono
+%  - CJK serif:   Source Han Serif SC (思源宋体)
+%  - CJK sans:    Source Han Sans SC  (思源黑体)
+\defaultfontfeatures{Ligatures=TeX}
+\makeatletter
+\@ifpackageloaded{ctexhook}{}{\RequirePackage{ctex}} % ensure ctex base loaded
+\makeatother
+\setmainfont{Libertinus Serif}
+\setsansfont{Inter}
+\setmonofont{JetBrains Mono}
+% Switch to Noto CJK (Plan B)
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+
+% Headings (compact, textbook-like)
+\ctexset{
+  chapter = {
+    format = \bfseries\zihao{3},
+    name = {第,章},
+    number = {\chinese{chapter}},
+    beforeskip = 12pt,
+    afterskip  = 6pt,
+  },
+  section = {
+    format = \bfseries\zihao{4},
+    beforeskip = 8pt,
+    afterskip  = 4pt,
+  },
+  subsection = {
+    format = \bfseries\zihao{5},
+    beforeskip = 6pt,
+    afterskip  = 3pt,
+  }
+}
+
+% Header & footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\nouppercase{\leftmark}}
+\fancyfoot[CE,CO]{\thepage}
+
+% Hyperlinks
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=black,citecolor=black}
+
+% Code highlighting: force minted (no fallback)
+% (Options already passed and package loaded above.)
+% JetBrains-like light theme via custom pygments style (minted)
+\setminted{breaklines,fontsize=\small,linenos,numbersep=9pt,autogobble,tabsize=4,style=clionlight}
+% Enrich syntax colors for specific languages while keeping light theme
+\setminted[c++]{style=clionlight}
+\setminted[c]{style=clionlight}
+\setminted[nasm]{style=clionlight}
+\setminted[cmake]{style=clionlight}
+
+% tcolorbox skins
+\tcbset{enhanced, boxrule=0.3pt, arc=2pt, colback=white, colframe=CodeAccent!20, left=6pt,right=6pt,top=4pt,bottom=4pt}
+
+% Admonitions
+% Unify all tip-like boxes to light purple theme
+\newtcolorbox{notebox}[1][]{colback=QSBack,colframe=QSFrame,coltitle=black,
+  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=2pt,breakable,
+  borderline west={2pt}{0pt}{QSAccent},title=\bfseries 注意,#1}
+\newtcolorbox{warnbox}[1][]{colback=QSBack,colframe=QSFrame,coltitle=black,
+  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=2pt,breakable,
+  borderline west={2pt}{0pt}{QSAccent},title=\bfseries 警告,#1}
+\newtcolorbox{tipbox}[1][]{colback=QSBack,colframe=QSFrame,coltitle=black,
+  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=2pt,breakable,
+  borderline west={2pt}{0pt}{QSAccent},title=\bfseries 提示,#1}
+% Quick-start box: alias to purple tipbox
+\newtcolorbox{qsbox}[1][]{colback=QSBack,colframe=QSFrame,coltitle=black,
+  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=2pt,breakable,
+  borderline west={2pt}{0pt}{QSAccent},title=\bfseries 提示,#1}
+
+% Code gutter layout
+\newlength{\CodeGutterWidth}
+\setlength{\CodeGutterWidth}{2.4em}
+
+% Unified code environment using tcolorbox + minted listing engine with gutter
+% Usage: \begin{codeblock}[Title]{c++} ... \end{codeblock}
+\newtcblisting{codeblock}[2][]{listing engine=minted,
+  minted language=#2,
+  minted options={linenos,breaklines,autogobble,tabsize=4,numbersep=9pt},
+  colback=CodeBg,colframe=CodeAccent!20,breakable,title=#1,coltitle=black,
+  left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt,listing only}
+
+% Inline/include code files
+% \codefile[options]{lang}{path}
+% Wrap \inputminted within a tcolorbox to apply the same gutter/frame
+\newcommand{\codefile}[3][]{%
+  \begin{tcolorbox}[colback=CodeBg,colframe=CodeAccent!20,breakable,title={},coltitle=black,
+    left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt]
+  \inputminted[linenos,breaklines,autogobble,tabsize=4,numbersep=9pt,#1]{#2}{#3}
+  \end{tcolorbox}%
+}
+% Improve line number readability for minted (FancyVerb)
+\makeatletter
+% Draw a thin vertical separator immediately after the line number
+\renewcommand{\theFancyVerbLine}{\textcolor{CodeLineNumber}{\footnotesize\arabic{FancyVerbLine}}\textcolor{GutterLine}{\hspace{0.5em}\vrule width 0.2pt}}
+\makeatother
