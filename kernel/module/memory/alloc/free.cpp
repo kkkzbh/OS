@@ -16,13 +16,13 @@ export auto free(void* ptr) -> void;
 
 auto free(void* ptr) -> void
 {
-    ASSERT(ptr != nullptr);
-    if(ptr == nullptr) {
+    ASSERT(ptr);
+    if(not ptr) {
         return;
     }
     auto pf = pool_flags{};
     auto& pool = [&] -> auto& { // 判断是内核线程还是用户进程(线程)
-        if(running_thread()->pgdir == nullptr) {
+        if(not running_thread()->pgdir) {
             ASSERT((u32)ptr >= K_HEAP_START);
             pf = pool_flags::KERNEL;
             return kernel_pool;
@@ -33,7 +33,7 @@ auto free(void* ptr) -> void
     auto lcg = lock_guard{ get_mutex(pf) };
     auto b = (mem_block*)ptr;
     auto a = ofarena(b);
-    if(a->desc == nullptr and a->large) { // 大内存 (> 1024字节)
+    if(not a->desc and a->large) { // 大内存 (> 1024字节)
         mfree_page(pf,a,a->cnt);
     } else { // 小内存块
         // 先把内存回收到 free_list

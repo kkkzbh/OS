@@ -28,6 +28,9 @@ export auto fork_pid() -> pid_t;
 export auto get_a_page_without_op_vaddr_bitmap(pool_flags pf,u32 vaddr) -> void*;
 
 auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
+auto vaddr_remove(pool_flags pf,void* _vaddr,size_t pg_cnt) -> void;
+auto page_table_pte_remove(u32 vaddr) -> void;
+auto pfree(u32 pg_phy_addr) -> void;
 
 auto kernel_alloc_mtx = mutex{};
 auto user_alloc_mtx = mutex{};
@@ -71,14 +74,19 @@ auto malloc_page(pool_flags pf,u32 pg_cnt) -> void*
         return nullptr;
     }
     auto vaddr = reinterpret_cast<u32>(vaddr_start);
-    auto cnt = pg_cnt;
     auto& pool = get_pool(pf);
     // 虚拟地址连续 物理内存可不连续 做逐个按页映射
-    while(cnt--) {
+    for(auto i = 0u; i != pg_cnt; ++i) {
         auto page_phyaddr = pool.palloc();
         if(not page_phyaddr) { // 内存已满
-            // 回滚全部物理页 (地址回收功能)
-            // !-----------------------!!将来实现!!------------------------------!
+            auto rollback_vaddr = reinterpret_cast<u32>(vaddr_start);
+            for(auto j = 0u; j < i; ++j) {
+                auto pg_phy_addr = pgtable::addr_v2p(rollback_vaddr);
+                pfree(pg_phy_addr);
+                page_table_pte_remove(rollback_vaddr);
+                rollback_vaddr += PG_SIZE;
+            }
+            vaddr_remove(pf,vaddr_start,pg_cnt);
             return nullptr;
         }
         page_table_add(reinterpret_cast<void*>(vaddr),page_phyaddr);
@@ -93,9 +101,10 @@ auto get_kernel_pages(u32 pg_cnt) -> void*
 {
     auto lcg = lock_guard{ kernel_alloc_mtx };
     auto vaddr = malloc_page(pool_flags::KERNEL, pg_cnt);
-    if (vaddr) {
-        memset(vaddr, 0, pg_cnt * PG_SIZE);
+    if(not vaddr) {
+        return nullptr;
     }
+    memset(vaddr, 0, pg_cnt * PG_SIZE);
     return vaddr;
 }
 
@@ -104,6 +113,9 @@ auto get_user_pages(u32 pg_cnt) -> void*
 {
     auto lcg = lock_guard{ user_alloc_mtx };
     auto vaddr = malloc_page(pool_flags::USER,pg_cnt);
+    if(not vaddr) {
+        return nullptr;
+    }
     memset(vaddr,0,pg_cnt * PG_SIZE);
     return vaddr;
 }
@@ -117,23 +129,33 @@ auto get_a_page(pool_flags pf,u32 vaddr) -> void*
     auto cur = running_thread();
     
     // 先将虚拟地址位图置 1
-    if(cur->pgdir != nullptr and pf == USER) {
+    if(cur->pgdir and pf == USER) {
         auto bi = cur->userprog_vaddr.trans(vaddr);
         cur->userprog_vaddr.set(bi,true);
-    } else if(cur->pgdir == nullptr and pf == KERNEL) {
+        auto page_phyaddr = pool.palloc();
+        if(not page_phyaddr) {
+            cur->userprog_vaddr.set(bi,false);
+            return nullptr;
+        }
+
+        page_table_add((void*)vaddr, page_phyaddr);
+        return (void*)vaddr;
+    }
+
+    if(not cur->pgdir and pf == KERNEL) {
         auto bi = kernel_vaddr.trans(vaddr);
         kernel_vaddr.set(bi,true);
-    } else {
-        PANIC("get_a_page: not allow kernel alloc userpace or user alloc kernelspace by get_a_page");
+        auto page_phyaddr = pool.palloc();
+        if(not page_phyaddr) {
+            kernel_vaddr.set(bi,false);
+            return nullptr;
+        }
+
+        page_table_add((void*)vaddr, page_phyaddr);
+        return (void*)vaddr;
     }
 
-    auto page_phyaddr = pool.palloc();
-    if(page_phyaddr == nullptr) {
-        return nullptr;
-    }
-
-    page_table_add((void*)vaddr, page_phyaddr);
-    return (void*)vaddr;
+    PANIC("get_a_page: not allow kernel alloc userpace or user alloc kernelspace by get_a_page");
 }
 
 // 创建页目录表，将当前页表的表示内核空间的pde复制
@@ -143,7 +165,7 @@ auto create_page_dir() -> u32*
 {
     // 用户进程的页表不能让用户直接访问到，故在内核空间中申请
     auto page_dir_vaddr = (u32*)get_kernel_pages(1);
-    if(page_dir_vaddr == nullptr) {
+    if(not page_dir_vaddr) {
         puts("create_page_dir: get_kernel_page failed!");
         return nullptr;
     }
@@ -280,7 +302,7 @@ auto get_a_page_without_op_vaddr_bitmap(pool_flags pf,u32 vaddr) -> void*
     auto lcg = lock_guard{ get_mutex(pf) };
 
     auto page_phyaddr = pool.palloc();
-    if(page_phyaddr == nullptr) {
+    if(not page_phyaddr) {
         return nullptr;
     }
 
