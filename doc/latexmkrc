@@ -1,0 +1,18 @@
+$pdflatex = 'xelatex -shell-escape -interaction=nonstopmode -halt-on-error %O %S';
+$out_dir  = '_build';
+$aux_dir  = '_build';
+$pdf_mode = 1;  # generate PDF
+
+# If you later add bibliography with biblatex+biber:
+# $bibtex = 'biber %O %B';
+
+# Ensure custom Pygments style for minted (JetBrains-like)
+do {
+  my $cachedir = '_build/_minted-main';
+  my $src = 'style/pygments/clionlight.pygstyle';
+  my $dst = $cachedir . '/clionlight.pygstyle';
+  if (-e $src) {
+    system('mkdir','-p',$cachedir);
+    system('cp',$src,$dst);
+  }
+};

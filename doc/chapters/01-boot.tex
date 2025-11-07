@@ -1,0 +1,25 @@
+\chapter{引导与磁盘布局}
+
+本章概览磁盘镜像、MBR 与 Loader 的位置，以及从实模式到保护模式的关键步骤。为示例起见，下面展示一个极简的 MBR 代码片段（仅示意）。
+
+\section{极简 MBR 片段}
+\begin{codeblock}{nasm}
+; demo only — not a real boot sector
+BITS 16
+org 0x7C00
+cli
+xor ax, ax
+mov ds, ax
+mov es, ax
+sti
+hlt
+times 510-($-$$) db 0
+dw 0xAA55
+\end{codeblock}
+
+\section{引用仓库源码}
+可以直接从仓库中引入源码并自动高亮，例如：
+
+\codefile[firstline=1,lastline=60]{c++}{../kernel/main.cpp}
+
+如需引用汇编：\verb|\codefile{nasm}{../boot/mbr.asm}|（路径请按你的仓库实际调整）。
