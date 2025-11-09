@@ -1,20 +1,75 @@
-\chapter{内存管理}
+\chapter{物理内存探测与分页}
 
-本章将逐步介绍内核内存布局、物理页分配器、分页结构与内核堆的设计权衡与实现要点。以下为一个 C++ 伪代码片段示例：
+本章聚焦引导阶段遗留的数据结构如何在内核内存子系统中继续发挥作用：先回顾 \mintinline{text}{boot/loader.asm} 如何记录可用物理内存并在 1MB 附近预留分页结构，再对照内核的 C++ 模块解析分页助手函数、物理/虚拟内存池与小块分配器的协作关系。
 
-\begin{codeblock}[示例：物理页分配接口]{c++}
-struct page {
-    unsigned long pfn; // page frame number
-    bool used;
-};
+\section{Loader 中的内存拓扑记录}
 
-auto alloc_page() -> page* {
-    // TODO: implement buddy or bitmap allocator
-    return nullptr;
-}
+在上一章中，Loader 借助 \mintinline{text}{int 0x15} 的 E820/E801/0x88 三重回退策略将最大可用物理内存写入 \mintinline{text}{total_mem_bytes}。该变量位于 0xB00，并在分页开启前即被填入：
 
-auto free_page(page* p) -> void {
-    // TODO: recycle
-}
-\end{codeblock}
+\codefile[firstline=29,lastline=93]{nasm}{../boot/loader.asm}
 
+通过循环遍历 BIOS 返回的 \mintinline{text}{Address Range Descriptor}，Loader 选出最高的可用内存上界；若新 BIOS 接口失效，则退化至 E801 或 0x88。完成后，内存容量被保存在 32 位寄存器 \mintinline{text}{edx} 中并写入 0xB00。
+
+分页开启后，Loader 会把自身的 GDT、栈与页目录整体搬移到 0x0010\,0000 一带，同时把虚拟地址空间映射到高半区。上述布局对内核阶段的意义主要体现在两个方面：
+
+\begin{itemize}
+    \item 内核初始化时可以直接从 0xB00 读取物理内存总量，无需再次调用 BIOS 中断。\footnote{保护模式下已经无法再执行 BIOS 例程。}
+    \item 页目录第 0 项（低端 4MB）与第 768 项（0xC0000000 起始）指向同一张页表，确保内核在虚拟地址 0xC000\,0000--0xC03F\,FFFF 与物理地址 0x0000\,0000--0x003F\,FFFF 间一一映射。
+\end{itemize}
+
+\section{页目录与递归映射技巧}
+
+Loader 使用 \mintinline{text}{setup_page} 构造页目录，关键片段如下：
+
+\codefile[firstline=244,lastline=322]{nasm}{../boot/loader.asm}
+
+这里的核心做法有三点：
+
+\begin{enumerate}
+    \item 预留 1MB 的低端内存（0x0000\,0000--0x000F\,FFFF）以及 256 个页表页框，共耗费 1MB + 256\,KB。\mintinline{text}{PAGE_DIR_TABLE_POS} 常量指向 0x0010\,0000，既作为页目录也作为页表存储区域。
+    \item PDE[0] 与 PDE[768] 指向同一张页表，后者负责内核高半区的恒等映射，因此开启分页前后地址转换保持一致。内核的 C/C++ 代码可以直接使用高地址访问同一片物理内存。
+    \item PDE[1023] 指向页目录自身，从而在虚拟地址 0xFFFF\,F000 映射页目录，在 0xFFC0\,0000 起映射整张页表。这一“递归映射”方便通过虚拟地址计算页目录/页表项指针。
+\end{enumerate}
+
+内核的 \mintinline{text}{memory:pgtable} 模块即依赖这块布局实现下列辅助函数：
+
+\codefile[firstline=1,lastline=60]{c++}{../kernel/module/memory/pgtable.cppm}
+
+\begin{itemize}
+    \item \mintinline{text}{pde_idx}/\mintinline{text}{pte_idx} 通过位掩码提取虚拟地址的高 10 位与中间 10 位索引。
+    \item \mintinline{text}{pde_ptr} 假设 PDE[1023] 指向自身，于是 0xFFFF\,F000 起的一页可直接视作“页目录虚拟数组”；返回的指针始终落在该页。
+    \item \mintinline{text}{pte_ptr} 则基于 0xFFC0\,0000 起的 4MB 递归窗口，定位当前虚拟地址所在的页表项。
+    \item \mintinline{text}{addr_v2p} 结合页表项的高 20 位与虚拟地址的页内偏移，给出线性地址对应的物理地址，常用于调试或 DMA 访问。
+\end{itemize}
+
+这些助手函数直接映射了 Loader 构造页表时的假设，内核可以据此以恒定方式定位页目录与页表项。
+
+\section{物理内存池划分}
+
+在内核入口 \mintinline{text}{start()} 调用 \mintinline{text}{init_all} 期间，\mintinline{text}{alloc:init::mem_init} 会读取 Loader 留下的内存容量并划分内核/用户物理内存池：
+
+\codefile[firstline=11,lastline=88]{c++}{../kernel/module/memory/alloc/init.cppm}
+
+函数中的关键步骤如下。
+
+\begin{enumerate}
+    \item 计算页表结构的开销：页目录 1 页 + 256 页页表 = 1MB + 256KB，从总内存减去后得到可分配的空闲内存。\footnote{此处以 4KB 页大小为基本单位，并假设 Loader 仅建立 256 张页表。}
+    \item 将剩余页框数量折半分别分配给内核与用户，以减少后续碎片管理复杂度。\mintinline{text}{kernel_pool} 和 \mintinline{text}{user_pool} 位于 \mintinline{text}{pool.cppm} 中，分别维护一个互斥保护的位图。
+    \item 位图物理地址统一放在 \mintinline{text}{MEM_BITMAP_BASE}（0xC009\,A000）附近。由于开启分页后栈、内核映像均映射到高半区，这些地址在 C++ 侧可以直接访问。
+    \item 同时初始化 \mintinline{text}{kernel_vaddr}，用与内核物理池等长的位图跟踪内核堆的虚拟页分配情况，起始虚拟地址为 \mintinline{text}{K_HEAP_START}（0xC010\,0000）。
+\end{enumerate}
+
+内核池、用户池和内核虚拟地址池的封装见 \mintinline{text}{pool.cppm}：
+
+\codefile[firstline=1,lastline=88]{c++}{../kernel/module/memory/alloc/pool.cppm}
+
+\section{小块分配器与 Arena}
+
+为了避免大量小对象直接占用整页物理内存，内核提供了基于 arena 的小块分配器。初始化函数 \mintinline{text}{kernel_block_desc_init} 在 \mintinline{text}{arena.cpp} 中定义，负责构建 16--1024 字节的七档内存块描述符：
+
+\codefile[firstline=1,lastline=88]{c++}{../kernel/module/memory/alloc/arena.cpp}
+
+每个 \mintinline{text}{arena} 占用一页物理内存，头部保存所属描述符指针与剩余块数量，其余空间按照 \mintinline{text}{block_size} 等分。配合位图分配的页框，这一层次化的内存管理器使内核既能按页分配给线程栈、页表，也能按块提供给互斥锁、PCB 等小对象，避免碎片浪费。
+
+
+本章所述的分页结构、内存池与小块分配器共同构成内核初始化的内存基础，后续章节在此之上构建中断处理、线程调度等模块。
