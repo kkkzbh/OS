@@ -23,7 +23,7 @@ auto malloc(size_t size) -> void*
     auto pf = pool_flags{};
     auto desc = (mem_block_desc*){};
     auto& pool = [&] -> auto& {
-        if(cur_thread->pgdir == nullptr) { // 内核线程
+        if(not cur_thread->pgdir) { // 内核线程
             pf = pool_flags::KERNEL;
             desc = k_block_descs;
             return kernel_pool;
@@ -42,7 +42,7 @@ auto malloc(size_t size) -> void*
     if(size > 1024) { // 属于大块内存 分配页框
         auto page_cnt = std::div_ceil(size + sizeof(arena),PG_SIZE);
         auto a = (arena*)malloc_page(pf,page_cnt);
-        if(a == nullptr) {
+        if(not a) {
             return nullptr;
         }
         memset(a,0,page_cnt * PG_SIZE);
@@ -65,7 +65,7 @@ auto malloc(size_t size) -> void*
     auto& list = desc[i].free_list;
     if(list.empty()) {
         auto a = (arena*)malloc_page(pf,1);
-        if(a == nullptr) {
+        if(not a) {
             return nullptr;
         }
         memset(a,0,PG_SIZE);

@@ -25,10 +25,9 @@ export struct bitmap
     {
         size_t i = 0;
         // 跳过满 1 的byte 等于一个小小的剪枝
-        while(0xff == bits[i] and i != sz) {
+        while(i != sz and bits[i] == 0xff) {
             ++i;
         }
-        ASSERT(i != sz);
         if(i == sz) {
             return nullopt;
         }
@@ -41,7 +40,7 @@ export struct bitmap
         if(cnt == 1) {
             return start;
         }
-        auto left = sz * 8 - start;
+        auto left = sz * 8 - start - 1;
         auto it = start + 1;
         auto count = size_t{ 1 };
         while(left--) { // 遍历剩余所有位
