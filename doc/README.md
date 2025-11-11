@@ -70,3 +70,30 @@ fc-list | rg 'Noto (Sans|Serif) CJK SC'
 ```
 
 Note: `minted` fallback is disabled. If `minted`/Pygments is missing, compilation fails by design.
+
+## Documentation Roadmap
+
+The book follows the implementation order of this repository: each chapter documents the code paths that are already present in the boot sector, loader, kernel core, and modules. Keep this roadmap in sync whenever the codebase evolves or the documentation plan changes.
+
+| Chapter | Focus | Key Source Files/Modules | Status |
+| --- | --- | --- | --- |
+| 前言 | 项目背景、构建方式与阅读指引 | `doc/chapters/00-preface.tex` | ✅ 已完成 |
+| 01 引导程序 | 磁盘布局、MBR、自制 Loader、进入保护模式 | `boot/mbr.asm`, `boot/loader.asm`, `boot/include/boot.inc` | ✅ 草稿完成 |
+| 02 物理内存探测与分页 | BIOS 内存检测、页目录/页表构建、内核高半区映射 | `boot/loader.asm` (`setup_page`), `kernel/module/memory/pgtable.cppm`, `kernel/module/memory/alloc` | ✅ 草稿完成 |
+| 03 内核启动流程 | `start()` 入口、全局构造函数、`init_all` 初始化序列 | `kernel/start.cpp`, `kernel/init.cpp` | ⏳ 计划中 |
+| 04 中断与异常子系统 | IDT 构建、可编程中断控制器、键盘与定时器中断 | `kernel/interrupt.asm`, `kernel/interrupt.c`, `device/keyboard`, `device/time` | ⏳ 计划中 |
+| 05 线程与调度 | 线程控制块、上下文切换、定时器驱动调度 | `kernel/module/thread`, `kernel/module/tss.cppm` | ⏳ 计划中 |
+| 06 内存分配器 | 物理页分配、内核堆、bitmap 工具 | `kernel/module/memory/alloc`, `kernel/module/bitmap.cppm` | ⏳ 计划中 |
+| 07 同步与系统调用 | 自旋锁/信号量、系统调用入口与分发 | `kernel/module/thread`, `kernel/module/syscall`, `kernel/include/interrupt.h` | ⏳ 计划中 |
+| 08 文件系统与磁盘驱动 | IDE 驱动、ioqueue、文件系统初始化及 API | `device/ide`, `device/ioqueue`, `kernel/module/filesystem` | ⏳ 计划中 |
+| 09 用户态与 Shell | 用户态加载器、简单 Shell、示例程序 | `kernel/module/user`, `kernel/module/shell` | ⏳ 计划中 |
+| 附录 | 工具链、调试脚本、Bochs/QEMU 配置 | `bochsrc*.disk`, `device/` & `doc/figures/` (待补充) | ⏳ 计划中 |
+
+### 使用说明
+
+- 在修改 `doc/` 目录下的任何文件前，请重新阅读本 README，确认路线图与维护规则仍然适用。
+- 若对章节结构、撰写顺序或规划有调整，务必同步更新本文件与对应的章节源文件，使路线图与正文保持一致。
+- 撰写或修改章节时，请记录涉及的源代码文件，必要时扩充上表的 “Key Source Files/Modules” 以便交叉引用。
+- 完成某章节后，将状态列改为 ✅ 并注明完成阶段（草稿/审阅/定稿）。
+- 若章节需要跨越多个模块，请在“Key Source Files/Modules”列中列出关键入口，帮助读者快速定位实现。
+- 保持叙述性与客观性：章节应直接描述已实现的功能、实现方法与相关源码位置，避免“读者应该……”此类引导语或假定读者水平的措辞。
