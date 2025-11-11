@@ -1,0 +1,48 @@
+*.bin
+
+*.out
+
+cmake-build-debug/
+
+os/.idea/
+
+build/
+
+/src/
+
+bochs*.out
+
+hd*.img
+
+kernel/pom
+
+.idea/
+
+# Documentation: ignore LaTeX intermediates; keep only build PDFs
+
+# latexmk/minted outputs (root of doc/)
+doc/*.aux
+doc/*.log
+doc/*.out
+doc/*.toc
+doc/*.fls
+doc/*.fdb_latexmk
+doc/*.synctex.gz
+doc/*.listing
+doc/*.nav
+doc/*.snm
+doc/*.lof
+doc/*.lot
+doc/*.pdf
+
+# chapter aux files
+doc/chapters/*.aux
+
+# latexmk build directory; re-include PDFs inside it
+doc/_build/**
+!doc/_build/
+!doc/_build/*.pdf
+!doc/_build/**/*.pdf
+
+# Stray minted cache at root (if any)
+doc/_minted-*/
