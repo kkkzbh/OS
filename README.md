@@ -46,13 +46,13 @@
    - 开启分页（`CR0.PG=1`），修正 GDT 基址至高半地址，跳入内核入口
 3) 内核 `start()`（`kernel/start.cpp`）:
    - `init_all()` 初始化：中断/内存/线程/PIT/键盘/TSS/系统调用/IDE/文件系统
-   - 调用 C++ `main()`（`kernel/main.cpp`），当前默认运行文件系统测试 `test::t7()`
+   - 调用 C++ `main()`（`kernel/main.cpp`），当前默认运行文件读写测试（写入 50,000 个整数到文件 `/test_f` 并读取校验）
 
 磁盘布局（以 CMake 的写入规则为准）：
 
 - MBR：LBA 0，大小 1 扇区
 - Loader：从 LBA 2 开始，大小 4 扇区（可在 `boot/CMakeLists.txt` 中看到 `add_disk_target(write_loader ..., 2, 4)`）
-- 内核：从 LBA 9 开始，默认预留 300 扇区（见 `kernel/CMakeLists.txt` 中 `add_disk_target(write_kernel ..., 9, 300)`）
+- 内核：从 LBA 9 开始，默认预留 380 扇区（见 `kernel/CMakeLists.txt` 中 `add_disk_target(write_kernel ..., 9, 380)`）
 
 ---
 
@@ -241,8 +241,8 @@ gdb cmake-build-debug/bin/kernel \
 
 ## 开发与测试
 
-- 运行内置测试：当前 `kernel/main.cpp` 默认调用 `test::t7()`（查看根与 `/kkkzbh` 目录的 `stat/ls` 输出）
-- 你可以在 `kernel/test/filesystem.cpp` 中切换至 `t1`~`t6` 等其他测试项，重新构建并运行观察行为
+- 运行内置测试：当前 `kernel/main.cpp` 默认调用 `func()`，进行大文件读写测试。
+- 你可以在 `kernel/test/filesystem.cpp` 中查看 `t1`~`t7` 等其他测试项，并在 `kernel/main.cpp` 中调用它们，重新构建并运行观察行为。
 
 ---
 
