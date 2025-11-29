@@ -58,7 +58,7 @@ namespace console
 
     auto write(char const* str) -> void
     {
-        // auto lcg = lock_guard{ mtx };
+        auto lcg = lock_guard{ mtx };
         puts(str);
     }
 

@@ -78,10 +78,11 @@ The book follows the implementation order of this repository: each chapter docum
 | Chapter | Focus | Key Source Files/Modules | Status |
 | --- | --- | --- | --- |
 | 前言 | 项目背景、构建方式与阅读指引 | `doc/chapters/00-preface.tex` | ✅ 已完成 |
-| 01 引导程序 | 磁盘布局、MBR、自制 Loader、进入保护模式 | `boot/mbr.asm`, `boot/loader.asm`, `boot/include/boot.inc` | ✅ 草稿完成 |
-| 02 物理内存探测与分页 | BIOS 内存检测、页目录/页表构建、内核高半区映射 | `boot/loader.asm` (`setup_page`), `kernel/module/memory/pgtable.cppm`, `kernel/module/memory/alloc` | ✅ 草稿完成 |
-| 03 内核启动流程 | `start()` 入口、全局构造函数、`init_all` 初始化序列 | `kernel/start.cpp`, `kernel/init.cpp` | ⏳ 计划中 |
-| 04 中断与异常子系统 | IDT 构建、可编程中断控制器、键盘与定时器中断 | `kernel/interrupt.asm`, `kernel/interrupt.c`, `device/keyboard`, `device/time` | ⏳ 计划中 |
+| 01 引导程序 | 磁盘布局、MBR、Loader、进入保护模式 | `boot/mbr.asm`, `boot/loader.asm`, `boot/include/boot.inc` | ✅ 草稿完成 |
+| 02 基础输出（stdio） | `putchar`/`puthex`/`puts`、VGA 文本模式、光标 | `kernel/src/stdio.asm` | ✅ 新增 |
+| 03 中断与异常 | IDT 构建、8259A、异常处理与装载 | `kernel/interrupt.c`, `kernel/interrupt.asm` | ✅ 新增 |
+| 04 物理内存探测与分页 | BIOS 内存检测、页目录/页表构建、内核高半区映射 | `boot/loader.asm` (`setup_page`), `kernel/module/memory/pgtable.cppm`, `kernel/module/memory/alloc` | ✅ 已迁移 |
+| 05 中断与异常子系统 | IDT 构建、可编程中断控制器、键盘与定时器中断 | `kernel/interrupt.asm`, `kernel/interrupt.c`, `device/keyboard`, `device/time` | ⏳ 计划中 |
 | 05 线程与调度 | 线程控制块、上下文切换、定时器驱动调度 | `kernel/module/thread`, `kernel/module/tss.cppm` | ⏳ 计划中 |
 | 06 内存分配器 | 物理页分配、内核堆、bitmap 工具 | `kernel/module/memory/alloc`, `kernel/module/bitmap.cppm` | ⏳ 计划中 |
 | 07 同步与系统调用 | 自旋锁/信号量、系统调用入口与分发 | `kernel/module/thread`, `kernel/module/syscall`, `kernel/include/interrupt.h` | ⏳ 计划中 |
