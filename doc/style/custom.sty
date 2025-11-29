@@ -8,13 +8,19 @@
 \RequirePackage{microtype}
 \RequirePackage{geometry}
 \RequirePackage{graphicx}
+\RequirePackage{xstring}
 \RequirePackage{fancyhdr}
 \RequirePackage{hyperref}
+\RequirePackage{bookmark}
+\RequirePackage{caption} % for \captionof to make non-floating tables
 \RequirePackage{cleveref}
 \RequirePackage{etoolbox}
 \RequirePackage{ifthen}
 \RequirePackage{longtable}
 \RequirePackage{booktabs}
+\RequirePackage{tabularx}
+% Precise float placement (e.g., tables with [H])
+\RequirePackage{float}
 % Ensure minted sees outputdir before any dependent package may load it
 \PassOptionsToPackage{outputdir=_build}{minted}
 \RequirePackage{minted}
@@ -28,6 +34,9 @@
 \setlength{\parskip}{0pt}
 \setlength{\parindent}{2em}
 \linespread{1.25}
+% Be more forgiving to avoid overfull boxes in mixed CJK+code text
+\emergencystretch=2em
+\tolerance=1600
 
 % Colors (low-saturation for textbook style)
 \definecolor{Gray}{HTML}{6B7280}
@@ -42,6 +51,7 @@
 \definecolor{QSAccent}{HTML}{7C3AED} % strong purple accent for left border/title
 % Code accents (light blue)
 \definecolor{CodeAccent}{HTML}{93C5FD} % blue-300
+\definecolor{CodeTitleBack}{HTML}{DBEAFE} % blue-200 for title bar
 % Code line number color
 \definecolor{CodeLineNumber}{HTML}{64748B} % slate-500
 % Thin separator line only (no filled gutter)
@@ -98,7 +108,8 @@
 % Code highlighting: force minted (no fallback)
 % (Options already passed and package loaded above.)
 % JetBrains-like light theme via custom pygments style (minted)
-\setminted{breaklines,fontsize=\small,linenos,numbersep=9pt,autogobble,tabsize=4,style=clionlight}
+% Allow breaking long tokens if needed to avoid overflow
+\setminted{breaklines,breakanywhere,fontsize=\small,linenos,numbersep=9pt,autogobble,tabsize=4,style=clionlight}
 % Enrich syntax colors for specific languages while keeping light theme
 \setminted[c++]{style=clionlight}
 \setminted[c]{style=clionlight}
@@ -134,17 +145,122 @@
   minted language=#2,
   minted options={linenos,breaklines,autogobble,tabsize=4,numbersep=9pt},
   colback=CodeBg,colframe=CodeAccent!20,breakable,title=#1,coltitle=black,
+  colbacktitle=CodeTitleBack,fonttitle=\bfseries,enhanced,
   left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt,listing only}
 
 % Inline/include code files
 % \codefile[options]{lang}{path}
-% Wrap \inputminted within a tcolorbox to apply the same gutter/frame
+% Safer implementation: avoid macro expansion inside tcolorbox keyvals.
+% Render the blue header line inside the box content instead of title.
+% Header format: "filename(first--last) — relative/path/to/file"
 \newcommand{\codefile}[3][]{%
-  \begin{tcolorbox}[colback=CodeBg,colframe=CodeAccent!20,breakable,title={},coltitle=black,
+  \begingroup
+  % Capture inputs
+  \def\cfopts{#1}% minted options input (we parse first/last; don't rely on passing macro as-is)
+  \def\cflang{#2}% language
+  \def\cfpath{#3}% relative path shown in header
+
+  % Extract (first--last) range from options, if provided
+  \def\cfrange{}\def\cftmp{}\def\cffirst{}\def\cflast{}%
+  % Extract firstline
+  \IfSubStr{\cfopts}{firstline=}{%
+    \StrBehind{\cfopts}{firstline=}[\cftmp]% get tail after key
+    \IfSubStr{\cftmp}{,}{\StrBefore{\cftmp}{,}[\cffirst]}{\edef\cffirst{\cftmp}}%
+  }{}%
+  % Extract lastline (robust even if it's the final key without trailing comma)
+  \IfSubStr{\cfopts}{lastline=}{%
+    \StrBehind{\cfopts}{lastline=}[\cftmp]%
+    \IfSubStr{\cftmp}{,}{\StrBefore{\cftmp}{,}[\cflast]}{\edef\cflast{\cftmp}}%
+  }{}%
+  \ifx\cffirst\empty\else
+    \ifx\cflast\empty \edef\cfrange{(\cffirst)}\else \edef\cfrange{(\cffirst--\cflast)}\fi
+  \fi
+
+  % Build a safe title string for tcolorbox (monospace via fonttitle)
+  \def\cfrangesfx{}%
+  \ifx\cffirst\empty\else
+    \ifx\cflast\empty \edef\cfrangesfx{ (\cffirst)}\else \edef\cfrangesfx{ (\cffirst--\cflast)}\fi
+  \fi
+  % Sanitize path for display: strip leading ../ or ./ segments
+  \def\cfdisplaypath{#3}% raw path
+  \IfBeginWith{\cfdisplaypath}{../}{\StrBehind{\cfdisplaypath}{../}[\cfdisplaypath]}{}%
+  \IfBeginWith{\cfdisplaypath}{../}{\StrBehind{\cfdisplaypath}{../}[\cfdisplaypath]}{}%
+  \IfBeginWith{\cfdisplaypath}{./}{\StrBehind{\cfdisplaypath}{./}[\cfdisplaypath]}{}%
+  % Final title text: detokenized for safety
+  \edef\cftitle{\expandafter\detokenize\expandafter{\cfdisplaypath}\cfrangesfx}%
+
+  % The visual container; render a wrapping header inside to avoid overflow
+  \begin{tcolorbox}[colback=CodeBg,colframe=CodeAccent!20,breakable,enhanced,
     left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt]
-  \inputminted[linenos,breaklines,autogobble,tabsize=4,numbersep=9pt,#1]{#2}{#3}
+    {\ttfamily\bfseries\colorbox{CodeTitleBack}{\parbox[t]{\dimexpr\linewidth-2pt\relax}{\strut\cftitle}}}\par\smallskip
+    \ifx\cffirst\empty
+      \inputminted[linenos,breaklines,autogobble,tabsize=4,numbersep=9pt]{#2}{#3}%
+    \else
+      \ifx\cflast\empty
+        \inputminted[firstline=\cffirst,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt]{#2}{#3}%
+      \else
+        \inputminted[firstline=\cffirst,lastline=\cflast,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt]{#2}{#3}%
+      \fi
+    \fi
   \end{tcolorbox}%
+  \endgroup
 }
+
+% Deterministic range variant to avoid option parsing issues
+% Usage: \codefilerange{lang}{path}{first}{last}
+\newcommand{\codefilerange}[4]{%
+  \begingroup
+  \def\cflang{#1}%
+  \def\cfpath{#2}%
+  \def\cffirst{#3}%
+  \def\cflast{#4}%
+  % Sanitize path for display
+  \def\cfdisplaypath{#2}%
+  \IfBeginWith{\cfdisplaypath}{../}{\StrBehind{\cfdisplaypath}{../}[\cfdisplaypath]}{}%
+  \IfBeginWith{\cfdisplaypath}{../}{\StrBehind{\cfdisplaypath}{../}[\cfdisplaypath]}{}%
+  \IfBeginWith{\cfdisplaypath}{./}{\StrBehind{\cfdisplaypath}{./}[\cfdisplaypath]}{}%
+  \edef\cftitle{\expandafter\detokenize\expandafter{\cfdisplaypath} (\cffirst--\cflast)}%
+  \begin{tcolorbox}[colback=CodeBg,colframe=CodeAccent!20,breakable,enhanced,
+    left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt]
+    {\ttfamily\bfseries\colorbox{CodeTitleBack}{\parbox[t]{\dimexpr\linewidth-2pt\relax}{\strut\cftitle}}}\par\smallskip
+    \inputminted[firstline=\cffirst,lastline=\cflast,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt]{#1}{#2}%
+  \end{tcolorbox}%
+  \endgroup
+}
+
+% Concatenate two non-contiguous ranges under a single header, without line numbers
+% Usage: \codefilerangetwo{lang}{path}{firstA}{lastA}{firstB}{lastB}
+\newcommand{\codefilerangetwo}[6]{%
+  \begingroup
+  \def\cflang{#1}%
+  \def\cfpath{#2}%
+  \def\cfAfirst{#3}%
+  \def\cfAlast{#4}%
+  \def\cfBfirst{#5}%
+  \def\cfBlast{#6}%
+  % Sanitize path for display
+  \def\cfdisplaypath{#2}%
+  \IfBeginWith{\cfdisplaypath}{../}{\StrBehind{\cfdisplaypath}{../}[\cfdisplaypath]}{}%
+  \IfBeginWith{\cfdisplaypath}{../}{\StrBehind{\cfdisplaypath}{../}[\cfdisplaypath]}{}%
+  \IfBeginWith{\cfdisplaypath}{./}{\StrBehind{\cfdisplaypath}{./}[\cfdisplaypath]}{}%
+  \edef\cftitle{\expandafter\detokenize\expandafter{\cfdisplaypath} (\cfAfirst--\cfAlast, \cfBfirst--\cfBlast)}%
+  % Container with a single blue header
+  \begin{tcolorbox}[colback=CodeBg,colframe=CodeAccent!20,breakable,enhanced,
+    left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt]
+    {\ttfamily\bfseries\colorbox{CodeTitleBack}{\parbox[t]{\dimexpr\linewidth-2pt\relax}{\strut\cftitle}}}\par\smallskip
+    % First slice with line numbers starting at actual file line
+    \inputminted[firstline=\cfAfirst,lastline=\cfAlast,breaklines,tabsize=4,numbersep=9pt,linenos,firstnumber=\cfAfirst,autogobble=false,gobble=0]{#1}{#2}%
+    \vspace{2pt}\noindent{\ttfamily ...}\vspace{2pt}\\
+    % Second slice with line numbers starting at actual file line
+    \inputminted[firstline=\cfBfirst,lastline=\cfBlast,breaklines,tabsize=4,numbersep=9pt,linenos,firstnumber=\cfBfirst,autogobble=false,gobble=0]{#1}{#2}%
+  \end{tcolorbox}%
+  \endgroup
+}
+
+% Inline code (safe underscores, etc.) used in tables and text
+% Usage: \codeinline{thread_start(name, prio, func, arg)}
+% Inline code: robust in moving args (titles/bookmarks); underscores render as '_'
+\DeclareRobustCommand{\codeinline}[1]{\texorpdfstring{\texttt{\detokenize{#1}}}{#1}}
 % Improve line number readability for minted (FancyVerb)
 \makeatletter
 % Draw a thin vertical separator immediately after the line number

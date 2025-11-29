@@ -20,6 +20,8 @@ kernel/pom
 
 # Documentation: ignore LaTeX intermediates; keep only build PDFs
 
+doc/
+
 # latexmk/minted outputs (root of doc/)
 doc/*.aux
 doc/*.log
