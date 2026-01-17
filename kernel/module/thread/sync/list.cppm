@@ -5,15 +5,13 @@ module;
 
 export module list;
 
+export import list.node;
+
 import utility;
 
 export struct list
 {
-    struct node
-    {
-        node* prev;
-        node* next;
-    };
+    using node = ::list_node;
 
     struct iter : std::iter::forward<node>
     {
