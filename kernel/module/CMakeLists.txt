@@ -64,6 +64,32 @@ target_link_libraries(memory
         assert
 )
 
+add_library(list_node)
+
+target_sources(list_node
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        thread/sync/list_node.cppm
+)
+
+add_library(list)
+
+target_sources(list
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        thread/sync/list.cppm
+)
+
+target_link_libraries(list
+        PUBLIC
+        list_node
+        PRIVATE
+        utility
+        kernel_utility
+)
+
 add_library(sync_alloc
         thread/sync/switch.asm
 )
@@ -73,7 +99,6 @@ target_sources(sync_alloc
         FILE_SET CXX_MODULES
         FILES
         thread/sync/task.cpp
-        thread/sync/list.cppm
         thread/sync/semaphore.cppm
         thread/sync/mutex.cppm
         thread/sync/lock_guard.cpp
@@ -94,6 +119,7 @@ target_include_directories(sync_alloc
 
 target_link_libraries(sync_alloc
         PRIVATE
+        list
         utility
         stdio
         interrupt
@@ -111,7 +137,7 @@ add_library(new
 
 target_link_libraries(new
         PRIVATE
-        user
+        syscall
         utility
 )
 
@@ -166,17 +192,34 @@ target_link_libraries(thread_init PRIVATE
         shell
 )
 
+add_library(syscall)
+
+target_sources(syscall
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        user/syscall.cpp
+        user/utility.cpp
+        user/printf.cpp
+)
+
+target_link_libraries(syscall
+        PRIVATE
+        utility
+        std_string
+        filesystem_types
+        kernel_utility
+        format
+)
+
 add_library(user)
 
 target_sources(user
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
-        user/syscall.cpp
         user/syscall_init.cpp
-        user/utility.cpp
         user/getpid.cpp
-        user/printf.cpp
         user/fork.cpp
         user/ps.cpp
         user/exec.cpp
@@ -184,6 +227,7 @@ target_sources(user
 
 target_link_libraries(user
         PRIVATE
+        syscall
         utility
         sync_alloc
         stdio
@@ -207,33 +251,87 @@ target_sources(format
 target_link_libraries(format
         PRIVATE
         utility
-        assert
-        string
+        std_string
 )
 
-add_library(std)
+# std_core: 无分配，最轻量
+add_library(std_core)
 
-target_sources(std
+target_sources(std_core
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
         std/bit.cpp
-        std/string.cpp
-        std/vector.cpp
-        std/bufer.cpp
         std/scope.cpp
 )
 
-target_link_libraries(std
+target_link_libraries(std_core
         PRIVATE
         utility
-        string
-        optional
-        sysnew
+)
+
+# std_string: 无分配，string_view 和 buffer
+add_library(std_string)
+
+target_sources(std_string
         PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        std/string.cpp
+        std/buffer.cpp
+)
+
+target_link_libraries(std_string
+        PRIVATE
+        std_core
+        std_algorithm
+        optional
+        kernel_utility
+)
+
+# std_vector: 需要分配
+add_library(std_vector)
+
+target_sources(std_vector
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        std/vector.cpp
+)
+
+target_link_libraries(std_vector
+        PRIVATE
+        utility
         std_algorithm
         INTERFACE
+        sysnew
+)
+
+# user_std_vector: 用户态 vector（使用 new 库的 syscall 分配）
+add_library(user_std_vector)
+
+target_sources(user_std_vector
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        std/vector.cpp
+)
+
+target_link_libraries(user_std_vector
+        PRIVATE
+        utility
+        std_algorithm
+)
+
+# std: 聚合库（内核态用）
+add_library(std INTERFACE)
+
+target_link_libraries(std
+        INTERFACE
+        std_core
+        std_string
         std_array
+        std_vector
         stdfmt
 )
 
@@ -268,22 +366,76 @@ target_link_libraries(std_array
         std_algorithm
 )
 
-add_library(stdfmt)
+# 格式化库 - 对应容器层
+add_library(std_array_format)
 
-target_sources(stdfmt
+target_sources(std_array_format
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
         std/format/array.cpp
+)
+
+target_link_libraries(std_array_format
+        PRIVATE
+        std_array
+        format
+)
+
+add_library(std_string_format)
+
+target_sources(std_string_format
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
         std/format/string.cpp
+)
+
+target_link_libraries(std_string_format
+        PRIVATE
+        std_string
+        format
+)
+
+add_library(std_vector_format)
+
+target_sources(std_vector_format
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
         std/format/vector.cpp
 )
 
-target_link_libraries(stdfmt
+target_link_libraries(std_vector_format
         PRIVATE
-        std
+        std_vector
         format
-        utility
+)
+
+# user_std_vector_format: 用户态 vector 格式化
+add_library(user_std_vector_format)
+
+target_sources(user_std_vector_format
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        std/format/vector.cpp
+)
+
+target_link_libraries(user_std_vector_format
+        PRIVATE
+        user_std_vector
+        format
+)
+
+# stdfmt: 聚合库（内核态用）
+add_library(stdfmt INTERFACE)
+
+target_link_libraries(stdfmt
+        INTERFACE
+        std_array_format
+        std_string_format
+        std_vector_format
 )
 
 add_library(sleep)
@@ -303,6 +455,27 @@ target_link_libraries(sleep
         time
 )
 
+add_library(filesystem_types)
+
+target_sources(filesystem_types
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        filesystem/utility.cpp
+        filesystem/stat_struct.cpp
+        filesystem/dir_struct.cpp
+        filesystem/inode_structure.cpp
+        filesystem/file_struct.cpp
+        filesystem/path_struct.cpp
+)
+
+target_link_libraries(filesystem_types
+        PRIVATE
+        utility
+        list_node
+        std_array
+)
+
 add_library(filesystem)
 
 target_sources(filesystem
@@ -313,21 +486,16 @@ target_sources(filesystem
         filesystem/inode.cpp
         filesystem/fs.cpp
         filesystem/init.cpp
-        filesystem/utility.cpp
         filesystem/file_manager.cpp
-        filesystem/file_struct.cpp
         filesystem/file.cpp
-        filesystem/dir_struct.cpp
         filesystem/path.cpp
-        filesystem/path_struct.cpp
         filesystem/sysfunc.cpp
         filesystem/inode_free.cpp
-        filesystem/inode_structure.cpp
-        filesystem/stat_struct.cpp
 )
 
 target_link_libraries(filesystem
         PRIVATE
+        filesystem_types
         utility
         std
         sync_alloc

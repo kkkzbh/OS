@@ -1,7 +1,9 @@
+# 显示库设置 (使用默认 X11)
+
 # Bochs使用的内存 单位MB
 megs: 32
 
-# BIOS和VGA BIOS
+# BIOS和VGA BIOS (使用 Bochs 2.6.2 路径)
 romimage: file=/usr/local/bochs/share/bochs/BIOS-bochs-latest
 vgaromimage: file=/usr/local/bochs/share/bochs/VGABIOS-lgpl-latest
 

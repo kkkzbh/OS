@@ -28,6 +28,9 @@ import ide;
 import buffer;
 import free;
 import malloc;
+import alloc;
+import pool;
+import memory;
 import scope;
 import schedule;
 
@@ -167,7 +170,8 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
         console::println("exceed max file_size 71680 bytes,write file failed");
         return -1;
     }
-    auto iobuf = std::vector(512,char{});
+    // NOTE: inode_sync 可能需要读写 2 个扇区 (inode跨扇区时), 所以缓冲区需要 1024 字节
+    auto iobuf = std::vector(1024,char{});
     if(not iobuf) {
         console::println("file_write: sys_malloc for iobuf failed");
         return -1;
@@ -254,6 +258,9 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
             ASSERT(sectors.back() == 0);
             // 分配一级间接块索引表
             auto indirect_block_table = sectors.back() = *block_lba;
+            // 验证刚分配的间接块表地址有效
+            ASSERT(sectors.back() != 0 and sectors.back() < 0x30000);
+
             for(auto i : std::iota[file_has_used_blocks,file_will_use_blocks]) {
                 block_lba = block_bitmap_alloc(cur_part);
                 if(not block_lba) {
@@ -324,6 +331,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
         bytes_written += chunk_size;
         size_left -= chunk_size;
     }
+
     inode_sync(cur_part,file->node,iobuf.data());
     return bytes_written;
 }
@@ -341,31 +349,24 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
             return -1;
         }
     }
-    auto static iobuf = (char*)malloc(BLOCK_SIZE);
+    // 使用内核内存池分配缓冲区（避免用户内存池导致的页表问题）
+    auto iobuf = (char*)get_kernel_pages(1);
     if(not iobuf) {
-        console::println("file_read: sys_malloc for iobuf failed");
+        console::println("file_read: get_kernel_pages for iobuf failed");
         return -1;
     }
-    auto constexpr activate = false;
-    auto free_iobuf = scope_exit {
-        [&] {
-            free(iobuf);
-        },
-        activate
-    };
-    auto static all_blocks = (u32*)malloc(BLOCK_SIZE * 48);
+    auto all_blocks = (u32*)get_kernel_pages(1);
     if(not all_blocks) {
-        console::println("file_read: sys_malloc for all_blocks failed");
+        console::println("file_read: get_kernel_pages for all_blocks failed");
+        mfree_page(pool_flags::KERNEL, iobuf, 1);
         return -1;
     }
-    auto free_all_blocks = scope_exit {
-        [&] {
-            free(all_blocks);
-        },
-        activate
-    };
+    
     auto block_read_start_idx = file->pos / BLOCK_SIZE; // 数据所在块起始地址
     auto block_read_end_idx = (file->pos + size) / BLOCK_SIZE; // 数据所在块终止地址
+
+    // 清零 all_blocks，防止残留的垃圾数据
+    memset(all_blocks, 0, (BLOCK_SIZE + 48));
 
     // 如果增量为0
     auto read_blocks = block_read_end_idx - block_read_start_idx;
@@ -382,7 +383,7 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
         }
     } else {    // 要读多个块
         if(block_read_end_idx < 12) {   // 数据结束所在的块属于直接块
-            for(auto block_idx : std::iota[block_read_start_idx,block_read_end_idx]) {
+            for(auto block_idx : std::iota[block_read_start_idx,block_read_end_idx + 1]) {
                 all_blocks[block_idx] = file->node->sectors[block_idx];
             }
         } else if(block_read_start_idx < 12 and block_read_end_idx >= 12) {
@@ -409,12 +410,12 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
     auto a = (char*)(buf);
     while(bytes_read < size) {  // 读完为止
         auto sec_idx = file->pos / BLOCK_SIZE;
-        ASSERT(sec_idx < (BLOCK_SIZE * 48 / sizeof(u32)));
+        ASSERT(sec_idx < (BLOCK_SIZE + 48) / sizeof(u32));  // sec_idx < 140
         auto sec_lba = all_blocks[sec_idx];
         auto sec_off_bytes = file->pos % BLOCK_SIZE;
         auto sec_left_bytes = BLOCK_SIZE - sec_off_bytes;
         auto chunk_size = std::min(size_left,sec_left_bytes);
-        memset(iobuf,BLOCK_SIZE,0);
+        memset(iobuf, 0, BLOCK_SIZE);
         ide_read(cur_part->my_disk,sec_lba,iobuf,1);
         memcpy(a,iobuf + sec_off_bytes,chunk_size);
         a += chunk_size;
@@ -422,5 +423,7 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
         bytes_read += chunk_size;
         size_left -= chunk_size;
     }
+    mfree_page(pool_flags::KERNEL, all_blocks, 1);
+    mfree_page(pool_flags::KERNEL, iobuf, 1);
     return bytes_read;
 }

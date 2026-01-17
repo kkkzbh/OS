@@ -54,3 +54,25 @@ add_custom_target(osbuild
     DEPENDS write_mbr write_loader write_kernel write_program_no_arg
     COMMENT "Building complete OS image"
 )
+
+# ============== Bochs 配置 ==============
+set(BOCHS_NODEBUG "/usr/local/bochs-nodebug/bin/bochs")
+set(BOCHS_GDB "/usr/local/bochs3.0-gdb/bin/bochs")
+
+# Bochs 普通运行
+add_custom_target(bochs
+    COMMAND ${BOCHS_NODEBUG} -qf bochsrc.disk
+    DEPENDS osbuild
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Starting Bochs..."
+    USES_TERMINAL
+)
+
+# Bochs GDB 调试
+add_custom_target(bochs-gdb
+    COMMAND ${BOCHS_GDB} -qf bochsrc-gdb.disk
+    DEPENDS osbuild
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Starting Bochs with GDB support..."
+    USES_TERMINAL
+)
