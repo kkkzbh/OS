@@ -5,7 +5,6 @@ module;
 export module sys;
 
 import syscall.utility;
-import optional;
 import string;
 import filesystem.utility;
 import dir.structure;

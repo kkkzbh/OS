@@ -33,6 +33,12 @@ namespace std
     }
 
     export template<typename... Args>
+    auto println() -> u32
+    {
+        return println("");
+    }
+
+    export template<typename... Args>
     auto sprintf(char* buf,char const* format,Args&&... args) -> u32
     {
         return format_to(buf,format,forward<Args>(args)...);

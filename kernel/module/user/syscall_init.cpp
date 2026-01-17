@@ -22,7 +22,6 @@ using sysfunc = void*;
 
 extern "C" sysfunc syscall_table[syscall_nr]{};
 
-
 auto syscall_init()
 {
     puts("syscall_init start\n");
