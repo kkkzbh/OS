@@ -116,10 +116,9 @@ export auto write(i32 fd,void const* buf,u32 count) -> i32
             console::println("sys_write: get_kernel_pages for stdout buffer failed!");
             return -1;
         }
-        ASSERT(count <= 1024);
         memset(a, 0, 1024);
         memcpy(a, buf, count);
-        console::print("{}", std::string_view{ a, count });
+        console::write(a);
         mfree_page(pool_flags::KERNEL, a, 1);
         return count;
     }
