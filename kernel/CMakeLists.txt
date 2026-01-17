@@ -48,6 +48,17 @@ target_link_libraries(interrupt
         system
 )
 
+add_library(string_impl STATIC
+        src/string_impl.c
+)
+
+target_include_directories(string_impl
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/
+)
+
 add_library(string STATIC
         src/string.c
 )
@@ -61,6 +72,7 @@ target_include_directories(string
 
 target_link_libraries(string
         PRIVATE
+        string_impl
         assert
 )
 

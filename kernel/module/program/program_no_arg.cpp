@@ -4,9 +4,12 @@ import std;
 
 auto main() -> int
 {
+    std::println("Hello World from user program!");
+    
+    std::putchar('O');
+    std::putchar('K');
+    std::putchar('\n');
 
-    std::println("Hello wasdasd\n");
-    // std::putchar('c');
     while(true) {
 
     }

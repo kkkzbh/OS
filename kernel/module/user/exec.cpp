@@ -2,6 +2,7 @@ module;
 
 #include <interrupt.h>
 #include <string.h>
+#include <stdio.h>
 
 export module exec;
 
@@ -76,13 +77,15 @@ namespace elf32
 }
 
 // 将文件描述符fd指向的文件中，偏移为offset，大小为filesz的段加载到虚拟地址vaddr的内存
-auto segment_load(i32 fd,u32 offset,u32 filesz,u32 vaddr) -> bool
+// memsz 是段在内存中占用的总大小（包括需要清零的 .bss 部分）
+auto segment_load(i32 fd,u32 offset,u32 filesz,u32 memsz,u32 vaddr) -> bool
 {
     auto vaddr_first_page = vaddr & 0xfffff000;  // 虚拟地址所在的页框
     auto size_in_first_page = PG_SIZE - (vaddr & 0x00000fff);   // 加载到内存后，文件在第一个页框中可以占用的字节大小
     auto occupy_pages = 0u;
-    if(filesz > size_in_first_page) {   // 如果第一个页框容不下该段
-        auto left_size = filesz - size_in_first_page;
+    // 根据 memsz（而非 filesz）计算需要的页面数
+    if(memsz > size_in_first_page) {   // 如果第一个页框容不下该段
+        auto left_size = memsz - size_in_first_page;
         occupy_pages = std::div_ceil(left_size,PG_SIZE) + 1;    // +1 是指第一张页
     } else {
         occupy_pages = 1;
@@ -93,7 +96,7 @@ auto segment_load(i32 fd,u32 offset,u32 filesz,u32 vaddr) -> bool
         auto pde = pgtable::pde_ptr(vaddr_page);
         auto pte = pgtable::pte_ptr(vaddr_page);
         // 如果pde或者pte不在，需要分配内存，pde的判断要在pte之前，否则pde不存在会导致判断pte时缺页异常
-        if(not (*pde & 0x00000001) or not(*pte & 0x00000001)) {
+        if(not (*pde & 0x00000001) or not (*pte & 0x00000001)) {
             if(not get_a_page(pool_flags::USER,vaddr_page)) {
                 return false;
             }
@@ -101,8 +104,18 @@ auto segment_load(i32 fd,u32 offset,u32 filesz,u32 vaddr) -> bool
         // 如果原进程的页表已经分配了，直接利用现有的物理页，直接覆盖进程体
         vaddr_page += PG_SIZE;
     }
-    lseek(fd,offset,whence::set);
-    read(fd,(void*)vaddr,filesz);
+    // 读取文件内容（如果 filesz > 0）
+    if(filesz > 0) {
+        lseek(fd,offset,whence::set);
+        auto const r = read(fd,(void*)vaddr,filesz);
+        if(r != (i32)filesz) {
+            return false;
+        }
+    }
+    // 将 .bss 部分（memsz - filesz）清零
+    if(memsz > filesz) {
+        memset((void*)(vaddr + filesz), 0, memsz - filesz);
+    }
     return true;
 }
 
@@ -112,7 +125,7 @@ auto load(char const* pathname) -> i32
     auto elf_header = elf32::ehdr{};
     auto prog_header = elf32::phdr{};
     auto fd = open(pathname,+open_flags::read);
-    if(fd == -1) {
+    if(fd == -1) {    
         console::println("can not open {}!",pathname);
         return 0;
     }
@@ -127,6 +140,7 @@ auto load(char const* pathname) -> i32
         console::println("read {} elf_header failed!",pathname);
         return 0;
     }
+
 
     // 检验elf头
     if (
@@ -163,7 +177,7 @@ auto load(char const* pathname) -> i32
             return 0;
         }
         if(prog_header.type == +elf32::segment::load) { // 如果是可加载段就调用segment_load加载到内存
-            if(not segment_load(fd,prog_header.offset,prog_header.filesz,prog_header.vaddr)) {
+            if(not segment_load(fd,prog_header.offset,prog_header.filesz,prog_header.memsz,prog_header.vaddr)) {
                 return 0;
             }
         }

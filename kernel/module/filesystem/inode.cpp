@@ -55,6 +55,9 @@ auto inode_sync(partition* part,inode* node,void* buf) -> void
     pure_inode.open_cnts = 0;
     pure_inode.wdeny = false;
     pure_inode.tag = {};
+    
+    // 验证 sectors[12] 必须是有效值 (0 或 < 0x30000)
+    ASSERT(pure_inode.sectors.back() == 0 or pure_inode.sectors.back() < 0x30000);
 
     auto ibuf = (char*)buf;
     auto cnt = 1 + inode_pos.two_sec; // 1 or 2
@@ -88,14 +91,17 @@ auto inode_open(partition* part,u32 inode_no) -> inode*
     // 需要让新inode被所有任务共享，让inode置于内核空间，于是需要临时将cur_pbc->pgdir置为nullptr
     auto cur = running_thread();
     auto cur_pagedir_bak = std::exchange(cur->pgdir,nullptr);
-    // 这样分配的nd将源自内核空间
-    auto nd = new inode;
+    // 这样分配的nd将源自内核空间 (使用{}确保零初始化)
+    auto nd = new inode{};
     // 恢复pgdir
     cur->pgdir = cur_pagedir_bak;
     auto seccnt = 1 + inode_pos.two_sec;
     auto buf = std::vector(seccnt * BLOCK_SIZE,'\0');
     ide_read(part->my_disk,inode_pos.sec_lba,buf.data(),seccnt);
     memcpy(nd,buf.data() + inode_pos.off_size,sizeof(inode));
+    
+    // 验证从磁盘读取的 sectors[12] 必须有效 (0 或 < 0x30000)
+    ASSERT(nd->sectors.back() == 0 or nd->sectors.back() < 0x30000);
 
     // 在缓存缺失的状态下,从硬盘载入inode,这说明马上要用到inode,插入到队首
     il.push_front(&nd->tag);

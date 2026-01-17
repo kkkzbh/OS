@@ -13,11 +13,12 @@ import file.structure;
 namespace std
 {
 
-    char buf[1024]{};
+    auto constexpr BUF_SZ = 128;
 
     export template<typename... Args>
     auto print(char const* format,Args&&... args) -> u32
     {
+        char buf[BUF_SZ]{};
         auto c = format_to(buf,format,forward<Args>(args)...);
         buf[c] = '\0';
         return std::write(stdout,buf,c);
@@ -26,6 +27,7 @@ namespace std
     export template<typename... Args>
     auto println(char const* format,Args&&... args) -> u32
     {
+        char buf[BUF_SZ]{};
         auto c = format_to(buf,format,forward<Args>(args)...);
         buf[c] = '\n';
         buf[c + 1] = '\0';

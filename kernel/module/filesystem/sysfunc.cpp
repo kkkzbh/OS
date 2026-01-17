@@ -30,6 +30,11 @@ import ide;
 import buffer;
 import stat.structure;
 import iobuf;
+import malloc;
+import free;
+import alloc;
+import pool;
+import memory;
 
 // 打开或创建文件成功后，返回文件描述符
 export auto open(char const* ptr_pathname,u8 flags) -> i32
@@ -105,10 +110,17 @@ export auto write(i32 fd,void const* buf,u32 count) -> i32
     }
     auto buffer = std::subrange{ (char const*)(buf),(char const*)(buf) + count };
     if(fd == stdout) {
-        auto a = std::array<char,1024>{};
+        // 使用内核内存池，避免用户进程上下文中 malloc 使用 USER 池导致页表问题
+        auto a = (char*)get_kernel_pages(1);
+        if(not a) {
+            console::println("sys_write: get_kernel_pages for stdout buffer failed!");
+            return -1;
+        }
         ASSERT(count <= 1024);
-        a | std::copy[buffer];
-        console::print("{}",a);
+        memset(a, 0, 1024);
+        memcpy(a, buf, count);
+        console::print("{}", std::string_view{ a, count });
+        mfree_page(pool_flags::KERNEL, a, 1);
         return count;
     }
     auto global_fd = fdi_local_to_global(fd);
