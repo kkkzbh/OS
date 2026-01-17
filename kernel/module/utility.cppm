@@ -419,20 +419,30 @@ export namespace std
     template<typename T>
     using decay = __decay(T);
 
+    // normalize: 先 decay 去掉引用和顶层 const，再处理指针/数组
     template<typename T>
     struct normalize_s
     {
         using type = decay<T>;
     };
 
+    // 指针特化：去掉指向类型的 const
     template<typename T>
     struct normalize_s<T*>
     {
-        using type = decay<T>*;
+        using type = remove_const<decay<T>>*;
     };
 
+    // 数组特化
+    template<typename T, size_t N>
+    struct normalize_s<T[N]>
+    {
+        using type = remove_const<T>[N];
+    };
+
+    // 先 decay 再递归
     template<typename T>
-    using normalize = typename normalize_s<T>::type;
+    using normalize = typename normalize_s<decay<T>>::type;
 
     using nullptr_t = decltype(nullptr);
 

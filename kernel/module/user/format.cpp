@@ -1,11 +1,7 @@
-module;
-
-#include <assert.h>
-#include <string.h>
-
 export module format;
 
 import utility;
+import string;
 
 namespace std
 {
@@ -63,6 +59,24 @@ namespace std
         }
     };
 
+    template<size_t N>
+    struct formatter<char[N]>
+    {
+        auto static parse(char*& out,char const* arg,char c) -> void
+        {
+            formatter<char*>::parse(out,arg,c);
+        }
+    };
+
+    template<size_t N>
+    struct formatter<unsigned char[N]>
+    {
+        auto static parse(char*& out,unsigned char const* arg,char c) -> void
+        {
+            formatter<char*>::parse(out,reinterpret_cast<char const*>(arg),c);
+        }
+    };
+
     template<std::unsigned_integral T>
     struct formatter<T>
     {
@@ -98,33 +112,33 @@ namespace std
         }
     };
 
-    template<typename... Args>
-    auto switch_table(char*& out,Args const&... args) -> auto
+    template<size_t I = 0, typename... Args>
+    auto parse(char*& out, size_t idx, char c, Args&&... args) -> void
     {
-        return [&](size_t idx,char c) {
-            using seq = std::index_sequence_for<Args...>;
-            return [&]<size_t... Is>(std::index_sequence<Is...>) {
-            ([&]{ if(Is == idx) format<Args>::parse(out,args...[Is],c); }(),...);
-            }(seq{});
-        };
+        if constexpr (I < sizeof...(Args)) {
+            if (I == idx) {
+                format<Args...[I]>::parse(out, args...[I], c);
+            } else {
+                parse<I + 1>(out, idx, c, static_cast<Args&&>(args)...);
+            }
+        }
     }
 
     export template<typename... Args>
-    auto format_to(char* out,char const* format,Args&&... args) -> u32
+    auto format_to(char* out, char const* fmt, Args&&... args) -> u32
     {
         auto base = out;
-        auto parse = switch_table(out,args...);
-        auto c = *format;
-        auto i = 0;
+        auto c = *fmt;
+        auto i = size_t{0};
         while(c) {
             if(c != '{') {
                 *out++ = c;
-                c = *++format;
+                c = *++fmt;
                 continue;
             }
-            c = *++format;
-            parse(i++,c);
-            c = *(format += 1 + (c != '}'));
+            c = *++fmt;
+            parse(out, i++, c, static_cast<Args&&>(args)...);
+            c = *(fmt += 1 + (c != '}'));
         }
         return out - base;
     }
