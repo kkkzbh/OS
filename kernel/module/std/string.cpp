@@ -1,16 +1,14 @@
-module;
-
-#include <string.h>
-
 export module string;
 
 import utility;
 import algorithm;
 import optional;
 
-
 export namespace std
 {
+
+    // strlen 前置声明（定义在文件末尾）
+    auto strlen(char const* str) -> size_t;
 
     template<typename T>
     concept CharT = std::same_as<T,char> or
@@ -21,16 +19,18 @@ export namespace std
                 std::same_as<T,char signed const>;
 
     template<CharT Char>
-    struct string_view;
-
-    auto constexpr operator==(string_view<char const> x,string_view<char const> y) -> bool;
-    auto constexpr operator==(string_view<char const> x,decltype(nullptr))-> bool;
-
-    template<CharT Char>
     struct string_view
     {
         using value_type = Char;
         using iterator = std::iter::random<Char>;
+
+        template<CharT T1,CharT T2>
+        auto friend constexpr operator<=>(string_view<T1> x,string_view<T2> y) -> strong_ordering;
+
+        template<CharT T1,CharT T2>
+        auto friend constexpr operator==(string_view<T1> x,string_view<T2> y) -> bool;
+
+        auto friend constexpr operator==(string_view<char const> x,decltype(nullptr))-> bool;
 
         constexpr string_view() = default;
 
@@ -121,12 +121,14 @@ export namespace std
         auto constexpr operator++() -> string_view&
         {
             ++s;
+            --sz;
             return *this;
         }
 
         auto constexpr operator--() -> string_view&
         {
             --s;
+            ++sz;
             return *this;
         }
 
@@ -159,11 +161,13 @@ export namespace std
             return find(sv);
         }
 
+    private:
         Char* s = nullptr;
         size_t sz = 0;
     };
 
-    auto constexpr operator<=>(string_view<char const> x,string_view<char const> y) -> strong_ordering
+    template<CharT T1,CharT T2>
+    auto constexpr operator<=>(string_view<T1> x,string_view<T2> y) -> strong_ordering
     {
         using enum strong_ordering;
         auto bound = std::min(x.size(),y.size());
@@ -187,12 +191,22 @@ export namespace std
         }();
     }
 
-    auto constexpr operator==(string_view<char const> x,string_view<char const> y) -> bool
+    template<CharT T1,CharT T2>
+    auto constexpr operator==(string_view<T1> x,string_view<T2> y) -> bool
     {
         if(x.size() != y.size()) {
             return false;
         }
         return (x <=> y) == 0;
+    }
+
+    auto constexpr operator==(string_view<char const> x, string_view<char const> y) -> bool
+    {
+        if(x.size() != y.size()) return false;
+        for(size_t i = 0; i < x.size(); ++i) {
+            if(x[i] != y[i]) return false;
+        }
+        return true;
     }
 
     auto constexpr operator==(string_view<char const> x,decltype(nullptr))-> bool
@@ -217,3 +231,108 @@ export auto constexpr operator""sv(char const* str,size_t sz) -> std::string_vie
     return { str,sz };
 }
 
+// C 风格字符串函数（用户态版本）
+export namespace std
+{
+    auto memset(void* __dst,u8 value,size_t size) -> void*
+    {
+        auto dst = static_cast<char*>(__dst);
+        while(size--) {
+            *dst++ = value;
+        }
+        return __dst;
+    }
+
+    auto memcpy(void* __dst,void const* __src, size_t size) -> void*
+    {
+        auto dst = static_cast<char*>(__dst);
+        auto src = static_cast<char const*>(__src);
+        while(size--) {
+            *dst++ = *src++;
+        }
+        return __dst;
+    }
+
+    auto memcmp(void const* __a,void const* __b, size_t size) -> int
+    {
+        auto a = static_cast<char const*>(__a);
+        auto b = static_cast<char const*>(__b);
+        while(size--) {
+            auto const cmp = *a++ - *b++;
+            if(cmp) {
+                return cmp;
+            }
+        }
+        return 0;
+    }
+
+    auto strlen(char const* str) -> size_t
+    {
+        char const* first = str;
+        while(*str++) {}
+        return str - first - 1;
+    }
+
+    auto strcmp(char const* a,char const* b) -> int
+    {
+        while(*a && *a == *b) {
+            ++a;
+            ++b;
+        }
+        return *a - *b;
+    }
+
+    auto strcpy(char* dst,char const* src) -> char*
+    {
+        char* ret = dst;
+        while((*dst++ = *src++)) {}
+        return ret;
+    }
+
+    auto strchr(char const* str,int ch) -> char*
+    {
+        for(; *str; ++str) {
+            if(*str == ch) {
+                return const_cast<char*>(str);
+            }
+        }
+        if(ch == '\0') {
+            return const_cast<char*>(str);
+        }
+        return nullptr;
+    }
+
+    auto strrchr(char const* str,int ch) -> char*
+    {
+        char const* ret = nullptr;
+        for(; *str; ++str) {
+            if(*str == ch) {
+                ret = str;
+            }
+        }
+        if(ch == '\0') {
+            return const_cast<char*>(str);
+        }
+        return const_cast<char*>(ret);
+    }
+
+    auto strcat(char* dst,char const* src) -> char*
+    {
+        char* str = dst;
+        for(; *str; ++str) {}
+        while((*str++ = *src++)) {}
+        return dst;
+    }
+
+    auto strchrs(char const* str,int ch) -> size_t
+    {
+        size_t cnt = 0;
+        char const* p = str;
+        for(; *p; ++p) {
+            if(*p == ch) {
+                ++cnt;
+            }
+        }
+        return cnt;
+    }
+}

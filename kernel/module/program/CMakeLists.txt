@@ -38,20 +38,12 @@ target_link_libraries(program_no_arg
 )
 
 add_executable(program_arg 
+        ${CMAKE_SOURCE_DIR}/kernel/crt/start.asm
         program_arg.cpp
 )
 
-# 编译优化：减小体积 (仅C/C++，排除汇编)
-target_compile_options(program_arg PRIVATE
-        $<$<COMPILE_LANGUAGE:C,CXX>:-Os>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-fdata-sections>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-ffunction-sections>
-)
-
 target_link_options(program_arg PRIVATE
-        -e main
-        -Wl,--gc-sections       # 移除未使用的section
-        -Wl,-s                  # 去除符号表
+        -e _start
 )
 
 target_link_libraries(program_arg
@@ -67,10 +59,10 @@ add_disk_target(write_program_no_arg
 )
 add_dependencies(write_program_no_arg program_no_arg)
 
-# 将 program_arg 写入磁盘镜像到扇区 1100，预留 100 个扇区 (50KB)
+# 将 program_arg 写入磁盘镜像到扇区 1100，预留 200 个扇区 (100KB)
 add_disk_target(write_program_arg
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/program_arg
         1100
-        100
+        200
 )
 add_dependencies(write_program_arg program_arg)

@@ -170,11 +170,11 @@ auto std_print() -> void
 // 与 kernel/module/program/CMakeLists.txt 的 add_disk_target 保持一致
 auto prog_arg() -> void
 {
-    write_program_to_fs(1100, 100, "/bin/prog_arg");
+    write_program_to_fs(1100, 200, "/bin/eb");
 }
 
 export auto write_execution() -> void
 {
-    std_print();
+    // std_print();
     // prog_arg();
 }
