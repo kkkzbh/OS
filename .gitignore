@@ -8,6 +8,9 @@ os/.idea/
 
 build/
 
+.run/
+.cache/
+
 /src/
 
 bochs*.out

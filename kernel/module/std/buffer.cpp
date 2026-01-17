@@ -1,12 +1,11 @@
-module;
-
-#include <string.h>
-
 export module buffer;
 
 import utility;
 import string;
 import algorithm;
+
+using std::strlen;
+using std::strcat;
 
 namespace std
 {
@@ -72,6 +71,12 @@ namespace std
 
         auto constexpr empty() const -> bool
         { return sz == 0; }
+
+        auto constexpr operator+=(char c) -> buffer&
+        {
+            buf[sz++] = c;
+            return *this;
+        }
 
         auto constexpr operator+=(char const* str) -> buffer&
         {
