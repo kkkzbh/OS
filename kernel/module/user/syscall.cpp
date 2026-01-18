@@ -169,7 +169,7 @@ namespace std
 
     export auto wait(i32& status) -> pid_t
     {
-        return syscall(+sysid::wait,status);
+        return syscall(+sysid::wait, &status);
     }
 
     export extern "C" [[noreturn]] auto exit(i32 status) -> void
