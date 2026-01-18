@@ -3,6 +3,7 @@
 export module std.os;
 
 import sys;
+export import filesystem.flags;
 
 export namespace std 
 {
@@ -10,27 +11,43 @@ export namespace std
     using ::std::syscall;
     
     // 进程相关
-    using ::std::fork;
-    using ::std::exec;
-    using ::std::getpid;
-    using ::std::ps;
+    inline namespace process
+    {
+        using ::std::fork;
+        using ::std::exec;
+        using ::std::getpid;
+        using ::std::ps;
+        using ::std::wait;
+        using ::std::exit;
+    }
     
     // 文件 I/O
-    using ::std::open;
-    using ::std::close;
-    using ::std::read;
-    using ::std::write;
-    using ::std::lseek;
-    using ::std::unlink;
-    using ::std::stat;
+    inline namespace io
+    {
+        using ::std::open;
+        using ::std::close;
+        using ::std::read;
+        using ::std::write;
+        using ::std::lseek;
+        using ::std::unlink;
+        using ::std::stat;
+
+        // flags
+        using fs::open_flags;
+        using fs::whence;
+    }
     
     // 目录操作
-    using ::std::getcwd;
-    using ::std::chdir;
-    using ::std::mkdir;
-    using ::std::rmdir;
-    using ::std::opendir;
-    using ::std::closedir;
-    using ::std::readdir;
-    using ::std::rewinddir;
+    inline namespace directory
+    {
+        using ::std::getcwd;
+        using ::std::chdir;
+        using ::std::mkdir;
+        using ::std::rmdir;
+        using ::std::opendir;
+        using ::std::closedir;
+        using ::std::readdir;
+        using ::std::rewinddir;
+    }
+
 }

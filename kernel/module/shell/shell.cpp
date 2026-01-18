@@ -18,6 +18,7 @@ import string;
 import string.format;
 import stat.structure;
 
+
 auto constexpr MAX_ARG_NR = 16;     // 加上命令名外，最多支持15个参数
 
 // 存储键入的命令
@@ -148,21 +149,21 @@ export auto shell() -> void
         } else {
             auto pid = std::fork();
             if(pid) {   // 让父进程停下，否则会清空final_path
-                while(true) {
-
+                int status;
+                auto child_pid = std::wait(status);  // 使用系统调用
+                if(child_pid == -1) {   // 没有子进程，按理说不应该
+                    std::println("shell: no child!");
                 }
+                std::println("child_pid {}, it's status is {}",child_pid,status);
             } else {
                 make_clear_abs_path(argv[0],final_path.data());
                 argv[0] = final_path.data();
                 auto file_stat = stat_t{};
                 if(not std::stat(argv[0],&file_stat)) { // 判断文件是否存在
                     std::print("shell: cannot access {}, No such file or directory!\n",argv[0]);
-                } else {
-                    std::exec(argv[0],argv.data());
+                    std::exit(-1);
                 }
-                while(true) {
-
-                }
+                std::exec(argv[0],argv.data());
             }
             argv | std::fill[nullptr];  // 清空，但是不必要
         }

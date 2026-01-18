@@ -20,16 +20,15 @@ auto init() -> void
 {
     auto ret_pid = std::fork();
     if(ret_pid) {   // 父进程
-        shell();
         while(true) {
-
-        }
-    } else {    // 子进程
-        // std::print("Hella I em son!\n");
-        while(true) {
-
+            int status;
+            // 不断回收僵尸进程
+            auto child_pid = std::wait(status);  // 使用 std::wait 系统调用
+            std::println("init: recieve a child, pid {}, status {}",child_pid,status);
         }
     }
+    // 子进程
+    shell();
     PANIC("init: should not be here");
 }
 
