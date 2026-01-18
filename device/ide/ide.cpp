@@ -87,7 +87,7 @@ struct ide_channel
 };
 
 export auto channel_cnt = u8{};        // 按硬盘数计算的通道数
-export auto channels = std::array<ide_channel,2>{};
+export std::array<ide_channel,2> channels;
 
 namespace reg
 {

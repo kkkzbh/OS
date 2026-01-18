@@ -24,9 +24,19 @@ auto call_global_constructors() -> void
 
 }
 
+auto clear_bss() -> void
+{
+    extern char __bss_start[];
+    extern char _end[];
+    for(auto p = __bss_start; p != _end; ++p) {
+        *p = 0;
+    }
+}
+
 auto init_all() -> void
 {
     puts("init_all\n");
+    clear_bss();                // 清零 BSS 段，必须在全局构造函数之前！
     call_global_constructors(); // 调用C++全局构造函数
 
     idt_init();         // 初始化 中断

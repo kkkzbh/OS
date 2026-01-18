@@ -14,15 +14,15 @@ import utility;
 export struct semaphore
 {
 
-    semaphore() = default;  // 使用未初始化的semaphore是未定义的，但是为了兼容C以及特殊的初始化方式不得不引入默认构造
+    constexpr semaphore() = default;  // 使用未初始化的semaphore是未定义的，但是为了兼容C以及特殊的初始化方式不得不引入默认构造
 
-    explicit semaphore(u8 desire)
+    explicit constexpr semaphore(u8 desire)
     {
         init(desire);
         // puts(" ***** semaphore construction!! ****** \n");
     }
 
-    auto init(u8 desire) -> void
+    auto constexpr init(u8 desire) -> void
     {
         value = desire;
     }
@@ -60,5 +60,5 @@ export struct semaphore
     }
 
     u8 value;
-    list waiters;
+    list waiters{};
 };
