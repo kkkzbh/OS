@@ -172,7 +172,7 @@ namespace std
         return syscall(+sysid::wait,status);
     }
 
-    export [[noreturn]] auto exit(i32 status) -> void
+    export extern "C" [[noreturn]] auto exit(i32 status) -> void
     {
         syscall(+sysid::exit,status);
         __builtin_unreachable();

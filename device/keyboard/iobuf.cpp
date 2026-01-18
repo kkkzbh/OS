@@ -6,7 +6,7 @@ export module iobuf;
 
 import ioqueue;
 
-export auto ioqbuf = ioqueue{};
+export ioqueue ioqbuf;
 
 extern "C" auto solve(char c) -> void
 {
