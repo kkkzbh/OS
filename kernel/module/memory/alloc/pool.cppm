@@ -67,12 +67,14 @@ struct pool : bitmap
     // 成功返回物理地址，失败返回 nullptr
     auto palloc() -> void*
     {
-        auto lcg = lock_guard{ mtx };
+        // auto lcg = lock_guard{ mtx };
+        mtx.lock();
         auto start = scan(1);
         if(not start) {
             return nullptr;
         }
         set(*start,true);
+        mtx.unlock();
         auto page_phyaddr = phy_addr_start + *start * PG_SIZE;
         return reinterpret_cast<void*>(page_phyaddr);
     }
@@ -81,6 +83,6 @@ struct pool : bitmap
     mutex mtx;
 };
 
-export auto kernel_pool = pool{};          // 内核物理内存池位图
-export auto user_pool = pool{};            // 用户物理内存池位图
-export auto kernel_vaddr = virtual_addr{}; // 内核虚拟地址池位图
+export pool kernel_pool;          // 内核物理内存池位图
+export pool user_pool;            // 用户物理内存池位图
+export virtual_addr kernel_vaddr; // 内核虚拟地址池位图
