@@ -41,6 +41,11 @@ struct reference
         return get();
     }
 
+    auto constexpr operator&() -> T*
+    {
+        return it;
+    }
+
     explicit constexpr operator bool() const
     {
         return bool(it);

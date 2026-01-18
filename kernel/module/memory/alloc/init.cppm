@@ -38,15 +38,13 @@ auto mem_pool_init(u32 all_mem) -> void
     kernel_pool.init (
           reinterpret_cast<char*>(MEM_BITMAP_BASE),
           kbm_length,
-          kp_start,
-          kernel_free_pages * PG_SIZE
+          kp_start
     );
 
     user_pool.init (
         reinterpret_cast<char*>(MEM_BITMAP_BASE + kbm_length),
         ubm_length,
-        up_start,
-        user_free_pages * PG_SIZE
+        up_start
     );
 
     puts("      kernel_pool_bitmap_start: ");

@@ -6,7 +6,7 @@ module;
 
 export module memory:pgtable;
 
-import :utility;
+import memory.utility;
 
 namespace pgtable
 {

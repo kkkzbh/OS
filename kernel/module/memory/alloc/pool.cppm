@@ -55,12 +55,12 @@ export struct virtual_addr : bitmap
 // 物理内存池
 struct pool : bitmap
 {
-    auto init(char* addr,size_t sz,u32 pstart,size_t psize) -> void
+
+    auto init(char* addr,size_t const sz,u32 const pstart) -> void
     {
         bits = (u8*)addr;
         this->sz = sz;
         phy_addr_start = pstart;
-        pool_size = psize;
     }
 
     // 分配一个物理页
@@ -77,14 +77,7 @@ struct pool : bitmap
         return reinterpret_cast<void*>(page_phyaddr);
     }
 
-    [[nodiscard]]
-    auto size() const -> size_t
-    {
-        return pool_size;
-    }
-
     u32 phy_addr_start;
-    u32 pool_size;
     mutex mtx;
 };
 

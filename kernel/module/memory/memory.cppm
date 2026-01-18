@@ -4,4 +4,4 @@ export module memory;
 
 export import :pgtable;
 
-export import :utility;
+export import memory.utility;

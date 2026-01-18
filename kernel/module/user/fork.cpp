@@ -17,6 +17,7 @@ import file.manager;
 import scope;
 import memory;
 import thread;
+import thread.pid;
 
 // 将父进程的pcb拷贝给子进程
 auto copy_pcb_vaddr_bitmap_stack0(task* child_thread,task* parent_thread) -> void
@@ -24,7 +25,7 @@ auto copy_pcb_vaddr_bitmap_stack0(task* child_thread,task* parent_thread) -> voi
     // 复制pcb所在的整个页，里面包含进程pcb信息以及特权0级的栈
     memcpy(child_thread,parent_thread,PG_SIZE);
     // 下面单独修改
-    child_thread->pid = fork_pid();
+    child_thread->pid = pid_pool.allocate();
     child_thread->elapsed_ticks = 0;
     child_thread->stu = thread_status::ready;
     child_thread->ticks = child_thread->priority;   // 为新进程把时间片充满
