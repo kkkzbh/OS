@@ -165,4 +165,15 @@ namespace std
         return syscall(+sysid::exec,path,argv);
     }
 
+    export auto wait(i32& status) -> pid_t
+    {
+        return syscall(+sysid::wait,status);
+    }
+
+    export [[noreturn]] auto exit(i32 status) -> void
+    {
+        syscall(+sysid::exit,status);
+        __builtin_unreachable();
+    }
+
 }

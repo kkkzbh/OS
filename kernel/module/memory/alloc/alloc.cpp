@@ -274,7 +274,7 @@ auto get_a_page_without_op_vaddr_bitmap(pool_flags pf,u32 vaddr) -> void*
 }
 
 // 根据物理页框地址 pg_phy_addr 在相应的内存池的位图清0，不改动页表
-auto free_a_phy_page(u32 pg_phy_addr) -> void
+export auto free_a_phy_page(u32 pg_phy_addr) -> void
 {
     if(pg_phy_addr >= user_pool.phy_addr_start) {
         auto bi = (pg_phy_addr - user_pool.phy_addr_start) / PG_SIZE;

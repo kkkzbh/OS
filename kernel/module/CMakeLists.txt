@@ -269,6 +269,7 @@ target_link_libraries(user
         filesystem
         thread
         thread_pid
+        wait_exit
 )
 
 add_library(format)
@@ -596,3 +597,26 @@ target_link_libraries(shell
 )
 
 add_subdirectory(program)
+
+add_library(wait_exit)
+
+target_sources(wait_exit
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        user/wait_exit.cpp
+        user/wait.cpp
+        user/exit.cpp
+)
+
+target_link_libraries(wait_exit
+        PRIVATE
+        sync_alloc
+        std_algorithm
+        memory
+        list_node
+        utility
+        assert
+        thread
+        filesystem
+)

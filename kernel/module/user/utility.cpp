@@ -28,7 +28,9 @@ export enum struct sysid : int
     rewinddir,
     stat,
     ps,
-    exec
+    exec,
+    wait,
+    exit
 };
 
 export auto constexpr operator+(sysid i) -> int
