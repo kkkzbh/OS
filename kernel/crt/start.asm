@@ -2,6 +2,7 @@
 
 [bits 32]
 extern main
+extern exit
 
 global _start
 
@@ -11,3 +12,7 @@ _start:
     push ebx    ; 压入argv
     push ecx    ; 压入argc
     call main
+
+    ; 将main的返回值传递给exit, gcc用eax存储返回值(ABI)
+    push eax
+    call exit   ; noreturn

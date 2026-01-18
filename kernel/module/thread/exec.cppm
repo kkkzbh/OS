@@ -90,7 +90,7 @@ export auto thread_start(char const* name,u8 prio,function func,void* func_arg) 
 }
 
 // 回收thread的pcb和页表，并从调度队列中移除
-auto thread_exit(task* thread,bool need_schedule) -> void
+export auto thread_exit(task* thread,bool need_schedule) -> void
 {
     intr_disable(); // 确保关中断
     thread->stu = thread_status::died;
@@ -99,10 +99,6 @@ auto thread_exit(task* thread,bool need_schedule) -> void
         list::erase(&thread->general_tag);
     }
     if(thread->pgdir) {     // 如果是进程，回收进程的页表
-        // TODO: 当前只回收了页目录表(1页)，二级页表资源回收不完整，存在内存泄漏:
-        //   1. 需要遍历用户空间PDE(0-767)，释放所有有效的页表页
-        //   2. 需要回收用户空间分配的所有物理页(代码、数据、栈等)
-        //   3. 需要回收 userprog_vaddr.bits 虚拟地址位图
         mfree_page(pool_flags::KERNEL,thread->pgdir,1);
     }
     // 从all_thread_list中去掉该任务

@@ -13,6 +13,8 @@ import filesystem.syscall;
 import fork;
 import ps;
 import exec;
+import wait;
+import exit;
 
 export auto syscall_init();
 
@@ -49,5 +51,7 @@ auto syscall_init()
     install(stat);
     install(ps);
     install(exec);
+    install(wait);
+    install(exit);
     puts("syscall_init done\n");
 }

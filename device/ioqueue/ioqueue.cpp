@@ -42,7 +42,7 @@ export struct ioqueue
 
     ioqueue() : producer(nullptr),consumer(nullptr),buf{},head{},tail{}
     {
-        puts(" ****  ioqueue construction!***\n");
+        // puts(" ****  ioqueue construction!***\n");
     }
 
     auto full() const -> bool
