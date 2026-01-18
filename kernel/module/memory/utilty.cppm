@@ -1,6 +1,6 @@
 
 
-export module memory:utility;
+export module memory.utility;
 
 export import utility;
 

@@ -34,7 +34,7 @@ auto malloc(size_t size) -> void*
         }
     }();
 
-    if(size == 0 or size >= pool.size()) { // 内存范围不合法
+    if(size == 0 or size >= pool.size() * 8 * PG_SIZE) { // 内存范围不合法
         return nullptr;
     }
     auto lcg = lock_guard{ get_mutex(pf) };

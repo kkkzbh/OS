@@ -74,21 +74,19 @@ export struct task
     mem_block_desc u_block_desc[DESC_CNT];
     u32 cwd_inode_no;       // 进程所在的工作目录的inode编号
     i16 parent_pid;         // 父进程的pid
+    i8  exit_status;        // 进程结束时自己调用exit传入的参数
     u32 stack_magic;        // 栈的边界标记，防止溢出
 };
 
-export auto find_task_by_general(list::node* tag) -> task*;
 
-export auto find_task_by_all(list::node* tag) -> task*;
-
-auto find_task_by_general(list::node* tag) -> task*
+export auto find_task_by_general(list::node* tag) -> task*
 {
     return reinterpret_cast<task*>(
         reinterpret_cast<u32>(tag) - reinterpret_cast<u32>(&reinterpret_cast<task*>(0)->general_tag)
     );
 }
 
-auto find_task_by_all(list::node* tag) -> task*
+export auto find_task_by_all(list::node* tag) -> task*
 {
     return reinterpret_cast<task*>(
         reinterpret_cast<u32>(tag) - reinterpret_cast<u32>(&reinterpret_cast<task*>(0)->all_list_tag)

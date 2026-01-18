@@ -94,6 +94,9 @@ export struct bitmap
     auto clear() const -> void
     { memset(bits,0,sz); }
 
+    auto size() const -> size_t
+    { return sz; }
+
     u8* bits;
     size_t sz;
 };

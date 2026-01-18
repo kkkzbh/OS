@@ -53,7 +53,6 @@ target_sources(memory
         FILES
         memory/memory.cppm
         memory/pgtable.cppm
-        memory/utilty.cppm
 )
 
 target_link_libraries(memory
@@ -62,6 +61,21 @@ target_link_libraries(memory
         stdio
         string
         assert
+        memory_utility
+)
+
+add_library(memory_utility)
+
+target_sources(memory_utility
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        memory/utilty.cppm
+)
+
+target_link_libraries(memory_utility
+        PRIVATE
+        utility
 )
 
 add_library(list_node)
@@ -173,6 +187,23 @@ target_link_libraries(thread
         assert
         kernel_utility
         sync_alloc
+        thread_pid
+        memory_utility
+)
+
+add_library(thread_pid)
+
+target_sources(thread_pid
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        thread/pid.cpp
+)
+
+target_link_libraries(thread_pid PRIVATE
+        utility
+        std_array
+        sync_alloc
 )
 
 add_library(thread_init)
@@ -237,6 +268,7 @@ target_link_libraries(user
         console
         filesystem
         thread
+        thread_pid
 )
 
 add_library(format)

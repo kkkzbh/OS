@@ -14,7 +14,7 @@ export struct mutex
 
     constexpr mutex() : holder(nullptr),sema(1),holder_repeat_nr(1)
     {
-        puts("******* mutux construction!!! ***********\n");
+        // puts("******* mutux construction!!! ***********\n");
     }
 
     mutex(mutex const&) = delete;

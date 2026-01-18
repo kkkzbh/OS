@@ -19,7 +19,7 @@ export struct semaphore
     explicit semaphore(u8 desire)
     {
         init(desire);
-        puts(" ***** semaphore construction!! ****** \n");
+        // puts(" ***** semaphore construction!! ****** \n");
     }
 
     auto init(u8 desire) -> void

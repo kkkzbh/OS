@@ -20,11 +20,9 @@ export auto get_pool(pool_flags pf) -> auto&;
 export auto get_kernel_pages(u32 pg_cnt) -> void*;
 export auto get_a_page(pool_flags pf,u32 vaddr) -> void*;
 export auto create_page_dir() -> u32*;
-export auto allocate_pid() -> pid_t;
 export auto get_mutex(pool_flags pf) -> auto&;
 export auto malloc_page(pool_flags pf,u32 pg_cnt) -> void*;
 export auto mfree_page(pool_flags pf,void* _vaddr,size_t pg_cnt) -> void;
-export auto fork_pid() -> pid_t;
 export auto get_a_page_without_op_vaddr_bitmap(pool_flags pf,u32 vaddr) -> void*;
 
 auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
@@ -259,19 +257,6 @@ auto mfree_page(pool_flags pf,void* _vaddr,size_t pg_cnt) -> void
     }
 }
 
-auto allocate_pid() -> pid_t
-{
-    auto static next_pid = 0;
-    auto lcg = lock_guard{ pid_lock };
-    return ++next_pid;
-}
-
-// 单纯就是形式作用，原版因为allocate_pid是静态函数，但是我这里不是，为了形式还是添加
-auto fork_pid() -> pid_t
-{
-    return allocate_pid();
-}
-
 // 安装1页大小的vaddr，专门针对fork时虚拟地址位图无需操作的情况
 auto get_a_page_without_op_vaddr_bitmap(pool_flags pf,u32 vaddr) -> void*
 {
@@ -286,4 +271,16 @@ auto get_a_page_without_op_vaddr_bitmap(pool_flags pf,u32 vaddr) -> void*
 
     page_table_add((void*)vaddr, page_phyaddr);
     return (void*)vaddr;
+}
+
+// 根据物理页框地址 pg_phy_addr 在相应的内存池的位图清0，不改动页表
+auto free_a_phy_page(u32 pg_phy_addr) -> void
+{
+    if(pg_phy_addr >= user_pool.phy_addr_start) {
+        auto bi = (pg_phy_addr - user_pool.phy_addr_start) / PG_SIZE;
+        user_pool.set(bi,false);
+        return;
+    }
+    auto bi = (pg_phy_addr - kernel_pool.phy_addr_start) / PG_SIZE;
+    kernel_pool.set(bi,false);
 }
