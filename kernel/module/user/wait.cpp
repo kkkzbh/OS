@@ -9,7 +9,7 @@ import task;
 import thread;
 import list.node;
 
-export auto wait(i32& status) -> pid_t
+export auto wait(i32* status) -> pid_t
 {
     auto parent_thread = running_thread();
     while(true) {
@@ -25,7 +25,7 @@ export auto wait(i32& status) -> pid_t
         auto cnd = find(find_hanging_child);
         if(cnd) {   //若存在已挂起的子进程
             auto child_thread = find_task_by_all(cnd);
-            status = child_thread->exit_status;
+            *status = child_thread->exit_status;
             auto child_pid = child_thread->pid;
             // 从就绪队列和全部队列移除PCB并回收PCB
             thread_exit(child_thread,false);
