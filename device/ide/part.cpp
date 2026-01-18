@@ -42,7 +42,7 @@ export auto partition_info(list::node& pelem) -> void;
 // 用于记录总扩展分区的起始lba，初始为0, partition_scan时以此为标记
 auto ext_lba_base = 0;
 
-export auto partition_list = list{};       // 用于分区的队列
+export list partition_list;       // 用于分区的队列
 
 // 扫描hd中地址为 ext_lba 的扇区的所有分区
 auto scan_partition(disk* __hd,u32 __ext_lba) -> void

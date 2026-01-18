@@ -6,6 +6,8 @@ auto init_all() -> void;
 auto main() -> void;
 
 import write_execution;
+import thread;
+import schedule;
 
 extern "C" auto start() -> void
 {
@@ -13,7 +15,5 @@ extern "C" auto start() -> void
     clear();
     write_execution();  // 切记仅运行一次！
     main();
-    while(true) {
-
-    }
+    thread_exit(running_thread(),true);
 }

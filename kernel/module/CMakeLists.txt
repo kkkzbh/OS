@@ -494,6 +494,7 @@ target_sources(filesystem_types
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
+        filesystem/flags.cpp
         filesystem/utility.cpp
         filesystem/stat_struct.cpp
         filesystem/dir_struct.cpp
@@ -594,6 +595,7 @@ target_link_libraries(shell
         assert
         filesystem
         user
+        wait_exit
 )
 
 add_subdirectory(program)
@@ -620,3 +622,4 @@ target_link_libraries(wait_exit
         thread
         filesystem
 )
+
