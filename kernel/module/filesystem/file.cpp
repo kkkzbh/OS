@@ -34,6 +34,8 @@ import memory;
 import scope;
 import schedule;
 
+using namespace fs;
+
 // 创建文件，成功则返回文件描述符
 export auto file_create(dir* parent_dir,std::string_view<char const> filename,u8 flag) -> optional<i32>
 {

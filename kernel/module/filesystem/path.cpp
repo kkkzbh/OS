@@ -17,6 +17,8 @@ import dir.structure;
 import optional;
 import console;
 
+using namespace fs;
+
 namespace path
 {
     export auto parse(char const* pathname,char* name_store) -> char const*;

@@ -4,6 +4,8 @@ export module stat.structure;
 
 import filesystem.utility;
 
+using namespace fs;
+
 export struct stat_t
 {
     u32 ino;        // inode编号

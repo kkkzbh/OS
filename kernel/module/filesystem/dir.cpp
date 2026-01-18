@@ -20,6 +20,8 @@ import file.structure;
 import file.manager;
 import vector;
 
+using namespace fs;
+
 // 根目录
 export auto root = dir{};
 
