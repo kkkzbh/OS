@@ -12,6 +12,8 @@ import filesystem.syscall;
 import console;
 import sys;
 
+using namespace fs;
+
 namespace elf32
 {
 

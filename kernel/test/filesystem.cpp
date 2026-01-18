@@ -4,6 +4,8 @@ export module test.filesystem;
 
 import kernel;
 
+using namespace fs;
+
 export namespace test
 {
     // 测试 打开 关闭 删除 写入 文件

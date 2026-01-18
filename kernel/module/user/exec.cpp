@@ -18,6 +18,8 @@ import task;
 import thread;
 import console;
 
+using namespace fs;
+
 namespace elf32
 {
 

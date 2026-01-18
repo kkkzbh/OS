@@ -6,6 +6,8 @@ import inode.structure;
 import filesystem.utility;
 import array;
 
+using namespace fs;
+
 // 目录结构
 export struct dir
 {

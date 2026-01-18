@@ -10,6 +10,8 @@ import filesystem.utility;
 import dir.structure;
 import stat.structure;
 
+using namespace fs;
+
 namespace std
 {
     export template<typename... Args>
@@ -95,9 +97,9 @@ namespace std
         return (char*)syscall(+sysid::getcwd,buf,size);
     }
 
-    export auto open(std::string_view<char const> pathname,u8 flags) -> i32
+    export auto open(std::string_view<char const> pathname,open_flags flags) -> i32
     {
-        return syscall(+sysid::open,pathname.data(),flags);
+        return syscall(+sysid::open,pathname.data(),+flags);
     }
 
     export auto close(i32 fdi) -> bool

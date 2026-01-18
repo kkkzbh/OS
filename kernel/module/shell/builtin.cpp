@@ -17,6 +17,8 @@ import array.format;
 import stat.structure;
 import string.format;
 
+using namespace fs;
+
 // 将路径old_abs_path中的..和.转换为实际路径后存入new_abs_path
 auto wash_path(char const* old_abs_path,char* new_abs_path) -> void
 {

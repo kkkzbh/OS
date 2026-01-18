@@ -36,6 +36,8 @@ import alloc;
 import pool;
 import memory;
 
+using namespace fs;
+
 // 打开或创建文件成功后，返回文件描述符
 export auto open(char const* ptr_pathname,u8 flags) -> i32
 {

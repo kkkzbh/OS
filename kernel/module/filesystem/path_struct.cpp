@@ -6,6 +6,8 @@ import dir.structure;
 import array;
 import filesystem.utility;
 
+using namespace fs;
+
 namespace path
 {
     export struct search_record     // 记录查找文件过程中已找到的上级路径

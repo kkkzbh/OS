@@ -16,6 +16,8 @@ import algorithm;
 import string;
 import list;
 
+using namespace fs;
+
 export auto format_partition(partition* part) -> void;
 
 export auto mount(list::node* pelem,char const* part_name) -> bool;

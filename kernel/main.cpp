@@ -6,6 +6,8 @@ import test.filesystem;
 import inode.structure;
 import console;
 
+using namespace fs;
+
 auto func() -> void
 {
     auto a = std::vector(50000,int{});
