@@ -4,8 +4,8 @@
 megs: 32
 
 # BIOS和VGA BIOS (使用 Bochs 2.6.2 路径)
-romimage: file=/usr/local/bochs/share/bochs/BIOS-bochs-latest
-vgaromimage: file=/usr/local/bochs/share/bochs/VGABIOS-lgpl-latest
+romimage: file=/usr/local/bochs-gdb/share/bochs/BIOS-bochs-latest
+vgaromimage: file=/usr/local/bochs-gdb/share/bochs/VGABIOS-lgpl-latest
 
 # 设置所用磁盘 软盘关键字floppy
 
@@ -27,7 +27,7 @@ com1: enabled=1, mode=file, dev="serial.txt"
 
 # 关闭鼠标并打开键盘
 mouse: enabled=0
-keyboard: keymap=/usr/local/bochs/share/bochs/keymaps/x11-pc-us.map
+keyboard: keymap=/usr/local/bochs-gdb/share/bochs/keymaps/x11-pc-us.map
 
 # 硬盘设置
 ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14

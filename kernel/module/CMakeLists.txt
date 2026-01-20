@@ -354,6 +354,7 @@ target_link_libraries(user_std_vector
         PRIVATE
         utility
         std_algorithm
+        new
 )
 
 # std: 聚合库（内核态用）

@@ -19,6 +19,9 @@ hd*.img
 
 kernel/pom
 
+os-dev/
+ref/
+
 .idea/
 
 # Documentation: ignore LaTeX intermediates; keep only build PDFs

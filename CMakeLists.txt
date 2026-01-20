@@ -56,8 +56,8 @@ add_custom_target(osbuild
 )
 
 # ============== Bochs 配置 ==============
-set(BOCHS_NODEBUG "/usr/local/bochs-nodebug/bin/bochs")
-set(BOCHS_GDB "/usr/local/bochs3.0-gdb/bin/bochs")
+set(BOCHS_NODEBUG "/usr/local/bochs/bin/bochs")
+set(BOCHS_GDB "/usr/local/bochs-gdb/bin/bochs")
 
 # Bochs 普通运行
 add_custom_target(bochs

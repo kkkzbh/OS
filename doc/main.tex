@@ -3,49 +3,44 @@
 
 % Project custom style
 \usepackage{style/custom}
+\usepackage{pdfpages}
 
 % Metadata
 \newcommand{\ProjectName}{Your OS}
 \newcommand{\DocVersion}{v0.1}
-% Path to the illustrated cover art (PNG lives under doc/figures)
-\newcommand{\CoverImagePath}{figures/封面.png}
 
-% Helper to print the illustrated cover as a standalone page (anchor to top)
-\newcommand{\PrintCover}{%
-  \thispagestyle{empty}
-  \begin{tikzpicture}[remember picture,overlay]
-    \node[anchor=north] at (current page.north)
-      {\includegraphics[width=\paperwidth]{\CoverImagePath}};
-  \end{tikzpicture}
-  \null
-  \clearpage}
-
-\title{操作系统项目工程文档\\\large 基于自制内核}
-\author{Your Name}
+\title{操作系统项目工程文档\\[0.5em]\large 基于自制内核}
+\author{作者姓名}
 \date{\today}
 
 \begin{document}
 
-\PrintCover
-\tableofcontents
+% ==================== 封面 ====================
+\includepdf[pages=1]{figures/封皮.pdf}
 
-% -------------------- Preface --------------------
-\frontmatter
-\include{chapters/00-preface}
+% ==================== 目录 ====================
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
 
 % -------------------- Main matter --------------------
 \mainmatter
-\include{chapters/01-boot}
-\include{chapters/02-stdio}
-\include{chapters/03-interrupts}
-\include{chapters/04-memory}
-\include{chapters/05-thread}
-\include{chapters/06-io}
-\include{chapters/07-user}
-\include{chapters/08-syslib}
-\include{chapters/09-disk}
-\include{chapters/10-filesystem}
-\include{chapters/11-sys-interact} % temporarily disabled to build without chapter 11
-
+\include{chapters/01-environment/main}
+\include{chapters/02-kernel-overview/main}
+\include{chapters/03-bootflow/main}
+\include{chapters/04-memory/main}
+\include{chapters/05-interrupt/main}
+\include{chapters/06-process/main}
+\include{chapters/07-device/main}
+\include{chapters/08-filesystem/main}
+\include{chapters/09-syscall/main}
+% \include{chapters/05-thread}
+% \include{chapters/06-io}
+% \include{chapters/07-user}
+% \include{chapters/08-syslib}
+% \include{chapters/09-disk}
+% \include{chapters/10-filesystem}
+% \include{chapters/11-sys-interact}
 
 \end{document}
