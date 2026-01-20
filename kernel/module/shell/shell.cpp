@@ -112,6 +112,7 @@ auto readline(char* buf, i32 count) -> void
 // 简单的shell
 export auto shell() -> void
 {
+    
     cwd_cache[0] = '/';
     while(true) {
         prompt();

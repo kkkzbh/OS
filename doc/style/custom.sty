@@ -12,30 +12,63 @@
 \RequirePackage{fancyhdr}
 \RequirePackage{hyperref}
 \RequirePackage{bookmark}
-\RequirePackage{caption} % for \captionof to make non-floating tables
+\RequirePackage{caption}
 \RequirePackage{cleveref}
 \RequirePackage{etoolbox}
 \RequirePackage{ifthen}
 \RequirePackage{longtable}
 \RequirePackage{booktabs}
 \RequirePackage{tabularx}
-% Precise float placement (e.g., tables with [H])
 \RequirePackage{float}
+\RequirePackage{flafter} % 浮动体不会出现在源代码之前
+\RequirePackage[section]{placeins}  % 防止浮动体跨越 section 边界
+% 允许浮动体在同一 section 内跨越 subsection，避免小节末尾单图占页
+% Figure 默认就地放置：不允许漂移到不相关段落中
+% 代价是：当页面剩余空间不够时，会换页并可能留下页底空白（这是“位置稳定”的必然结果）
+\floatplacement{figure}{H}
+% 调整浮动体参数，减少整页留白
+\setcounter{topnumber}{2}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{3}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.95}
+% 浮动页不要垂直居中，减少上下大面积空白
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{8pt}
+\setlength{\@fpbot}{0pt}
+\makeatother
+% 限制图片最大高度，避免小图被“抬到”浮动页
+\setkeys{Gin}{width=0.9\textwidth,height=0.75\textheight,keepaspectratio}
+\RequirePackage{threeparttable}  % 表注支持
 % Ensure minted sees outputdir before any dependent package may load it
 \PassOptionsToPackage{outputdir=_build}{minted}
 \RequirePackage{minted}
-% Load tcolorbox without auto-loading minted; enable minted library after
 \RequirePackage[skins,breakable,listings]{tcolorbox}
 \tcbuselibrary{minted}
 \RequirePackage{tikz}
+\RequirePackage{enumitem}
+% 设置紧凑的列表间距
+\setlist{nosep, leftmargin=2em}
 
-% Layout
-\geometry{margin=28mm}
+% Layout: A4, specific margins (roughly standard or keep existing 28mm if not specified, 
+% but A4 is implied by request. Standard A4 matches 210x297mm).
+% Request: 纸张大小是否为A4纸 -> Yes.
+\geometry{a4paper, margin=28mm}
+
+% Paragraph settings
+% Request 7: Indent 2 chars, Line height 20pt, Space before/after 0.
 \setlength{\parskip}{0pt}
 \setlength{\parindent}{2em}
-\linespread{1.25}
-% Be more forgiving to avoid overfull boxes in mixed CJK+code text
-\emergencystretch=2em
+
+% Line height 20pt for Body (Small 4 = 12pt).
+% 20pt / 12pt = 1.666
+\linespread{1.5} % Approximate 20pt leading for 12pt font.
+% Better: explicit set in document body, but global linespread is cleaner.
+\raggedbottom % 允许页面底部不齐，避免大片空白
+
 \tolerance=1600
 
 % Colors (low-saturation for textbook style)
@@ -45,108 +78,157 @@
 \definecolor{NoteBg}{HTML}{FFFFFF}
 \definecolor{WarnBg}{HTML}{FFFFFF}
 \definecolor{WarnFrame}{gray}{0.85}
-% Quick-start (purple) palette
-\definecolor{QSBack}{HTML}{F5F3FF}   % very light purple background
-\definecolor{QSFrame}{HTML}{DDD6FE}  % light purple frame
-\definecolor{QSAccent}{HTML}{7C3AED} % strong purple accent for left border/title
-% Code accents (light blue)
-\definecolor{CodeAccent}{HTML}{93C5FD} % blue-300
-\definecolor{CodeTitleBack}{HTML}{DBEAFE} % blue-200 for title bar
-% Code line number color
-\definecolor{CodeLineNumber}{HTML}{64748B} % slate-500
-% Thin separator line only (no filled gutter)
-\definecolor{GutterLine}{HTML}{93C5FD} % match CodeAccent
+\definecolor{QSBack}{HTML}{F5F3FF}   
+\definecolor{QSFrame}{HTML}{DDD6FE}  
+\definecolor{QSAccent}{HTML}{7C3AED} 
+\definecolor{CodeAccent}{HTML}{93C5FD} 
+\definecolor{CodeTitleBack}{HTML}{DBEAFE} 
+\definecolor{CodeLineNumber}{HTML}{64748B} 
+\definecolor{GutterLine}{HTML}{93C5FD} 
 
-% Fonts (no fallback: missing fonts will error)
-% Required fonts:
-%  - Latin serif: Libertinus Serif
-%  - Latin sans:  Inter
-%  - Monospace:   JetBrains Mono
-%  - CJK serif:   Source Han Serif SC (思源宋体)
-%  - CJK sans:    Source Han Sans SC  (思源黑体)
+% Fonts
 \defaultfontfeatures{Ligatures=TeX}
 \makeatletter
-\@ifpackageloaded{ctexhook}{}{\RequirePackage{ctex}} % ensure ctex base loaded
+\@ifpackageloaded{ctexhook}{}{\RequirePackage[fontset=fandol]{ctex}} % Use Fandol for Song/Hei
 \makeatother
-\setmainfont{Libertinus Serif}
-\setsansfont{Inter}
-\setmonofont{JetBrains Mono}
-% Switch to Noto CJK (Plan B)
-\setCJKmainfont{Noto Serif CJK SC}
-\setCJKsansfont{Noto Sans CJK SC}
 
-% Headings (compact, textbook-like)
+% Request 7: English Times New Roman, Chinese Songti.
+% We use TeX Gyre Termes for Times (FOSS equivalent).
+\setmainfont{TeX Gyre Termes}
+\setsansfont{Noto Sans}
+\setmonofont{JetBrains Mono}
+% Fandol sets CJK main to Song and sans to Hei automatically.
+% Enforce explicit names if needed, but fandol is good.
+
+% Headings
+% 4: Level 1 (Chapter): Arabic, Heiti Small 3, Center, 40pt before, 20pt after, 20pt line height.
+% 5: Level 2 (Section): 1.1, Heiti 4, Left, 24pt before, 6pt after, 20pt line height.
+% 6: Level 3 (Subsection): 1.1.1, Heiti 13pt, Left, 12pt before, 6pt after, 20pt line height.
+
+% 定义 Section 装饰颜色
+\definecolor{SectionAccent}{gray}{0.5}  % 灰色竖线
+
 \ctexset{
   chapter = {
-    format = \bfseries\zihao{3},
+    format = \centering\heiti\zihao{-3},
     name = {第,章},
-    number = {\chinese{chapter}},
-    beforeskip = 12pt,
-    afterskip  = 6pt,
+    number = \arabic{chapter},
+    beforeskip = 20pt,
+    afterskip  = 20pt,
+    fixskip = true,
   },
   section = {
-    format = \bfseries\zihao{4},
-    beforeskip = 8pt,
-    afterskip  = 4pt,
+    format = \raggedright\heiti\fontsize{14bp}{20bp}\selectfont,
+    aftername = \hspace{0.5em},
+    beforeskip = 24pt,
+    afterskip  = 14pt,
+    fixskip = true,
+    aftertitle = {},
   },
   subsection = {
-    format = \bfseries\zihao{5},
-    beforeskip = 6pt,
-    afterskip  = 3pt,
+    format = \raggedright\heiti\fontsize{13bp}{20bp}\selectfont,
+    beforeskip = 12pt,
+    afterskip  = 10pt,
+    fixskip = true,
   }
 }
 
+% Section 左侧灰色竖线装饰
+\RequirePackage{titlesec}
+\titleformat{\section}
+  {\raggedright\heiti\fontsize{18bp}{26bp}\selectfont}
+  {\textcolor{SectionAccent}{\rule[-0.15em]{3pt}{1.2em}}\hspace{6pt}\thesection}
+  {0.5em}
+  {}
+
 % Header & footer
+% 3: Header: Songti 5 hao, Center: "网络空间安全与计算机学院操作系统课程设计"
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[LE,RO]{\nouppercase{\leftmark}}
-\fancyfoot[CE,CO]{\thepage}
+\fancyhead[C]{\songti\zihao{5} 网络空间安全与计算机学院操作系统课程设计}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt} % Default rule
+\setlength{\headheight}{14pt} % Fix warning
+
+% 让章节开始页也显示相同的页眉
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \fancyhead[C]{\songti\zihao{5} 网络空间安全与计算机学院操作系统课程设计}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0.5pt}
+}
+
+% Tables
+% 8: Three-line table. Caption: Heiti 11pt (approx Small 4/5?). 11pt = 11bp.
+% Note: \zihao{5}=10.5bp, \zihao{-4}=12bp. 11pt is in between.
+% Cell: Songti 11pt, Center, Single spacing.
+\DeclareCaptionFont{heiti11}{\heiti\fontsize{11bp}{11bp}\selectfont}
+\captionsetup[table]{font=heiti11, labelsep=quad, skip=6pt} 
+% labelsep=quad matches "空一个汉字符宽度" (1em in CJK is roughly a quad or just 1em)
+
+% Helper for table cells
+% NOTE: Must be grouped; otherwise \centering may leak and break tabular alignment
+% (e.g., redefine \\ and trigger "Misplaced \noalign" / "Extra alignment tab" errors).
+\newcommand{\tablecell}[1]{{\centering\arraybackslash\songti\fontsize{11bp}{11bp}\selectfont #1}}
+% But it says "Table cells text centered, 11pt Songti".
+% We should apply this to the table environment or providing a wrapper.
+% For now globally setting it for tabular is hard without breaking other things.
+% We will set it in the example usage or try to hook into tabular.
+\AtBeginEnvironment{tabular}{\songti\fontsize{11bp}{11bp}\selectfont\centering\arraybackslash}
+
+% 表注样式：10.5pt 宋体，单倍行距
+\AtBeginEnvironment{tablenotes}{\songti\fontsize{10.5bp}{10.5bp}\selectfont}
+
+% 图表编号：使用 章.节.序号 格式（如 图 1.2.1, 表 1.3.2）
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\renewcommand{\thetable}{\thesection.\arabic{table}}
 
 % Hyperlinks
 \hypersetup{colorlinks=true,linkcolor=black,urlcolor=black,citecolor=black}
 
-% Code highlighting: force minted (no fallback)
-% (Options already passed and package loaded above.)
-% JetBrains-like light theme via custom pygments style (minted)
-% Allow breaking long tokens if needed to avoid overflow
-\setminted{breaklines,breakanywhere,fontsize=\small,linenos,numbersep=9pt,autogobble,tabsize=4,style=clionlight}
-% Enrich syntax colors for specific languages while keeping light theme
-\setminted[c++]{style=clionlight}
-\setminted[c]{style=clionlight}
-\setminted[nasm]{style=clionlight}
-\setminted[cmake]{style=clionlight}
+% Code highlighting settings - colorful style without bold
+\setminted{breaklines,breakanywhere,fontsize=\small,linenos,numbersep=9pt,autogobble,tabsize=4,style=colorful}
+\setminted[c++]{style=colorful}
+\setminted[c]{style=colorful}
+\setminted[nasm]{style=colorful}
+\setminted[cmake]{style=colorful}
 
 % tcolorbox skins
 \tcbset{enhanced, boxrule=0.3pt, arc=2pt, colback=white, colframe=CodeAccent!20, left=6pt,right=6pt,top=4pt,bottom=4pt}
 
-% Admonitions
-% Unify all tip-like boxes to light purple theme
-\newtcolorbox{notebox}[1][]{colback=QSBack,colframe=QSFrame,coltitle=black,
-  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=2pt,breakable,
-  borderline west={2pt}{0pt}{QSAccent},title=\bfseries 注意,#1}
-\newtcolorbox{warnbox}[1][]{colback=QSBack,colframe=QSFrame,coltitle=black,
-  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=2pt,breakable,
-  borderline west={2pt}{0pt}{QSAccent},title=\bfseries 警告,#1}
-\newtcolorbox{tipbox}[1][]{colback=QSBack,colframe=QSFrame,coltitle=black,
-  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=2pt,breakable,
-  borderline west={2pt}{0pt}{QSAccent},title=\bfseries 提示,#1}
-% Quick-start box: alias to purple tipbox
-\newtcolorbox{qsbox}[1][]{colback=QSBack,colframe=QSFrame,coltitle=black,
-  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=2pt,breakable,
-  borderline west={2pt}{0pt}{QSAccent},title=\bfseries 提示,#1}
+% Admonitions - 学术文档素雅风格
+% 使用灰色调，简洁专业
+\definecolor{AdmonBack}{gray}{0.97}      % 极浅灰背景
+\definecolor{AdmonFrame}{gray}{0.85}     % 浅灰边框
+\definecolor{AdmonAccent}{gray}{0.45}    % 深灰左边条
+
+\newtcolorbox{notebox}[1][]{colback=AdmonBack,colframe=AdmonFrame,coltitle=black,
+  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=0pt,breakable,
+  borderline west={2pt}{0pt}{AdmonAccent},title=\heiti 注意,#1}
+\newtcolorbox{warnbox}[1][]{colback=AdmonBack,colframe=AdmonFrame,coltitle=black,
+  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=0pt,breakable,
+  borderline west={2pt}{0pt}{AdmonAccent},title=\heiti 警告,#1}
+\newtcolorbox{tipbox}[1][]{colback=AdmonBack,colframe=AdmonFrame,coltitle=black,
+  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=0pt,breakable,
+  borderline west={2pt}{0pt}{AdmonAccent},title=\heiti 提示,#1}
+\newtcolorbox{qsbox}[1][]{colback=AdmonBack,colframe=AdmonFrame,coltitle=black,
+  left=8pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.4pt,arc=0pt,breakable,
+  borderline west={2pt}{0pt}{AdmonAccent},title=\heiti 提示,#1}
 
 % Code gutter layout
 \newlength{\CodeGutterWidth}
 \setlength{\CodeGutterWidth}{2.4em}
 
-% Unified code environment using tcolorbox + minted listing engine with gutter
-% Usage: \begin{codeblock}[Title]{c++} ... \end{codeblock}
-\newtcblisting{codeblock}[2][]{listing engine=minted,
-  minted language=#2,
-  minted options={linenos,breaklines,autogobble,tabsize=4,numbersep=9pt},
-  colback=CodeBg,colframe=CodeAccent!20,breakable,title=#1,coltitle=black,
-  colbacktitle=CodeTitleBack,fonttitle=\bfseries,enhanced,
-  left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt,listing only}
+% Unified code environment - clean design, no title
+% Usage: \begin{codeblock}{c++} ... \end{codeblock}
+\newtcblisting{codeblock}[1]{listing engine=minted,
+  minted language=#1,
+  minted options={linenos,breaklines,autogobble,tabsize=4,numbersep=9pt,style=colorful},
+  colback=white,colframe=gray!30,breakable,enhanced,
+  borderline west={2pt}{0pt}{CodeAccent},
+  left=6pt,right=6pt,top=6pt,bottom=6pt,boxrule=0.3pt,arc=0pt,listing only}
 
 % Inline/include code files
 % \codefile[options]{lang}{path}
@@ -194,12 +276,12 @@
     left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt]
     {\ttfamily\bfseries\colorbox{CodeTitleBack}{\parbox[t]{\dimexpr\linewidth-2pt\relax}{\strut\cftitle}}}\par\smallskip
     \ifx\cffirst\empty
-      \inputminted[linenos,breaklines,autogobble,tabsize=4,numbersep=9pt]{#2}{#3}%
+      \inputminted[linenos,breaklines,autogobble,tabsize=4,numbersep=9pt,style=colorful]{#2}{#3}%
     \else
       \ifx\cflast\empty
-        \inputminted[firstline=\cffirst,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt]{#2}{#3}%
+        \inputminted[firstline=\cffirst,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt,style=colorful]{#2}{#3}%
       \else
-        \inputminted[firstline=\cffirst,lastline=\cflast,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt]{#2}{#3}%
+        \inputminted[firstline=\cffirst,lastline=\cflast,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt,style=colorful]{#2}{#3}%
       \fi
     \fi
   \end{tcolorbox}%
@@ -223,7 +305,7 @@
   \begin{tcolorbox}[colback=CodeBg,colframe=CodeAccent!20,breakable,enhanced,
     left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt]
     {\ttfamily\bfseries\colorbox{CodeTitleBack}{\parbox[t]{\dimexpr\linewidth-2pt\relax}{\strut\cftitle}}}\par\smallskip
-    \inputminted[firstline=\cffirst,lastline=\cflast,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt]{#1}{#2}%
+    \inputminted[firstline=\cffirst,lastline=\cflast,linenos,breaklines,autogobble,tabsize=4,numbersep=9pt,style=colorful]{#1}{#2}%
   \end{tcolorbox}%
   \endgroup
 }
@@ -249,10 +331,10 @@
     left=6pt,right=6pt,top=4pt,bottom=4pt,boxrule=0.3pt,arc=2pt]
     {\ttfamily\bfseries\colorbox{CodeTitleBack}{\parbox[t]{\dimexpr\linewidth-2pt\relax}{\strut\cftitle}}}\par\smallskip
     % First slice with line numbers starting at actual file line
-    \inputminted[firstline=\cfAfirst,lastline=\cfAlast,breaklines,tabsize=4,numbersep=9pt,linenos,firstnumber=\cfAfirst,autogobble=false,gobble=0]{#1}{#2}%
+    \inputminted[firstline=\cfAfirst,lastline=\cfAlast,breaklines,tabsize=4,numbersep=9pt,linenos,firstnumber=\cfAfirst,autogobble=false,gobble=0,style=colorful]{#1}{#2}%
     \vspace{2pt}\noindent{\ttfamily ...}\vspace{2pt}\\
     % Second slice with line numbers starting at actual file line
-    \inputminted[firstline=\cfBfirst,lastline=\cfBlast,breaklines,tabsize=4,numbersep=9pt,linenos,firstnumber=\cfBfirst,autogobble=false,gobble=0]{#1}{#2}%
+    \inputminted[firstline=\cfBfirst,lastline=\cfBlast,breaklines,tabsize=4,numbersep=9pt,linenos,firstnumber=\cfBfirst,autogobble=false,gobble=0,style=colorful]{#1}{#2}%
   \end{tcolorbox}%
   \endgroup
 }

@@ -50,4 +50,8 @@ export namespace std
         using ::std::rewinddir;
     }
 
+    // memory
+    using ::std::malloc;
+    using ::std::free;
+
 }

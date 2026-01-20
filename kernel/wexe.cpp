@@ -175,8 +175,16 @@ auto prog_arg() -> void
     write_program_to_fs(1100, 200, "/bin/eb");
 }
 
+// 写入应用程序 cat
+// 与 kernel/module/program/CMakeLists.txt 的 add_disk_target 保持一致
+auto write_cat() -> void
+{
+    write_program_to_fs(1300, 100, "/bin/cat");
+}
+
 export auto write_execution() -> void
 {
     // std_print();
     // prog_arg();
+    // write_cat();
 }

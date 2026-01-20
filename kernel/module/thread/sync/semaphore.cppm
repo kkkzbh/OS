@@ -14,7 +14,7 @@ import utility;
 export struct semaphore
 {
 
-    constexpr semaphore() = default;  // 使用未初始化的semaphore是未定义的，但是为了兼容C以及特殊的初始化方式不得不引入默认构造
+    constexpr semaphore() : value{0}, waiters{} {}  // 使用未初始化的semaphore是未定义的，但是为了兼容C以及特殊的初始化方式不得不引入默认构造
 
     explicit constexpr semaphore(u8 desire)
     {

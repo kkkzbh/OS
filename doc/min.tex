@@ -1,5 +1,261 @@
+% 最小示例文档 - 测试排版效果
 \documentclass[12pt,oneside]{ctexbook}
 \usepackage{style/custom}
+\usepackage{pdfpages}
+
+\title{操作系统项目工程文档\\[0.5em]\large 基于自制内核}
+\author{作者姓名}
+\date{\today}
+
 \begin{document}
-Hello
+
+% ==================== 封面 ====================
+\includepdf[pages=1]{figures/封皮.pdf}
+
+
+
+% ==================== 目录 ====================
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+% ==================== 第一章 ====================
+\chapter{系统架构概述}
+
+本章将介绍操作系统的整体架构设计，包括内核模块划分、启动流程以及核心数据结构。操作系统是计算机系统中最重要的软件之一，它负责管理硬件资源、提供用户接口以及运行应用程序。
+
+\section{内核模块划分}
+
+内核是操作系统的核心部分，负责直接与硬件交互。我们的操作系统采用模块化设计，将内核功能划分为以下几个主要模块。每个模块都有明确的职责和接口，便于维护和扩展。
+
+\subsection{进程管理模块}
+
+进程管理模块负责进程的创建、调度、同步和销毁。主要包括以下功能：
+
+\begin{itemize}
+    \item 进程控制块（PCB）管理
+    \item 进程调度算法实现
+    \item 进程间通信机制
+    \item 信号处理
+\end{itemize}
+
+进程是操作系统资源分配的基本单位，每个进程都有独立的地址空间和执行状态。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/test.png}
+    \caption{第一章图片A}
+    \label{fig:ch1-a}
+\end{figure}
+
+\subsection{内存管理模块}
+
+内存管理模块实现虚拟内存机制，包括页表管理、物理内存分配和页面置换算法。系统采用二级页表结构，支持4KB页面大小。
+
+\begin{notebox}
+    内存分配时需要注意对齐要求，否则可能导致性能下降或硬件异常。
+\end{notebox}
+
+\subsection{文件系统模块}
+
+文件系统模块提供对磁盘数据的抽象访问接口。我们实现了一个类Unix的简单文件系统，支持inode结构、目录层次和基本的文件操作。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/test.png}
+    \caption{第一章图片B - 文件系统示意}
+    \label{fig:ch1-b}
+\end{figure}
+
+\section{启动流程分析}
+
+系统启动分为多个阶段，从BIOS自检到内核初始化完成。以下是启动流程的详细说明。
+
+\subsection{引导加载阶段}
+
+BIOS完成自检后，将控制权交给引导扇区（MBR）。引导程序负责加载内核到内存并跳转执行。
+
+\subsection{内核初始化阶段}
+
+内核初始化包括：中断描述符表（IDT）设置、内存管理初始化、进程调度器初始化等。
+
+% ==================== 第二章 ====================
+\chapter{进程与线程}
+
+本章详细介绍进程和线程的实现机制，包括数据结构设计和调度策略。
+
+\section{进程控制块设计}
+
+进程控制块（PCB）是描述进程状态的核心数据结构。表\ref{tab:pcb}列出了PCB的主要字段。
+
+\begin{table}[htbp]
+    \centering
+    \begin{threeparttable}
+        \caption{进程控制块主要字段}
+        \label{tab:pcb}
+        \begin{tabularx}{\textwidth}{XXX}
+            \toprule
+            字段名 & 类型 & 说明 \\
+            \midrule
+            pid & uint32\_t & 进程标识符\tnote{1} \\
+            status & enum & 进程状态\tnote{2} \\
+            priority & uint8\_t & 进程优先级 \\
+            pgdir & uint32\_t* & 页表指针 \\
+            parent & PCB* & 父进程指针 \\
+            \bottomrule
+        \end{tabularx}
+        \begin{tablenotes}
+            \footnotesize
+            \item[1] 进程标识符在系统范围内唯一，由内核分配。
+            \item[2] 状态包括：READY、RUNNING、BLOCKED、ZOMBIE。
+        \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/test.png}
+    \caption{测试图片}
+    \label{fig:test}
+\end{figure}
+
+\subsection{进程状态转换}
+
+进程在其生命周期中会经历多种状态：就绪、运行、阻塞和终止。状态转换由调度器和系统调用触发。
+
+\subsection{进程优先级管理}
+
+系统支持多级优先级调度，优先级范围为0-31，数值越小优先级越高。
+
+\section{线程实现}
+
+线程是CPU调度的基本单位，多个线程可以共享同一进程的地址空间。
+
+\subsection{内核线程}
+
+内核线程运行在内核态，共享内核地址空间，用于执行系统任务。
+
+\subsection{用户线程}
+
+用户线程运行在用户态，通过系统调用请求内核服务。
+
+% ==================== 第三章 ====================
+\chapter{代码高亮预览}
+
+本章展示 VS 主题的代码高亮效果，代码综合了常见的 C++ 语法元素。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/test.png}
+    \caption{第三章图片 - 代码结构}
+    \label{fig:ch3-code}
+\end{figure}
+
+\section{综合示例}
+
+\begin{minted}[style=vs,linenos,breaklines]{c++}
+// 预处理指令 (Preprocessor)
+#include <iostream>
+#include <vector>
+#include <string>
+#define MAX_SIZE 1024
+#define DEBUG_MODE
+
+// 命名空间 (Namespace)
+namespace kernel {
+
+// 枚举类型 (Enum)
+enum class status : uint8_t {
+    ready   = 0,
+    running = 1,
+    blocked = 2
+};
+
+// 类定义 (Class)
+class thread {
+public:
+    // 类型别名 (Type Alias)
+    using pid_t = uint32_t;
+    
+    // 构造函数
+    explicit thread(const char* name, int priority = 31)
+        : name_(name), priority_(priority), pid_(next_pid_++) {}
+    
+    // 成员函数 (Method)
+    auto run() -> void {
+        // 字符串 (String)
+        const char* msg = "Hello World";
+        std::string str = "Thread started";
+        
+        // 数字 (Number)
+        int decimal = 42;
+        double pi = 3.14159;
+        uint32_t hex = 0xDEADBEEF;
+        size_t binary = 0b11010010;
+        
+        // 运算符 (Operator)
+        int result = decimal + 10 * 2 - 5;
+        bool flag = (result > 0) && (priority_ <= 31);
+        
+        // 控制流 (Control Flow)
+        if (flag) {
+            for (size_t i = 0; i < MAX_SIZE; ++i) {
+                while (status_ != status::ready) {
+                    // 等待
+                }
+            }
+        } else if (priority_ == 0) {
+            return;
+        }
+        
+        // 标准库调用
+        std::cout << msg << std::endl;
+        std::vector<int> vec = {1, 2, 3, 4, 5};
+    }
+    
+    // 模板函数 (Template)
+    template<typename T>
+    auto print(const char* fmt, T&& arg) -> uint32_t {
+        char buf[256]{};
+        auto len = std::format_to(buf, fmt, std::forward<T>(arg));
+        return static_cast<uint32_t>(len);
+    }
+
+private:
+    const char* name_;
+    int priority_;
+    pid_t pid_;
+    status status_ = status::ready;
+    static inline pid_t next_pid_ = 1;
+};
+
+// 结构体 (Struct)
+struct bitmap {
+    uint8_t* bits;
+    size_t sz;
+    
+    auto test(size_t bi) -> bool {
+        return bits[bi / 8] >> (bi % 8) & 1;
+    }
+    
+    auto set(size_t bi, bool value) -> void {
+        if (value) {
+            bits[bi / 8] |= 1 << (bi % 8);
+        } else {
+            bits[bi / 8] &= ~(1 << (bi % 8));
+        }
+    }
+};
+
+} // namespace kernel
+
+// 主函数
+int main() {
+    auto t = kernel::thread{"init", 0};
+    t.run();
+    return 0;
+}
+\end{minted}
+
 \end{document}

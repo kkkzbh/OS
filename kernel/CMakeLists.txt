@@ -198,6 +198,7 @@ target_link_options(kernel PRIVATE
         "-Wl,-Ttext,0xC0001500"
         "-Wl,-e,kkkzbh"
         "-Wl,--gc-sections"
+        "-Wl,--build-id=none"
 )
 
 add_library(kernel_utility INTERFACE)

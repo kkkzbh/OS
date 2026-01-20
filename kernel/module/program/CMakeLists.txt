@@ -61,7 +61,7 @@ target_link_options(cat PRIVATE
         -e _start
 )
 
-target_link_libraries(cat
+target_link_libraries(cat PRIVATE
         stdc++
 )
 
