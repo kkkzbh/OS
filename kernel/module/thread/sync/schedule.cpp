@@ -56,7 +56,11 @@ auto schedule() -> void
     ASSERT(intr_get_status() == INTR_OFF);
 
     if(thread_ready_list.empty()) { // 如果就绪队列没有可运行的任务，唤醒idle
-        thread_unblock(idle_thread);
+        using enum thread_status;
+        auto stu = idle_thread->stu;
+        if(stu == blocked or stu == waiting or stu == hanging) {
+            thread_unblock(idle_thread);
+        }
     }
 
     auto cur = running_thread();
