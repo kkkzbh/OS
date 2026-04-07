@@ -19,6 +19,11 @@ import memory.utility;
 
 task* main_thread;  // 主线程 PCB
 
+export auto thread_exec_runtime_init() -> void
+{
+    main_thread = nullptr;
+}
+
 auto kernel_thread(function* func,void* func_arg) -> void
 {
     intr_enable(); // 开中断，避免后面的时钟中断被屏蔽，无法调度其他线程
@@ -139,7 +144,6 @@ export auto make_main_thread() -> void
     ASSERT(not thread_all_list.contains(&main_thread->all_list_tag));
     thread_all_list.push_back(&main_thread->all_list_tag);
 }
-
 
 
 

@@ -13,26 +13,17 @@ import utility;
 
 export struct semaphore
 {
-
-    constexpr semaphore() : value{0}, waiters{} {}  // 使用未初始化的semaphore是未定义的，但是为了兼容C以及特殊的初始化方式不得不引入默认构造
-
-    explicit constexpr semaphore(u8 desire)
-    {
-        init(desire);
-        // puts(" ***** semaphore construction!! ****** \n");
-    }
-
-    auto constexpr init(u8 desire) -> void
+    auto init(u8 desire) -> void
     {
         value = desire;
+        waiters.init();
     }
-
-    semaphore(semaphore const&) = delete;
 
     auto operator=(semaphore const&) -> semaphore& = delete;
 
     auto acquire() -> void
     {
+        assert_initialized();
         auto old_status = intr_disable();
         while(value == 0) {
             // 唤醒且无信号量 那么这时候阻塞队列里不应该存在自己
@@ -48,6 +39,7 @@ export struct semaphore
 
     auto release() -> void
     {
+        assert_initialized();
         auto old_status = intr_disable();
         if(not waiters.empty()) {
             auto thread_tag = waiters.front();
@@ -59,6 +51,16 @@ export struct semaphore
         intr_set_status(old_status);
     }
 
+    auto assert_initialized() const -> void
+    {
+        ASSERT(initialized());
+    }
+
+    auto initialized() const -> bool
+    {
+        return waiters.is_initialized();
+    }
+
     u8 value;
-    list waiters{};
+    list waiters;
 };

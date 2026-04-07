@@ -12,8 +12,16 @@ import sys;
 import print;
 import shell;
 import string;
+import thread.pid;
 
 export auto thread_init() -> void;
+
+auto thread_runtime_init() -> void
+{
+    schedule_runtime_init();
+    thread_exec_runtime_init();
+    pid_pool.init();
+}
 
 // init进程
 auto init() -> void
@@ -35,6 +43,7 @@ auto init() -> void
 auto thread_init() -> void
 {
     puts("thread_init start");
+    thread_runtime_init();
 
     // 创建第一个用户进程:init
     process_execute((void*)init,"init");

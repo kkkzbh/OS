@@ -24,6 +24,7 @@ struct virtual_addr : bitmap
     // 成功返回虚拟起始地址 失败返回 nullptr
     auto get(u32 pg_cnt) -> void*
     {
+        assert_initialized();
         auto start = scan(pg_cnt);
         if(not start) {
             return nullptr;
@@ -38,6 +39,7 @@ struct virtual_addr : bitmap
     // 将虚拟地址 转换为对应的位的位置
     auto trans(u32 vaddr) const -> size_t
     {
+        assert_initialized();
         ASSERT(vaddr >= vaddr_start);
         return (vaddr - vaddr_start) / PG_SIZE;
     }
@@ -46,6 +48,12 @@ struct virtual_addr : bitmap
     auto set(u32 vaddr) -> void
     {
         set(trans(vaddr),true);
+    }
+
+    auto assert_initialized() const -> void
+    {
+        ASSERT(bits != nullptr);
+        ASSERT(sz != 0);
     }
 
     u32 vaddr_start;

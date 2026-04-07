@@ -15,6 +15,7 @@
 - [构建目标说明](#构建目标说明)
 - [用户程序加载机制](#用户程序加载机制)
 - [调试](#调试)
+- [QEMU 调试](#qemu-调试)
 - [项目结构](#项目结构)
 - [已知限制](#已知限制)
 - [路线图](#路线图)
@@ -135,6 +136,10 @@ ls
 - `osbuild`：构建并写入完整启动链
 - `bochs`：普通运行
 - `bochs-gdb`：开启 `gdbstub`（端口 `1234`）
+- `bochs-smoke`：Bochs 图形窗口启动后自动发键并做 shell 冒烟验证
+- `qemu`：用 QEMU 图形模式启动
+- `qemu-gdb`：用 QEMU 启动并在 `tcp::1234` 等待 GDB
+- `qemu-smoke`：QEMU 无头启动，自动驱动 shell 并做 OCR 冒烟测试
 - `write_program_no_arg`：写入无参用户程序到扇区 `1000`
 - `write_program_arg`：写入带参用户程序到扇区 `1100`
 - `write_cat`：写入 `cat` 用户程序到扇区 `1300`
@@ -184,6 +189,42 @@ gdb build/bin/kernel
 - 普通运行：`bochs.out`
 - GDB 运行：`bochs-gdb.out`
 - 串口输出（gdb 配置）：`serial.txt`
+
+也可以直接跑 Bochs 冒烟测试：
+
+```bash
+cmake --build build --target bochs-smoke
+```
+
+它会启动 Bochs、等待 shell prompt、自动发送 `ps` 和 `pwd`，并把截图/OCR 工件写到 `.cache/bochs-smoke/latest/`。
+
+## QEMU 调试
+
+仓库现在提供了一套基于 `QEMU + QMP` 的调试和自动化验证路径：
+
+```bash
+cmake --build build --target qemu
+cmake --build build --target qemu-gdb
+cmake --build build --target qemu-smoke
+```
+
+- `qemu`：图形模式启动，适合日常交互验证
+- `qemu-gdb`：QEMU 在 `tcp::1234` 等待，可直接 `gdb build/bin/kernel`
+- `qemu-smoke`：无头启动，自动发送 `ps` / `mkdir /qq` / `cd /qq` / `pwd`，并通过截图 + OCR 验证 shell 是否正常工作
+
+也可以直接使用脚本：
+
+```bash
+python3 scripts/qemu_debug.py run
+python3 scripts/qemu_debug.py run --gdb 1234 --paused
+python3 scripts/qemu_debug.py smoke
+```
+
+`qemu-smoke` 的工件默认放在 `.cache/qemu-smoke/latest/`，包含：
+
+- `*.ppm`：QEMU 原始截图
+- `*.png`：OCR 预处理后的截图
+- `*.txt`：Tesseract 识别结果
 
 ## 项目结构
 

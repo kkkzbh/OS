@@ -31,6 +31,13 @@ auto kernel_alloc_mtx = mutex{};
 auto user_alloc_mtx = mutex{};
 auto pid_lock = mutex{};
 
+auto alloc_runtime_init() -> void
+{
+    kernel_alloc_mtx.init();
+    user_alloc_mtx.init();
+    pid_lock.init();
+}
+
 auto get_mutex(pool_flags pf) -> auto&
 {
     using enum pool_flags;

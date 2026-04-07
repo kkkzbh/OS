@@ -20,6 +20,7 @@ export auto thread_unblock(task* pthread) -> void;
 export auto idle(void* arg) -> void;
 export auto thread_yield() -> void;
 export auto page_dir_active(task const* pthread) -> void;
+export auto schedule_runtime_init() -> void;
 
 
 auto process_activate(task const* pthread) -> void;
@@ -30,6 +31,13 @@ export thread_list thread_ready_list; // 线程就绪队列
 export thread_list thread_all_list;   // 所有任务队列
 
 export auto idle_thread = (task*){};         // idle线程
+
+auto schedule_runtime_init() -> void
+{
+    thread_ready_list.init();
+    thread_all_list.init();
+    idle_thread = nullptr;
+}
 
 // 系统空闲时，运行的线程
 auto idle(void* arg) -> void

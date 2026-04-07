@@ -8,6 +8,11 @@ import ioqueue;
 
 export ioqueue ioqbuf;
 
+export auto iobuf_init() -> void
+{
+    ioqbuf.init();
+}
+
 extern "C" auto solve(char c) -> void
 {
     if(not ioqbuf.full()) { // 如果键盘缓冲区没满

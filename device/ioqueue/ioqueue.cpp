@@ -40,30 +40,41 @@ export struct ioqueue
         i32 it;
     };
 
-    ioqueue() : producer(nullptr),consumer(nullptr),buf{},head{},tail{}
+    auto init() -> void
     {
-        // puts(" ****  ioqueue construction!***\n");
+        mtx.init();
+        producer = nullptr;
+        consumer = nullptr;
+        for(auto& c : buf) {
+            c = '\0';
+        }
+        head = {};
+        tail = {};
     }
 
     auto full() const -> bool
     {
+        assert_initialized();
         ASSERT(intr_get_status() == INTR_OFF);
         return ++end() == begin();
     }
 
     auto empty() const -> bool
     {
+        assert_initialized();
         ASSERT(intr_get_status() == INTR_OFF);
         return begin() == end();
     }
 
     auto begin() const -> iterator
     {
+        assert_initialized();
         return tail;
     }
 
     auto end() const -> iterator
     {
+        assert_initialized();
         return head;
     }
 
@@ -83,6 +94,7 @@ export struct ioqueue
 
     auto get() -> char
     {
+        assert_initialized();
         ASSERT(intr_get_status() == INTR_OFF);
         while(empty()) {
             auto lcg = lock_guard{ mtx };
@@ -98,6 +110,7 @@ export struct ioqueue
 
     auto put(char byte) -> void
     {
+        assert_initialized();
         ASSERT(intr_get_status() == INTR_OFF);
         while(full()) {
             auto lcg = lock_guard{ mtx };
@@ -108,6 +121,11 @@ export struct ioqueue
         if(consumer) { // 如果有睡眠的consumer
             wakeup(consumer);
         }
+    }
+
+    auto assert_initialized() const -> void
+    {
+        ASSERT(mtx.initialized());
     }
 
     mutex mtx;

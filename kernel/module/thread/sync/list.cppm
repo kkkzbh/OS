@@ -2,6 +2,7 @@ module;
 
 #include <interrupt.h>
 #include <stdio.h>
+#include <assert.h>
 
 export module list;
 
@@ -38,23 +39,17 @@ export struct list
     using value_type = node;
     using iterator = iter;
 
-    constexpr list()
-    {
-        init();
-    }
-
     auto constexpr init() -> void
     {
         head = { nullptr,&tail };
         tail = { &head, nullptr };
     }
 
-    list(list const&) = delete("The list do not need copy constructor, because it can cause some amazing error!");
-
     auto operator=(list const&) -> list& = delete("too");
 
     auto insert(node* it,node* v) -> list&
     {
+        assert_initialized();
         auto old_stu = intr_disable();
         it->prev->next = v;
         v->prev = it->prev;
@@ -78,6 +73,9 @@ export struct list
 
     auto static erase(node* v) -> void
     {
+        ASSERT(v != nullptr);
+        ASSERT(v->prev != nullptr);
+        ASSERT(v->next != nullptr);
         auto old_stu = intr_disable();
         v->prev->next = v->next;
         v->next->prev = v->prev;
@@ -86,6 +84,7 @@ export struct list
 
     auto front() -> node*
     {
+        assert_initialized();
         return head.next;
     }
 
@@ -97,6 +96,7 @@ export struct list
 
     auto back() -> node*
     {
+        assert_initialized();
         return tail.prev;
     }
 
@@ -108,11 +108,13 @@ export struct list
 
     auto begin() -> iterator
     {
+        assert_initialized();
         return { head.next };
     }
 
     auto end() -> iterator
     {
+        assert_initialized();
         return { &tail };
     }
 
@@ -129,7 +131,18 @@ export struct list
     [[nodiscard]]
     auto empty() const -> bool
     {
+        assert_initialized();
         return head.next == &tail;
+    }
+
+    auto assert_initialized() const -> void
+    {
+        ASSERT(is_initialized());
+    }
+
+    auto is_initialized() const -> bool
+    {
+        return head.next != nullptr and tail.prev != nullptr;
     }
 
     // head->prev 用作 bound 第一个元素实为head->next
@@ -137,4 +150,3 @@ export struct list
     node head;
     node tail;
 };
-

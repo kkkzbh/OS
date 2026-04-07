@@ -24,6 +24,7 @@ export struct virtual_addr : bitmap
     // 成功返回虚拟起始地址 失败返回 nullptr
     auto get(u32 pg_cnt) -> void*
     {
+        assert_initialized();
         auto start = scan(pg_cnt);
         if(not start) {
             return nullptr;
@@ -39,6 +40,7 @@ export struct virtual_addr : bitmap
     [[nodiscard]]
     auto trans(u32 vaddr) const -> size_t
     {
+        assert_initialized();
         ASSERT(vaddr >= vaddr_start);
         return (vaddr - vaddr_start) / PG_SIZE;
     }
@@ -47,6 +49,12 @@ export struct virtual_addr : bitmap
     auto set(u32 vaddr) -> void
     {
         set(trans(vaddr),true);
+    }
+
+    auto assert_initialized() const -> void
+    {
+        ASSERT(bits != nullptr);
+        ASSERT(sz != 0);
     }
 
     u32 vaddr_start;
@@ -61,12 +69,14 @@ struct pool : bitmap
         bits = (u8*)addr;
         this->sz = sz;
         phy_addr_start = pstart;
+        mtx.init();
     }
 
     // 分配一个物理页
     // 成功返回物理地址，失败返回 nullptr
     auto palloc() -> void*
     {
+        assert_initialized();
         // auto lcg = lock_guard{ mtx };
         mtx.lock();
         auto start = scan(1);
@@ -77,6 +87,13 @@ struct pool : bitmap
         mtx.unlock();
         auto page_phyaddr = phy_addr_start + *start * PG_SIZE;
         return reinterpret_cast<void*>(page_phyaddr);
+    }
+
+    auto assert_initialized() const -> void
+    {
+        ASSERT(bits != nullptr);
+        ASSERT(sz != 0);
+        ASSERT(mtx.initialized());
     }
 
     u32 phy_addr_start;

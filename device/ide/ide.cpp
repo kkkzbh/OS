@@ -43,12 +43,15 @@ auto constexpr max_lba = 80 * 1024 * 1024 / 512 - 1;   // 仅80MB硬盘
 
 export struct disk;
 export struct ide_channel;
+export struct partition;
 
 export auto ide_read(disk* hd,u32 lba,void* buf,u32 sec_cnt) -> void;
 
 export auto ide_write(disk* hd,u32 lba,void* buf,u32 sec_cnt) -> void;
 
 export auto identify_disk(disk* hd) -> void;
+export auto init_partition_runtime(partition& part) -> void;
+export auto init_channel_runtime(ide_channel& channel) -> void;
 
 // 磁盘分区
 export struct partition
@@ -88,6 +91,36 @@ struct ide_channel
 
 export auto channel_cnt = u8{};        // 按硬盘数计算的通道数
 export std::array<ide_channel,2> channels;
+
+auto init_partition_runtime(partition& part) -> void
+{
+    part.sb = nullptr;
+    part.block = {};
+    part.inode = {};
+    part.open_inodes.init();
+}
+
+auto init_disk_runtime(disk& hd,ide_channel* channel,u8 dev_no) -> void
+{
+    hd.my_channel = channel;
+    hd.dev_no = dev_no;
+    for(auto& part : hd.prim_parts) {
+        init_partition_runtime(part);
+    }
+    for(auto& part : hd.logic_parts) {
+        init_partition_runtime(part);
+    }
+}
+
+auto init_channel_runtime(ide_channel& channel) -> void
+{
+    channel.mtx.init();
+    channel.expecting_intr = false;
+    channel.disk_done.init(0);
+    for(auto dev_no = 0; dev_no != 2; ++dev_no) {
+        init_disk_runtime(channel.devices[dev_no],&channel,dev_no);
+    }
+}
 
 namespace reg
 {

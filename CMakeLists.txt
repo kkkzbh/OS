@@ -6,6 +6,8 @@ project(KernelOS
     DESCRIPTION "Custom Operating System Project"
 )
 
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
 # 设置编译器和标准
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 26)
@@ -58,6 +60,7 @@ add_custom_target(osbuild
 # ============== Bochs 配置 ==============
 set(BOCHS_NODEBUG "/usr/local/bochs/bin/bochs")
 set(BOCHS_GDB "/usr/local/bochs-gdb/bin/bochs")
+find_program(QEMU_SYSTEM_I386 qemu-system-i386)
 
 # Bochs 普通运行
 add_custom_target(bochs
@@ -76,3 +79,37 @@ add_custom_target(bochs-gdb
     COMMENT "Starting Bochs with GDB support..."
     USES_TERMINAL
 )
+
+add_custom_target(bochs-smoke
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/bochs_debug.py --bochs-binary ${BOCHS_NODEBUG} --bochs-config bochsrc.disk
+    DEPENDS osbuild
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Running Bochs shell smoke test..."
+    USES_TERMINAL
+)
+
+if(QEMU_SYSTEM_I386)
+add_custom_target(qemu
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py run --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386}
+    DEPENDS osbuild
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Starting QEMU..."
+    USES_TERMINAL
+)
+
+add_custom_target(qemu-gdb
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py run --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386} --gdb 1234 --paused
+    DEPENDS osbuild
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Starting QEMU with GDB support on tcp::1234..."
+    USES_TERMINAL
+)
+
+add_custom_target(qemu-smoke
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py smoke --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386}
+    DEPENDS osbuild
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Running headless QEMU shell smoke test..."
+    USES_TERMINAL
+)
+endif()

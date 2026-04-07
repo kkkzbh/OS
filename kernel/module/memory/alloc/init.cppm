@@ -10,6 +10,8 @@ import arena;
 
 export auto mem_init() -> void;
 
+auto alloc_runtime_init() -> void;
+
 
 auto mem_pool_init(u32 all_mem) -> void
 {
@@ -78,6 +80,7 @@ auto mem_pool_init(u32 all_mem) -> void
 auto mem_init() -> void
 {
     puts("mem_init start\n");
+    alloc_runtime_init();
     auto total_mem_bytes = *reinterpret_cast<u32*>(0xb00);
     mem_pool_init(total_mem_bytes);
     kernel_block_desc_init();

@@ -12,6 +12,7 @@ import ide.init;
 import filesystem.init;
 import console;
 import thread.init;
+import iobuf;
 
 auto call_global_constructors() -> void
 {
@@ -36,13 +37,15 @@ auto clear_bss() -> void
 auto init_all() -> void
 {
     puts("init_all\n");
-    clear_bss();                // 清零 BSS 段，必须在全局构造函数之前！
-    call_global_constructors(); // 调用C++全局构造函数
+    clear_bss();                // 清零 BSS 段，显式初始化的全局状态依赖这一点。
+    call_global_constructors(); // 仅保留给编译器 / modules 运行时初始化，不再承担关键子系统状态构造。
 
     idt_init();         // 初始化 中断
     mem_init();         // 初始化 内存管理系统
     thread_init();      // 初始化 线程环境
+    console_init();     // 初始化控制台运行时状态
     timer_init();       // 初始化 PIT
+    iobuf_init();       // 初始化键盘输入缓冲
     keyboard_init();    // 初始化 键盘中断
     tss_init();         // 初始化 tss
     syscall_init();     // 初始化 系统调用

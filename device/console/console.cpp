@@ -12,6 +12,11 @@ import format;
 
 auto mtx = mutex{};
 
+export auto console_init() -> void
+{
+    mtx.init();
+}
+
 export namespace console
 {
     auto write(char const* str) -> void;
@@ -82,5 +87,4 @@ namespace console
     }
 
 }
-
 
