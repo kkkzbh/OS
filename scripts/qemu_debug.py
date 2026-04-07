@@ -207,6 +207,18 @@ def ocr_image(image_path: Path) -> str:
     return proc.stdout
 
 
+def decode_vga_text(vram: bytes) -> str:
+    lines: list[str] = []
+    for row in range(25):
+        chars: list[str] = []
+        for col in range(80):
+            idx = (row * 80 + col) * 2
+            ch = vram[idx]
+            chars.append(" " if ch == 0 else chr(ch))
+        lines.append("".join(chars).rstrip())
+    return "\n".join(lines)
+
+
 def capture_ocr(qmp: QmpClient, artifacts_dir: Path, stem: str) -> tuple[Path, Path, str]:
     ppm_path = artifacts_dir / f"{stem}.ppm"
     qmp.screendump(ppm_path)
@@ -214,6 +226,15 @@ def capture_ocr(qmp: QmpClient, artifacts_dir: Path, stem: str) -> tuple[Path, P
     text = ocr_image(png_path)
     (artifacts_dir / f"{stem}.txt").write_text(text)
     return ppm_path, png_path, text
+
+
+def capture_vga_text(qmp: QmpClient, artifacts_dir: Path, stem: str) -> tuple[Path, str]:
+    bin_path = artifacts_dir / f"{stem}.vram.bin"
+    rel_bin_path = bin_path.relative_to(REPO_ROOT)
+    qmp.hmp(f"pmemsave 0xb8000 4000 {rel_bin_path}")
+    text = decode_vga_text(bin_path.read_bytes())
+    (artifacts_dir / f"{stem}.txt").write_text(text)
+    return bin_path, text
 
 
 def normalize_text(text: str) -> str:
@@ -228,26 +249,30 @@ def wait_for_patterns(
     patterns: list[re.Pattern[str]],
     timeout: float,
     interval: float = 1.0,
+    capture: str = "ocr",
 ) -> tuple[Path, str]:
     deadline = time.time() + timeout
     attempt = 0
-    latest_ppm: Path | None = None
+    latest_artifact: Path | None = None
     latest_text = ""
 
     while time.time() < deadline:
         stem = f"{label}-{attempt:02d}"
-        ppm_path, _, text = capture_ocr(qmp, artifacts_dir, stem)
-        latest_ppm = ppm_path
+        if capture == "vga":
+            artifact_path, text = capture_vga_text(qmp, artifacts_dir, stem)
+        else:
+            artifact_path, _, text = capture_ocr(qmp, artifacts_dir, stem)
+        latest_artifact = artifact_path
         latest_text = text
         normalized = normalize_text(text)
         if all(pattern.search(normalized) for pattern in patterns):
-            print(f"[ok] {label}: {ppm_path}")
-            return ppm_path, text
+            print(f"[ok] {label}: {artifact_path}")
+            return artifact_path, text
         time.sleep(interval)
         attempt += 1
 
     raise TimeoutError(
-        f"timed out waiting for {label}; latest screenshot={latest_ppm}, latest OCR={latest_text!r}"
+        f"timed out waiting for {label}; latest artifact={latest_artifact}, latest text={latest_text!r}"
     )
 
 
@@ -299,6 +324,17 @@ def smoke(build_dir: Path, qemu_binary: str, artifacts_dir: Path, boot_timeout: 
             label="boot",
             patterns=[re.compile(r"KKK[Z2]BH")],
             timeout=boot_timeout,
+            capture="vga",
+        )
+
+        print("[info] waiting for shell prompt")
+        wait_for_patterns(
+            qmp=qmp,
+            artifacts_dir=artifacts_dir,
+            label="prompt",
+            patterns=[re.compile(r"K@KKKZBH /\$ >")],
+            timeout=boot_timeout,
+            capture="vga",
         )
 
         print("[info] sending: ps")
@@ -309,6 +345,7 @@ def smoke(build_dir: Path, qemu_binary: str, artifacts_dir: Path, boot_timeout: 
             label="ps",
             patterns=[re.compile(r"PID"), re.compile(r"COMMAND")],
             timeout=10,
+            capture="vga",
         )
 
         print("[info] sending: mkdir /qq")
@@ -323,6 +360,7 @@ def smoke(build_dir: Path, qemu_binary: str, artifacts_dir: Path, boot_timeout: 
             label="cd-qq",
             patterns=build_smoke_patterns("/QQ"),
             timeout=10,
+            capture="vga",
         )
 
         print("[info] sending: pwd")
@@ -333,6 +371,7 @@ def smoke(build_dir: Path, qemu_binary: str, artifacts_dir: Path, boot_timeout: 
             label="pwd-qq",
             patterns=[re.compile(r"/QQ")],
             timeout=10,
+            capture="vga",
         )
         print("[ok] qemu shell smoke passed")
         return 0
