@@ -87,3 +87,25 @@ add_disk_target(write_cat
         100
 )
 add_dependencies(write_cat cat)
+
+if(BUILD_TESTING)
+add_executable(fs_test_runner
+        ${CMAKE_SOURCE_DIR}/kernel/crt/start.asm
+        ${CMAKE_SOURCE_DIR}/tests/system/fs/programs/fs_test_runner.cpp
+)
+
+target_link_options(fs_test_runner PRIVATE
+        -e _start
+)
+
+target_link_libraries(fs_test_runner PRIVATE
+        stdc++
+)
+
+add_disk_target(write_fs_test_runner
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fs_test_runner
+        1500
+        200
+)
+add_dependencies(write_fs_test_runner fs_test_runner)
+endif()

@@ -17,6 +17,8 @@ void puthex(u32 num);
 
 void clear();
 
+void write_boot_marker_slot(u32 slot, char const* marker);
+
 __END_DECLS
 
 #endif

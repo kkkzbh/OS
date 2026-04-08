@@ -6,6 +6,8 @@ project(KernelOS
     DESCRIPTION "Custom Operating System Project"
 )
 
+include(CTest)
+
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 # 设置编译器和标准
@@ -106,10 +108,14 @@ add_custom_target(qemu-gdb
 )
 
 add_custom_target(qemu-smoke
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py smoke --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386}
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py test --scenario legacy_shell_smoke --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386}
     DEPENDS osbuild
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Running headless QEMU shell smoke test..."
     USES_TERMINAL
 )
+endif()
+
+if(BUILD_TESTING)
+add_subdirectory(tests)
 endif()

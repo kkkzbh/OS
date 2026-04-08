@@ -40,6 +40,23 @@ section mbr
     mov byte [gs:0x0A], 'H'
     mov byte [gs:0x0B], 0xA4
 
+    mov byte [gs:BOOT_MARKER_BASE + 0x00], 'B'
+    mov byte [gs:BOOT_MARKER_BASE + 0x01], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + 0x02], 'O'
+    mov byte [gs:BOOT_MARKER_BASE + 0x03], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + 0x04], 'O'
+    mov byte [gs:BOOT_MARKER_BASE + 0x05], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + 0x06], 'T'
+    mov byte [gs:BOOT_MARKER_BASE + 0x07], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + 0x08], ':'
+    mov byte [gs:BOOT_MARKER_BASE + 0x09], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + 0x0A], 'M'
+    mov byte [gs:BOOT_MARKER_BASE + 0x0B], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + 0x0C], '1'
+    mov byte [gs:BOOT_MARKER_BASE + 0x0D], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + 0x0E], ' '
+    mov byte [gs:BOOT_MARKER_BASE + 0x0F], BOOT_MARKER_ATTR
+
     mov eax, LOADER_START_SECTOR
     mov bx, LOADER_BASE_ADDR
     mov cx, 4

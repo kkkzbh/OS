@@ -112,6 +112,23 @@ loader_start: ; (地址 0xC00 文件地址0x300)
 .mem_get_ok:
     mov [total_mem_bytes], edx
 
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x00], 'B'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x01], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x02], 'O'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x03], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x04], 'O'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x05], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x06], 'T'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x07], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x08], ':'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x09], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x0A], 'L'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x0B], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x0C], '1'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x0D], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x0E], ' '
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES + 0x0F], BOOT_MARKER_ATTR
+
     ; 准备进入保护模式
 
     ; 进入保护模式后, 在内核建立 IDT 之前不能接收硬件中断
@@ -190,6 +207,22 @@ p_mode_start:
     lgdt [gdt_ptr]
 
     mov byte [gs:160], 'V'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x00], 'B'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x01], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x02], 'O'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x03], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x04], 'O'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x05], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x06], 'T'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x07], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x08], ':'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x09], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x0A], 'L'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x0B], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x0C], '2'
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x0D], BOOT_MARKER_ATTR
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x0E], ' '
+    mov byte [gs:BOOT_MARKER_BASE + BOOT_MARKER_SLOT_BYTES * 2 + 0x0F], BOOT_MARKER_ATTR
 
     jmp SELECTOR_CODE:enter_kernel ; 32->32 原则不需要刷流水线，但确保什么 刷上
 enter_kernel:

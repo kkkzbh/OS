@@ -1,6 +1,7 @@
 module;
 
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 export module shell;
@@ -31,6 +32,7 @@ auto cwd_cache = std::array<char,MAX_PATH_LEN>{};
 // 输出提示符
 auto prompt() -> void
 {
+    write_boot_marker_slot(4, "BOOT:SH");
     std::print("k@kkkzbh {}$ > ", cwd_cache);
 }
 

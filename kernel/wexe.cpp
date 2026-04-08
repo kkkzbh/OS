@@ -117,7 +117,7 @@ auto static detect_elf_image_size(void const* buf, u32 buf_sz) -> u32
 // lba: 磁盘起始扇区
 // reserved_sectors: 预留扇区数
 // target: 目标文件路径
-auto static write_program_to_fs(u32 lba, u32 reserved_sectors, char const* target) -> void
+auto static write_program_to_fs(u32 lba, u32 reserved_sectors, char const* target, bool required = true) -> void
 {
     auto const reserved_bytes = reserved_sectors * SECTOR_SIZE;
     auto sda = &channels[0].devices[0];
@@ -128,7 +128,9 @@ auto static write_program_to_fs(u32 lba, u32 reserved_sectors, char const* targe
     // 检测 ELF 实际大小
     auto elf_size = detect_elf_image_size(program_buf.data(), reserved_bytes);
     if(elf_size == 0) {
-        console::println("{}: invalid ELF format, abort!", target);
+        if(required) {
+            console::println("{}: invalid ELF format, abort!", target);
+        }
         return;
     }
 
@@ -182,8 +184,16 @@ auto write_cat() -> void
     write_program_to_fs(1300, 100, "/bin/cat");
 }
 
+// 写入应用程序 fs_test_runner
+auto write_fs_test_runner() -> void
+{
+    write_program_to_fs(1500, 200, "/bin/fs_test_runner", false);
+}
+
 export auto write_execution() -> void
 {
+    mkdir("/bin");
+    write_fs_test_runner();
     // std_print();
     // prog_arg();
     // write_cat();

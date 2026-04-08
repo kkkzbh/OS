@@ -9,7 +9,6 @@ import shutil
 import signal
 import socket
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -18,11 +17,22 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_BUILD_DIR = REPO_ROOT / "cmake-build-debug"
 DEFAULT_ARTIFACTS_DIR = REPO_ROOT / ".cache" / "qemu-smoke" / "latest"
 DEFAULT_GDB_PORT = 1234
-DEFAULT_QMP_SOCKET = REPO_ROOT / ".cache" / "qemu-smoke" / "qmp.sock"
-
-
-def run(cmd: list[str], *, cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, cwd=cwd, check=check, text=True, capture_output=True)
+ROOT_PROMPT_PATTERN = re.compile(r"K@KKKZBH /\$ >")
+PROMPT_PATTERN = re.compile(r"K@KKKZBH [^\n]+\$ >")
+BOOT_MARKERS = ["BOOT:M1", "BOOT:L1", "BOOT:L2", "BOOT:K1", "BOOT:SH"]
+FATAL_PATTERNS = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"#PF",
+        r"PAGE-FAULT",
+        r"PANIC",
+        r"ASSERT",
+        r"GENERAL PROTECTION",
+        r"DOUBLE FAULT",
+        r"TRIPLE FAULT",
+        r"EXCEPTION MESSAGE BEGIN",
+    )
+]
 
 
 class QmpClient:
@@ -108,6 +118,9 @@ def qemu_command(
     monitor: str,
     gdb_port: int | None,
     paused: bool,
+    snapshot: bool,
+    os_image: Path,
+    data_image: Path,
 ) -> list[str]:
     cmd = [
         qemu_binary,
@@ -122,15 +135,15 @@ def qemu_command(
         "-no-reboot",
         "-no-shutdown",
         "-drive",
-        f"file={REPO_ROOT / 'hd64M.img'},if=ide,index=0,media=disk,format=raw",
+        f"file={os_image},if=ide,index=0,media=disk,format=raw",
         "-drive",
-        f"file={REPO_ROOT / 'hd80M.img'},if=ide,index=1,media=disk,format=raw",
+        f"file={data_image},if=ide,index=1,media=disk,format=raw",
     ]
 
-    if display == "none":
-        cmd.extend(["-display", "none"])
-    else:
-        cmd.extend(["-display", display])
+    if snapshot:
+        cmd.append("-snapshot")
+
+    cmd.extend(["-display", "none" if display == "none" else display])
 
     if qmp_socket is not None:
         qmp_socket.parent.mkdir(parents=True, exist_ok=True)
@@ -152,9 +165,8 @@ def qemu_command(
     return cmd
 
 
-def ensure_images_exist() -> None:
-    for name in ("hd64M.img", "hd80M.img"):
-        path = REPO_ROOT / name
+def ensure_images_exist(os_image: Path, data_image: Path) -> None:
+    for path in (os_image, data_image):
         if not path.exists():
             raise FileNotFoundError(f"missing disk image: {path}")
 
@@ -219,19 +231,22 @@ def decode_vga_text(vram: bytes) -> str:
     return "\n".join(lines)
 
 
-def capture_ocr(qmp: QmpClient, artifacts_dir: Path, stem: str) -> tuple[Path, Path, str]:
+def capture_ocr(qmp: QmpClient, artifacts_dir: Path, stem: str) -> tuple[Path, str]:
     ppm_path = artifacts_dir / f"{stem}.ppm"
     qmp.screendump(ppm_path)
     png_path = preprocess_image(ppm_path)
     text = ocr_image(png_path)
     (artifacts_dir / f"{stem}.txt").write_text(text)
-    return ppm_path, png_path, text
+    return ppm_path, text
 
 
 def capture_vga_text(qmp: QmpClient, artifacts_dir: Path, stem: str) -> tuple[Path, str]:
     bin_path = artifacts_dir / f"{stem}.vram.bin"
-    rel_bin_path = bin_path.relative_to(REPO_ROOT)
-    qmp.hmp(f"pmemsave 0xb8000 4000 {rel_bin_path}")
+    try:
+        qmp_path = bin_path.relative_to(REPO_ROOT)
+    except ValueError:
+        qmp_path = bin_path
+    qmp.hmp(f"pmemsave 0xb8000 4000 {qmp_path}")
     text = decode_vga_text(bin_path.read_bytes())
     (artifacts_dir / f"{stem}.txt").write_text(text)
     return bin_path, text
@@ -239,6 +254,27 @@ def capture_vga_text(qmp: QmpClient, artifacts_dir: Path, stem: str) -> tuple[Pa
 
 def normalize_text(text: str) -> str:
     return " ".join(text.upper().split())
+
+
+def check_fatal(text: str, artifact: Path) -> None:
+    for pattern in FATAL_PATTERNS:
+        if pattern.search(text):
+            raise RuntimeError(f"fatal screen pattern {pattern.pattern!r} seen in {artifact}")
+
+
+def capture_screen(
+    *,
+    qmp: QmpClient,
+    artifacts_dir: Path,
+    stem: str,
+    capture: str,
+) -> tuple[Path, str]:
+    if capture == "vga":
+        artifact_path, text = capture_vga_text(qmp, artifacts_dir, stem)
+    else:
+        artifact_path, text = capture_ocr(qmp, artifacts_dir, stem)
+    check_fatal(text, artifact_path)
+    return artifact_path, text
 
 
 def wait_for_patterns(
@@ -249,7 +285,7 @@ def wait_for_patterns(
     patterns: list[re.Pattern[str]],
     timeout: float,
     interval: float = 1.0,
-    capture: str = "ocr",
+    capture: str = "vga",
 ) -> tuple[Path, str]:
     deadline = time.time() + timeout
     attempt = 0
@@ -257,11 +293,12 @@ def wait_for_patterns(
     latest_text = ""
 
     while time.time() < deadline:
-        stem = f"{label}-{attempt:02d}"
-        if capture == "vga":
-            artifact_path, text = capture_vga_text(qmp, artifacts_dir, stem)
-        else:
-            artifact_path, _, text = capture_ocr(qmp, artifacts_dir, stem)
+        artifact_path, text = capture_screen(
+            qmp=qmp,
+            artifacts_dir=artifacts_dir,
+            stem=f"{label}-{attempt:02d}",
+            capture=capture,
+        )
         latest_artifact = artifact_path
         latest_text = text
         normalized = normalize_text(text)
@@ -276,6 +313,35 @@ def wait_for_patterns(
     )
 
 
+def capture_once(
+    *,
+    qmp: QmpClient,
+    artifacts_dir: Path,
+    label: str,
+    capture: str = "vga",
+) -> tuple[Path, str]:
+    artifact_path, text = capture_screen(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        stem=label,
+        capture=capture,
+    )
+    print(f"[ok] {label}: {artifact_path}")
+    return artifact_path, text
+
+
+def assert_marker_order(text: str, markers: list[str]) -> None:
+    normalized = normalize_text(text)
+    offset = -1
+    for marker in markers:
+        pos = normalized.find(marker)
+        if pos == -1:
+            raise RuntimeError(f"missing marker {marker!r} in screen: {normalized!r}")
+        if pos < offset:
+            raise RuntimeError(f"marker order mismatch for {markers!r} in screen: {normalized!r}")
+        offset = pos
+
+
 def build_smoke_patterns(path_fragment: str) -> list[re.Pattern[str]]:
     return [
         re.compile(r"KKKZBH"),
@@ -283,17 +349,264 @@ def build_smoke_patterns(path_fragment: str) -> list[re.Pattern[str]]:
     ]
 
 
-def smoke(build_dir: Path, qemu_binary: str, artifacts_dir: Path, boot_timeout: float) -> int:
-    ensure_images_exist()
+def literal_pattern(text: str) -> re.Pattern[str]:
+    return re.compile(re.escape(text.upper()))
+
+
+def prompt_for(path_fragment: str) -> re.Pattern[str]:
+    return re.compile(re.escape(f"K@KKKZBH {path_fragment.upper()}$ >"))
+
+
+def run_shell_command(
+    qmp: QmpClient,
+    artifacts_dir: Path,
+    *,
+    label: str,
+    command: str,
+    patterns: list[re.Pattern[str]] | None = None,
+    timeout: float = 10.0,
+) -> tuple[Path, str]:
+    print(f"[info] sending: {command}")
+    send_text(qmp, f"{command}\n")
+    time.sleep(0.3)
+    expected = list(patterns or [])
+    expected.append(PROMPT_PATTERN)
+    return wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label=label,
+        patterns=expected,
+        timeout=timeout,
+        interval=0.5,
+    )
+
+
+def run_runner_case(qmp: QmpClient, artifacts_dir: Path, case_name: str, timeout: float = 20.0) -> tuple[Path, str]:
+    token = literal_pattern(f"FSCASE:{case_name}:PASS")
+    return run_shell_command(
+        qmp,
+        artifacts_dir,
+        label=f"runner-{case_name}",
+        command=f"/bin/fs_test_runner {case_name}",
+        patterns=[token],
+        timeout=timeout,
+    )
+
+
+def scenario_boot_banner(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    print("[info] waiting for MBR banner")
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="boot-banner",
+        patterns=[re.compile(r"KKK[Z2]BH"), re.compile(r"BOOT:M1")],
+        timeout=boot_timeout,
+    )
+
+
+def scenario_boot_milestones(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    print("[info] waiting for boot milestones")
+    _, text = wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="boot-milestones",
+        patterns=[*(re.compile(re.escape(marker)) for marker in BOOT_MARKERS), ROOT_PROMPT_PATTERN],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+    assert_marker_order(text, BOOT_MARKERS)
+
+
+def scenario_boot_prompt_clean(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    print("[info] waiting for shell prompt")
+    _, text = wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="boot-prompt",
+        patterns=[ROOT_PROMPT_PATTERN, re.compile(r"BOOT:SH")],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+    assert_marker_order(text, BOOT_MARKERS)
+
+
+def scenario_legacy_shell_smoke(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+
+    print("[info] sending: ps")
+    send_text(qmp, "ps\n")
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="ps",
+        patterns=[re.compile(r"PID"), re.compile(r"COMMAND")],
+        timeout=10,
+    )
+
+    print("[info] sending: mkdir /qq")
+    send_text(qmp, "mkdir /qq\n")
+    time.sleep(1.5)
+    capture_once(qmp=qmp, artifacts_dir=artifacts_dir, label="post-mkdir")
+
+    print("[info] sending: cd /qq")
+    send_text(qmp, "cd /qq\n")
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="cd-qq",
+        patterns=build_smoke_patterns("/QQ"),
+        timeout=10,
+    )
+
+    print("[info] sending: pwd")
+    send_text(qmp, "pwd\n")
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="pwd-qq",
+        patterns=[re.compile(r"/QQ")],
+        timeout=10,
+    )
+
+
+def scenario_shell_fs_cwd(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_shell_command(qmp, artifacts_dir, label="fs-cwd-mkdir", command="mkdir /fscwd")
+    run_shell_command(qmp, artifacts_dir, label="fs-cwd-cd-root", command="cd /fscwd", patterns=[prompt_for("/FSCWD")])
+    run_shell_command(qmp, artifacts_dir, label="fs-cwd-mkdir-sub", command="mkdir .//sub", patterns=[prompt_for("/FSCWD")])
+    run_shell_command(qmp, artifacts_dir, label="fs-cwd-cd-sub", command="cd .//sub", patterns=[prompt_for("/FSCWD/SUB")])
+    run_shell_command(qmp, artifacts_dir, label="fs-cwd-pwd-sub", command="pwd", patterns=[literal_pattern("/fscwd/sub")])
+    run_shell_command(qmp, artifacts_dir, label="fs-cwd-cd-parent", command="cd ..", patterns=[prompt_for("/FSCWD")])
+    run_shell_command(qmp, artifacts_dir, label="fs-cwd-pwd-parent", command="pwd", patterns=[literal_pattern("/fscwd")])
+
+
+def scenario_shell_fs_mkdir_rmdir(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_shell_command(qmp, artifacts_dir, label="fs-mkdir-create", command="mkdir /fsmr")
+    run_shell_command(qmp, artifacts_dir, label="fs-mkdir-list", command="ls /", patterns=[literal_pattern("fsmr")])
+    run_shell_command(qmp, artifacts_dir, label="fs-mkdir-remove", command="rmdir /fsmr")
+    run_shell_command(
+        qmp,
+        artifacts_dir,
+        label="fs-mkdir-cd-removed",
+        command="cd /fsmr",
+        patterns=[literal_pattern("cd: no such directory /fsmr")],
+    )
+
+
+def scenario_shell_fs_ls(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_shell_command(qmp, artifacts_dir, label="fs-ls-mkdir-root", command="mkdir /fsls")
+    run_shell_command(qmp, artifacts_dir, label="fs-ls-mkdir-a", command="mkdir /fsls/alphaone")
+    run_shell_command(qmp, artifacts_dir, label="fs-ls-mkdir-b", command="mkdir /fsls/betatwo")
+    run_shell_command(
+        qmp,
+        artifacts_dir,
+        label="fs-ls-list",
+        command="ls /fsls",
+        patterns=[literal_pattern("alphaone"), literal_pattern("betatwo")],
+    )
+
+
+def scenario_shell_fs_negative(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_shell_command(qmp, artifacts_dir, label="fs-neg-mkdir-root", command="mkdir /fsneg")
+    run_shell_command(
+        qmp,
+        artifacts_dir,
+        label="fs-neg-mkdir-dup",
+        command="mkdir /fsneg",
+        patterns=[literal_pattern("mkdir: create directory /fsneg failed.")],
+    )
+    run_shell_command(qmp, artifacts_dir, label="fs-neg-mkdir-child", command="mkdir /fsneg/child")
+    run_shell_command(
+        qmp,
+        artifacts_dir,
+        label="fs-neg-rmdir-nonempty",
+        command="rmdir /fsneg",
+        patterns=[literal_pattern("rmdir: remove /fsneg failed.")],
+    )
+    run_shell_command(
+        qmp,
+        artifacts_dir,
+        label="fs-neg-cd-missing",
+        command="cd /fsneg/missing",
+        patterns=[literal_pattern("cd: no such directory /fsneg/missing")],
+    )
+
+
+def scenario_shell_fs_regression_mkdir_rootqq_pf(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_shell_command(qmp, artifacts_dir, label="fs-regression-mkdir-qq", command="mkdir /qq", timeout=10.0)
+
+
+def scenario_runner_fs_basic(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "file_basic")
+
+
+def scenario_runner_fs_file_offset(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "file_offset")
+
+
+def scenario_runner_fs_directory_basic(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "directory_basic")
+
+
+def scenario_runner_fs_directory_iteration(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "directory_iteration")
+
+
+def scenario_runner_fs_metadata(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "metadata")
+
+
+def scenario_runner_fs_error_paths(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "error_paths")
+
+
+def scenario_runner_fs_persistence_write(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "persistence_file_write")
+
+
+def scenario_runner_fs_persistence_verify(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "persistence_file_verify")
+
+
+def scenario_runner_fs_persistence_dir_write(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "persistence_directory_write")
+
+
+def scenario_runner_fs_persistence_dir_verify(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+    run_runner_case(qmp, artifacts_dir, "persistence_directory_verify")
+
+
+def run_scenario(
+    *,
+    scenario: str,
+    qemu_binary: str,
+    artifacts_dir: Path,
+    boot_timeout: float,
+    snapshot: bool,
+    os_image: Path,
+    data_image: Path,
+) -> int:
+    ensure_images_exist(os_image, data_image)
     artifacts_dir.parent.mkdir(parents=True, exist_ok=True)
     if artifacts_dir.exists():
         shutil.rmtree(artifacts_dir)
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    qmp_socket = DEFAULT_QMP_SOCKET
-    if qmp_socket.exists():
-        qmp_socket.unlink()
-
+    qmp_socket = artifacts_dir / "qmp.sock"
     qemu_log = artifacts_dir / "qemu.log"
     cmd = qemu_command(
         qemu_binary=qemu_binary,
@@ -302,10 +615,14 @@ def smoke(build_dir: Path, qemu_binary: str, artifacts_dir: Path, boot_timeout: 
         monitor="none",
         gdb_port=None,
         paused=False,
+        snapshot=snapshot,
+        os_image=os_image,
+        data_image=data_image,
     )
     qemu_log.write_text(" ".join(cmd) + "\n")
     print(f"[info] artifacts: {artifacts_dir}")
     print(f"[info] qemu: {' '.join(cmd)}")
+
     proc = subprocess.Popen(
         cmd,
         cwd=REPO_ROOT,
@@ -317,63 +634,48 @@ def smoke(build_dir: Path, qemu_binary: str, artifacts_dir: Path, boot_timeout: 
     qmp = QmpClient(qmp_socket)
     try:
         qmp.connect()
-        print("[info] waiting for boot banner")
-        wait_for_patterns(
-            qmp=qmp,
-            artifacts_dir=artifacts_dir,
-            label="boot",
-            patterns=[re.compile(r"KKK[Z2]BH")],
-            timeout=boot_timeout,
-            capture="vga",
-        )
-
-        print("[info] waiting for shell prompt")
-        wait_for_patterns(
-            qmp=qmp,
-            artifacts_dir=artifacts_dir,
-            label="prompt",
-            patterns=[re.compile(r"K@KKKZBH /\$ >")],
-            timeout=boot_timeout,
-            capture="vga",
-        )
-
-        print("[info] sending: ps")
-        send_text(qmp, "ps\n")
-        wait_for_patterns(
-            qmp=qmp,
-            artifacts_dir=artifacts_dir,
-            label="ps",
-            patterns=[re.compile(r"PID"), re.compile(r"COMMAND")],
-            timeout=10,
-            capture="vga",
-        )
-
-        print("[info] sending: mkdir /qq")
-        send_text(qmp, "mkdir /qq\n")
-        time.sleep(1.5)
-
-        print("[info] sending: cd /qq")
-        send_text(qmp, "cd /qq\n")
-        wait_for_patterns(
-            qmp=qmp,
-            artifacts_dir=artifacts_dir,
-            label="cd-qq",
-            patterns=build_smoke_patterns("/QQ"),
-            timeout=10,
-            capture="vga",
-        )
-
-        print("[info] sending: pwd")
-        send_text(qmp, "pwd\n")
-        wait_for_patterns(
-            qmp=qmp,
-            artifacts_dir=artifacts_dir,
-            label="pwd-qq",
-            patterns=[re.compile(r"/QQ")],
-            timeout=10,
-            capture="vga",
-        )
-        print("[ok] qemu shell smoke passed")
+        if scenario == "boot_banner":
+            scenario_boot_banner(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "boot_milestones":
+            scenario_boot_milestones(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "boot_prompt_clean":
+            scenario_boot_prompt_clean(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "legacy_shell_smoke":
+            scenario_legacy_shell_smoke(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "shell_fs_cwd":
+            scenario_shell_fs_cwd(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "shell_fs_mkdir_rmdir":
+            scenario_shell_fs_mkdir_rmdir(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "shell_fs_ls":
+            scenario_shell_fs_ls(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "shell_fs_negative":
+            scenario_shell_fs_negative(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "shell_fs_regression_mkdir_rootqq_pf":
+            scenario_shell_fs_regression_mkdir_rootqq_pf(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_basic":
+            scenario_runner_fs_basic(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_file_offset":
+            scenario_runner_fs_file_offset(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_directory_basic":
+            scenario_runner_fs_directory_basic(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_directory_iteration":
+            scenario_runner_fs_directory_iteration(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_metadata":
+            scenario_runner_fs_metadata(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_error_paths":
+            scenario_runner_fs_error_paths(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_persistence_write":
+            scenario_runner_fs_persistence_write(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_persistence_verify":
+            scenario_runner_fs_persistence_verify(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_persistence_dir_write":
+            scenario_runner_fs_persistence_dir_write(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "runner_fs_persistence_dir_verify":
+            scenario_runner_fs_persistence_dir_verify(qmp, artifacts_dir, boot_timeout)
+        else:
+            raise ValueError(f"unknown scenario: {scenario}")
+        (artifacts_dir / "scenario.pass").write_text(f"{scenario}\n", encoding="utf-8")
+        print(f"[ok] scenario passed: {scenario}")
         return 0
     finally:
         qmp.quit()
@@ -392,7 +694,9 @@ def smoke(build_dir: Path, qemu_binary: str, artifacts_dir: Path, boot_timeout: 
 
 
 def command_run(args: argparse.Namespace) -> int:
-    ensure_images_exist()
+    os_image = Path(args.os_image).resolve() if args.os_image else REPO_ROOT / "hd64M.img"
+    data_image = Path(args.data_image).resolve() if args.data_image else REPO_ROOT / "hd80M.img"
+    ensure_images_exist(os_image, data_image)
     cmd = qemu_command(
         qemu_binary=args.qemu_binary,
         display=args.display,
@@ -400,17 +704,35 @@ def command_run(args: argparse.Namespace) -> int:
         monitor=args.monitor,
         gdb_port=args.gdb,
         paused=args.paused,
+        snapshot=args.snapshot,
+        os_image=os_image,
+        data_image=data_image,
     )
     os.execvp(cmd[0], cmd)
     return 0
 
 
 def command_smoke(args: argparse.Namespace) -> int:
-    return smoke(
-        build_dir=Path(args.build_dir),
+    return run_scenario(
+        scenario="legacy_shell_smoke",
         qemu_binary=args.qemu_binary,
         artifacts_dir=Path(args.artifacts_dir),
         boot_timeout=args.boot_timeout,
+        snapshot=args.snapshot,
+        os_image=Path(args.os_image).resolve() if args.os_image else REPO_ROOT / "hd64M.img",
+        data_image=Path(args.data_image).resolve() if args.data_image else REPO_ROOT / "hd80M.img",
+    )
+
+
+def command_test(args: argparse.Namespace) -> int:
+    return run_scenario(
+        scenario=args.scenario,
+        qemu_binary=args.qemu_binary,
+        artifacts_dir=Path(args.artifacts_dir),
+        boot_timeout=args.boot_timeout,
+        snapshot=args.snapshot,
+        os_image=Path(args.os_image).resolve() if args.os_image else REPO_ROOT / "hd64M.img",
+        data_image=Path(args.data_image).resolve() if args.data_image else REPO_ROOT / "hd80M.img",
     )
 
 
@@ -426,14 +748,59 @@ def parser() -> argparse.ArgumentParser:
     run_p.add_argument("--qmp-socket", default="")
     run_p.add_argument("--gdb", type=int, default=None, nargs="?")
     run_p.add_argument("--paused", action="store_true")
+    run_p.add_argument("--snapshot", action="store_true")
+    run_p.add_argument("--os-image", default="")
+    run_p.add_argument("--data-image", default="")
     run_p.set_defaults(func=command_run)
 
-    smoke_p = sub.add_parser("smoke", help="Run a headless shell smoke test.")
+    smoke_p = sub.add_parser("smoke", help="Run the legacy headless shell smoke test.")
     smoke_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))
     smoke_p.add_argument("--qemu-binary", default=shutil.which("qemu-system-i386") or "qemu-system-i386")
     smoke_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
     smoke_p.add_argument("--boot-timeout", type=float, default=40.0)
+    smoke_p.add_argument("--snapshot", dest="snapshot", action="store_true")
+    smoke_p.add_argument("--no-snapshot", dest="snapshot", action="store_false")
+    smoke_p.add_argument("--os-image", default="")
+    smoke_p.add_argument("--data-image", default="")
+    smoke_p.set_defaults(snapshot=True)
     smoke_p.set_defaults(func=command_smoke)
+
+    test_p = sub.add_parser("test", help="Run a boot-oriented QEMU test scenario.")
+    test_p.add_argument(
+        "--scenario",
+        required=True,
+        choices=[
+            "boot_banner",
+            "boot_milestones",
+            "boot_prompt_clean",
+            "legacy_shell_smoke",
+            "shell_fs_cwd",
+            "shell_fs_mkdir_rmdir",
+            "shell_fs_ls",
+            "shell_fs_negative",
+            "shell_fs_regression_mkdir_rootqq_pf",
+            "runner_fs_basic",
+            "runner_fs_file_offset",
+            "runner_fs_directory_basic",
+            "runner_fs_directory_iteration",
+            "runner_fs_metadata",
+            "runner_fs_error_paths",
+            "runner_fs_persistence_write",
+            "runner_fs_persistence_verify",
+            "runner_fs_persistence_dir_write",
+            "runner_fs_persistence_dir_verify",
+        ],
+    )
+    test_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))
+    test_p.add_argument("--qemu-binary", default=shutil.which("qemu-system-i386") or "qemu-system-i386")
+    test_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
+    test_p.add_argument("--boot-timeout", type=float, default=40.0)
+    test_p.add_argument("--os-image", default="")
+    test_p.add_argument("--data-image", default="")
+    test_p.add_argument("--snapshot", dest="snapshot", action="store_true")
+    test_p.add_argument("--no-snapshot", dest="snapshot", action="store_false")
+    test_p.set_defaults(snapshot=True)
+    test_p.set_defaults(func=command_test)
     return p
 
 

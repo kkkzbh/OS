@@ -5,12 +5,14 @@ SET(KERNEL ${CMAKE_SOURCE_DIR}/kernel/)
 # 创建stdio库
 add_library(stdio STATIC
         src/stdio.asm
+        src/boot_marker.c
 )
 
 # 设置stdio库的汇编包含目录
 target_include_directories(stdio
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
         INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -208,13 +210,19 @@ target_include_directories(kernel_utility
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-add_custom_command(TARGET kernel POST_BUILD
-    COMMAND ${CMAKE_OBJCOPY} --strip-all $<TARGET_FILE:kernel> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped
+set(KERNEL_STRIPPED ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped)
+
+add_custom_command(
+    OUTPUT ${KERNEL_STRIPPED}
+    COMMAND ${CMAKE_OBJCOPY} --strip-all $<TARGET_FILE:kernel> ${KERNEL_STRIPPED}
+    DEPENDS kernel
     COMMENT "Stripping debug symbols from kernel to create kernel_stripped"
     VERBATIM
 )
 
-add_disk_target(write_kernel ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernel_stripped 9 380)
-add_dependencies(write_kernel kernel)
+add_custom_target(kernel_stripped_bin DEPENDS ${KERNEL_STRIPPED})
+
+add_disk_target(write_kernel ${KERNEL_STRIPPED} 9 380)
+add_dependencies(write_kernel kernel_stripped_bin)
 
 add_subdirectory(test)

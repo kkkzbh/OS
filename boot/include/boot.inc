@@ -64,3 +64,7 @@ PG_US_U                equ         100b                          ; 用户级
 
 
 PT_NULL                equ         0
+
+BOOT_MARKER_BASE       equ         (24 * 80 * 2)
+BOOT_MARKER_SLOT_BYTES equ         (8 * 2)
+BOOT_MARKER_ATTR       equ         0x2F

@@ -108,6 +108,29 @@ cmake --build build --target osbuild
 cmake --build build --target bochs
 ```
 
+### 4) 运行 boot 回归测试
+
+```bash
+ctest --test-dir build --output-on-failure -L boot
+```
+
+这组测试会在 clean build 下自动准备镜像，并执行：
+
+- `boot.image.layout`
+- `boot.qemu.milestones`
+- `boot.qemu.prompt_clean`
+
+### 5) 运行文件系统回归测试
+
+```bash
+ctest --test-dir build --output-on-failure -L fs
+```
+
+这组测试会在 build 目录准备独立镜像副本，并覆盖两层场景：
+
+- shell 黑盒：`pwd/ls/mkdir/rmdir/cd`
+- syscall/selftest：文件、目录、元数据、错误路径、持久化
+
 ## 启动后验证
 
 系统进入 Shell 后，可以先用内建命令做冒烟验证：
@@ -139,10 +162,12 @@ ls
 - `bochs-smoke`：Bochs 图形窗口启动后自动发键并做 shell 冒烟验证
 - `qemu`：用 QEMU 图形模式启动
 - `qemu-gdb`：用 QEMU 启动并在 `tcp::1234` 等待 GDB
-- `qemu-smoke`：QEMU 无头启动，自动驱动 shell 并做 OCR 冒烟测试
+- `qemu-smoke`：保留的 legacy QEMU shell smoke，自动驱动 `ps` / `mkdir` / `cd` / `pwd`
+- `fs_test_runner`：文件系统 syscall/selftest 用户程序
 - `write_program_no_arg`：写入无参用户程序到扇区 `1000`
 - `write_program_arg`：写入带参用户程序到扇区 `1100`
 - `write_cat`：写入 `cat` 用户程序到扇区 `1300`
+- `write_fs_test_runner`：写入 `fs_test_runner` 到扇区 `1500`
 
 如需额外写入用户程序（默认 `osbuild` 不包含后两者）：
 
@@ -157,13 +182,11 @@ cmake --build build --target write_program_arg write_cat
 1. 宿主机构建后写入裸盘固定扇区（`add_disk_target`）
 2. 内核启动时由 `kernel/wexe.cpp` 的 `write_execution()` 把 ELF 导入文件系统 `/bin/*`
 
-当前仓库默认状态下，`write_execution()` 里的调用是注释掉的：
+当前仓库默认会在 boot 时尝试把 `fs_test_runner` 导入 `/bin/fs_test_runner`，用于 `CTest` 文件系统测试；其余演示程序仍保留在 `kernel/wexe.cpp` 注释里，可按需手动开启：
 
 - `std_print()` -> `/bin/a`
 - `prog_arg()` -> `/bin/eb`
 - `write_cat()` -> `/bin/cat`
-
-如果你要演示完整用户程序链路，需要按 `kernel/wexe.cpp` 的注释手动开启并重新构建。
 
 ## 调试
 
@@ -203,14 +226,18 @@ cmake --build build --target bochs-smoke
 仓库现在提供了一套基于 `QEMU + QMP` 的调试和自动化验证路径：
 
 ```bash
+ctest --test-dir build --output-on-failure -L boot
+ctest --test-dir build --output-on-failure -L fs
 cmake --build build --target qemu
 cmake --build build --target qemu-gdb
 cmake --build build --target qemu-smoke
 ```
 
+- `ctest -L boot`：正式的 boot 回归测试入口，输出工件位于 `build/test/artifacts/*`
+- `ctest -L fs`：正式的文件系统回归测试入口，覆盖 shell 场景与 `fs_test_runner`
 - `qemu`：图形模式启动，适合日常交互验证
 - `qemu-gdb`：QEMU 在 `tcp::1234` 等待，可直接 `gdb build/bin/kernel`
-- `qemu-smoke`：无头启动，自动发送 `ps` / `mkdir /qq` / `cd /qq` / `pwd`，并通过截图 + OCR 验证 shell 是否正常工作
+- `qemu-smoke`：兼容保留的 shell smoke，会在发现 fatal screen pattern 时直接失败
 
 也可以直接使用脚本：
 
@@ -218,13 +245,14 @@ cmake --build build --target qemu-smoke
 python3 scripts/qemu_debug.py run
 python3 scripts/qemu_debug.py run --gdb 1234 --paused
 python3 scripts/qemu_debug.py smoke
+python3 scripts/qemu_debug.py test --scenario boot_milestones
+python3 scripts/qemu_debug.py test --scenario shell_fs_cwd
 ```
 
-`qemu-smoke` 的工件默认放在 `.cache/qemu-smoke/latest/`，包含：
+`ctest -L boot` 和 `ctest -L fs` 的工件默认放在 `build/test/artifacts/`，`qemu-smoke` 的工件默认放在 `.cache/qemu-smoke/latest/`。其中 VGA 路径会保存：
 
-- `*.ppm`：QEMU 原始截图
-- `*.png`：OCR 预处理后的截图
-- `*.txt`：Tesseract 识别结果
+- `*.vram.bin`：QEMU 文本模式显存快照
+- `*.txt`：从显存解码出的屏幕文本
 
 ## 项目结构
 
@@ -236,6 +264,7 @@ python3 scripts/qemu_debug.py smoke
 │   ├── include/
 │   ├── crt/
 │   └── test/
+├── tests/                # CTest 顶层测试入口（boot/system）
 ├── device/               # 设备层（IDE/时间/键盘/控制台/ioqueue）
 ├── bochsrc.disk          # Bochs 普通运行配置
 ├── bochsrc-gdb.disk      # Bochs + GDB 配置
@@ -246,14 +275,15 @@ python3 scripts/qemu_debug.py smoke
 
 - 与本地环境耦合较强（Bochs 路径、镜像文件、分区布局）。
 - `CMake` 最低版本当前设置为 `4.0.1`，旧版本无法直接配置。
-- 目前没有 CI 与自动化回归测试，主要依赖 Bochs 手工验证。
-- 用户程序导入文件系统默认关闭（需手动启用 `write_execution()`）。
+- 当前还没有 CI，但仓库已经接入 `CTest` 的 `boot` 与 `fs` 回归测试。
+- 当前文件系统运行期存在真实缺陷：`mkdir` 与 `/bin/fs_test_runner` 执行路径在 QEMU 下会触发 `#PF`，`ctest -L fs` 会稳定暴露该问题。
+- 用户程序导入文件系统目前默认只启用 `fs_test_runner`，其余示例程序仍需手动开启。
 
 ## 路线图
 
 - [ ] 降低/整理构建环境耦合（工具链与路径可配置化）
 - [ ] 增加一键初始化镜像与分区脚本
-- [ ] 增加自动化测试（至少覆盖关键 syscall/fs 流程）
+- [ ] 修复 `mkdir` 与用户程序 `exec` 路径上的文件系统/进程回归
 - [ ] 提供 QEMU 运行路径以提升开发效率
 
 ## 贡献

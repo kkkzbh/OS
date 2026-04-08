@@ -3,6 +3,11 @@
 TI_GDT equ 0
 RPL0 equ 0
 SELECTOR_VIDEO equ (0x0003 << 3) + TI_GDT + RPL0
+TEXT_COLS equ 80
+TEXT_VISIBLE_ROWS equ 24
+TEXT_VISIBLE_CELLS equ TEXT_COLS * TEXT_VISIBLE_ROWS
+TEXT_SCROLL_DWORDS equ ((TEXT_VISIBLE_CELLS - TEXT_COLS) * 2) / 4
+TEXT_LAST_VISIBLE_BYTE equ (TEXT_VISIBLE_CELLS - TEXT_COLS) * 2
 
 global putchar
 global puts
@@ -63,7 +68,7 @@ putchar:
     mov byte [gs:bx], 0x07 
     shr bx, 1 
     inc bx 
-    cmp bx, 2000
+    cmp bx, TEXT_VISIBLE_CELLS
     jl .set_cursor ; 如果没超出屏幕字符个数, 则去设置新光标值, 否则处理换行
 
 .is_line_feed:              ; LF('\n')
@@ -78,26 +83,26 @@ putchar:
     sub bx, dx              ; dx存储余数 ax存储商
 
 .is_carriage_return_end:
-    add bx, 80
-    cmp bx, 2000
+    add bx, TEXT_COLS
+    cmp bx, TEXT_VISIBLE_CELLS
 .is_line_feed_end:
     jl .set_cursor          ; 代码上分两段逻辑，实际LF或CR都被当成CRLF的组合处理
 
 ; 滚屏，实现原理则仅仅只是平移行数据 (在一个数组中，空出的一行用空格填充)
 .roll_screen: 
     cld 
-    mov ecx, 960 ; 2000 - 80 = 1920个要搬运, 1920*2=3840 字节, 一次4字节, 960次
+    mov ecx, TEXT_SCROLL_DWORDS ; 保留第25行给 boot 标记，滚动范围仅覆盖前24行
     mov esi, 0xC00B80A0 ; 第1行行首 src
     mov edi, 0xC00B8000 ; 第0行行首 dst 
     rep movsd
 
-    mov ebx, 3840  ; 1920 * 2
-    mov ecx, 80    ; 一次处理1个字符(2字节) 80次
+    mov ebx, TEXT_LAST_VISIBLE_BYTE
+    mov ecx, TEXT_COLS
 .cls:
     mov word [gs:ebx], 0x0720  ; 0x0720 黑底白字的空格键 (20是空格 07是黑景白字)
     add ebx, 2
     loop .cls 
-    mov bx, 1920        ; 将光标重置为最后一行的首字符
+    mov bx, TEXT_VISIBLE_CELLS - TEXT_COLS ; 将光标重置为最后一个可见文本行的首字符
 
 .set_cursor: ; (bx: 光标位置)
     mov dx, 0x03D4
@@ -196,7 +201,7 @@ clear:
     mov gs, ax 
 
     mov ebx, 0
-    mov ecx, 80 * 25
+    mov ecx, TEXT_VISIBLE_CELLS
 
 .cls:
     mov word [gs:ebx], 0x0720  ; 0x0720 黑底白字的空格键 (20是空格 07是黑景白字)
@@ -204,7 +209,7 @@ clear:
     loop .cls 
     mov ebx, 0
 
-.set_cursor     ; 直接把set_cursor搬过来用 (cv上方代码)
+.set_cursor:    ; 直接把set_cursor搬过来用 (cv上方代码)
     mov dx, 0x03D4  ; 索引寄存器
     mov al, 0x0e
     out dx, al 

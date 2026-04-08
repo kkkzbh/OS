@@ -8,8 +8,14 @@ os/.idea/
 
 build/
 
+build-check/
+build-*/
+
 .run/
 .cache/
+Testing/
+__pycache__/
+AGENTS.md
 
 /src/
 
@@ -54,3 +60,6 @@ doc/_build/**
 
 # Stray minted cache at root (if any)
 doc/_minted-*/
+
+black
+serial.txt
