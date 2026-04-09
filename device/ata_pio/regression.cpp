@@ -11,6 +11,7 @@ import block.partition;
 import console;
 import array;
 import format;
+import list;
 import sleep;
 import utility;
 import vector;
@@ -293,6 +294,52 @@ namespace
         return part.start_lba == 0 and part.sec_cnt == 0 and part.name[0] == '\0';
     }
 
+    auto as_partition(list::node& tag) -> partition*
+    {
+        return (partition*)((u32)&tag - (u32)(&((partition*)0)->part_tag));
+    }
+
+    auto check_partition_list(char const* case_name) -> bool
+    {
+        struct expected_partition
+        {
+            char const* name;
+            u32 start_lba;
+            u32 sec_cnt;
+        };
+
+        auto constexpr expected = std::array{
+            expected_partition{ "sdb1", 0x800, 0x8000 },
+            expected_partition{ "sdb5", 0x9000, 0x4800 },
+            expected_partition{ "sdb6", 0xE000, 0x6000 },
+            expected_partition{ "sdb7", 0x14800, 0x3800 },
+            expected_partition{ "sdb8", 0x18800, 0x7800 },
+            expected_partition{ "sdb9", 0x20800, 0x75E0 },
+        };
+
+        auto idx = 0u;
+        for(auto& elem : partition_list) {
+            if(idx >= expected.size()) {
+                return fail(case_name, "partition_list contains unexpected extra entries");
+            }
+            auto* part = as_partition(elem);
+            auto const& want = expected[idx];
+            if(not check_partition(*part, want.name, want.start_lba, want.sec_cnt)) {
+                auto reason = std::array<char, 96>{};
+                std::format_to(reason.data(), "partition_list entry {} mismatch", idx);
+                return fail(case_name, reason.data());
+            }
+            ++idx;
+        }
+
+        if(idx != expected.size()) {
+            auto reason = std::array<char, 96>{};
+            std::format_to(reason.data(), "partition_list expected {} entries got {}", expected.size(), idx);
+            return fail(case_name, reason.data());
+        }
+        return true;
+    }
+
     auto case_read_sector() -> bool
     {
         auto* sda = &ata_channels[0].devices[0];
@@ -357,6 +404,7 @@ namespace
     auto case_partition_table_scan() -> bool
     {
         auto* sdb = &ata_channels[0].devices[1];
+        scan_block_device_partitions(&sdb->base);
         auto* table = find_block_partition_table(&sdb->base);
         if(table == nullptr) {
             return fail(partition_table_scan_case, "partition table missing");
@@ -394,6 +442,16 @@ namespace
                 return fail(partition_table_scan_case, "unused logical partition slot should be empty");
             }
         }
+
+        if(not check_partition_list(partition_table_scan_case)) {
+            return false;
+        }
+
+        scan_block_device_partitions(&sdb->base);
+        if(not check_partition_list(partition_table_scan_case)) {
+            return false;
+        }
+
         return pass(partition_table_scan_case);
     }
 
