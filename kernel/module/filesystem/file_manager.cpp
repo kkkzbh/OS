@@ -91,7 +91,7 @@ auto block_bitmap_alloc(partition* part) -> optional<i32>
 
 auto bitmap_sync(partition* part,u32 bi,bitmap_type btmp) -> void
 {
-    auto off_sec = bi / 4096;               // i结点索引相对于位图的扇区偏移量
+    auto off_sec = bi / BITS_PER_SECTOR;    // 位图索引相对于位图的扇区偏移量
     auto off_size = off_sec * BLOCK_SIZE;   // i结点索引相对于位图的字节偏移量
     using enum bitmap_type;
     // 需要被同步到硬盘的位图只有inode和block的bitmap
