@@ -26,7 +26,8 @@ import inode;
 import scope;
 import inode.structure;
 import dir.structure;
-import ide;
+import block.device;
+import block.partition;
 import buffer;
 import stat.structure;
 import iobuf;
@@ -297,7 +298,7 @@ export auto mkdir(char const* ptr_pathname) -> int
     p_de->filename | std::copy[".."sv];
     p_de->inode_no = parent_dir->node->no;
     p_de->type = file_type::directory;
-    ide_write(cur_part->my_disk,node.sectors.front(),iobuf.data(),1);
+    block_write_blocks(cur_part->device,node.sectors.front(),iobuf.data(),1);
     node.size = 2 * cur_part->sb->dir_entry_size;
 
     // 在父目录中添加自己的目录项

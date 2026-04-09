@@ -10,7 +10,8 @@ import super_block;
 import inode;
 import array;
 import filesystem.utility;
-import ide;
+import block.device;
+import block.partition;
 import string;
 import console;
 import algorithm;
@@ -21,6 +22,30 @@ import file.manager;
 import vector;
 
 using namespace fs;
+
+namespace
+{
+    auto dir_entry_name_len(std::array<char,MAX_FILES_NAME_LEN> const& name) -> size_t
+    {
+        auto len = size_t{};
+        while(len < name.size() and name[len] != '\0') {
+            ++len;
+        }
+        return len;
+    }
+
+    auto dir_entry_name_view(std::array<char,MAX_FILES_NAME_LEN> const& name) -> std::string_view<char const>
+    {
+        return { name.data(),dir_entry_name_len(name) };
+    }
+
+    auto dir_entry_name_cstr(std::array<char,MAX_FILES_NAME_LEN> const& name) -> std::array<char,MAX_FILES_NAME_LEN + 1>
+    {
+        auto buf = std::array<char,MAX_FILES_NAME_LEN + 1>{};
+        memcpy(buf.data(),name.data(),dir_entry_name_len(name));
+        return buf;
+    }
+}
 
 // 根目录
 export auto root = dir{};
@@ -67,7 +92,7 @@ auto search_dir_entry(partition* part,dir* pdir,std::string_view<char const> nam
     auto& sectors = pdir->node->sectors;
     a | std::copy[sectors[0,sectors.size() - 1]];
     if(sectors.back() != 0) { // 若含有一级间接块表
-        ide_read(part->my_disk,sectors.back(),a.data() + 12,1);
+        block_read_blocks(part->device,sectors.back(),a.data() + 12,1);
     }
     // 至此 all_blocs存储的是该文件或目录的所有扇区地址
     // 写目录项时保证目录项不夸扇区 读时只需要申请1个扇区的内存
@@ -83,9 +108,9 @@ auto search_dir_entry(partition* part,dir* pdir,std::string_view<char const> nam
         if(a[i] == 0) {
             continue;
         }
-        ide_read(part->my_disk,a[i],buf,1);
+        block_read_blocks(part->device,a[i],buf,1);
         for(auto di : std::iota[dir_entry_cnt]) {
-            if(std::string_view{ p_de->filename } == name) {
+            if(dir_entry_name_view(p_de->filename) == name) {
                 *dir_e = *p_de;
                 delete all_blocks;
                 delete[] buf;
@@ -170,26 +195,26 @@ auto sync_dir_entry(dir* parent_dir,dir_entry* p_de,void* buf) -> bool
                 bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
                 all_blocks[12] = block_lba;
                 // 把新分配的第0个间接块的地址写入一级间接块表
-                ide_write(cur_part->my_disk,dir_inode->sectors[12],all_blocks.data() + 12,1);
+                block_write_blocks(cur_part->device,dir_inode->sectors[12],all_blocks.data() + 12,1);
             } else { // 间接块未分配
                 all_blocks[i] = block_lba;
                 // 把新分配的间接块地址写入一级间接块表
-                ide_write(cur_part->my_disk,dir_inode->sectors[12],all_blocks.data() + 12,1);
+                block_write_blocks(cur_part->device,dir_inode->sectors[12],all_blocks.data() + 12,1);
             }
             // 再将新目录项p_de写入新分配的间接块
             memset(buf,0,512);
             memcpy(buf,p_de,dir_entry_size);
-            ide_write(cur_part->my_disk,all_blocks[i],buf,1);
+            block_write_blocks(cur_part->device,all_blocks[i],buf,1);
             dir_inode->size += dir_entry_size;
             return true;
         }
         // 如果第i块内存已存在，将其读入内存，然后再该块中查找空目录项
-        ide_read(cur_part->my_disk,all_blocks[i],buf,1);
+        block_read_blocks(cur_part->device,all_blocks[i],buf,1);
         for(auto dir_entry_i : std::iota[dir_entrys_per_sec]) {
             if((dir_e + dir_entry_i)->type == file_type::unknown) {
                 // 无论是初始化还是删除文件后，都会把file_type置为unknown(0)
                 memcpy(dir_e + dir_entry_i,p_de,dir_entry_size);
-                ide_write(cur_part->my_disk,all_blocks[i],buf,1);
+                block_write_blocks(cur_part->device,all_blocks[i],buf,1);
                 dir_inode->size += dir_entry_size;
                 return true;
             }
@@ -209,7 +234,7 @@ auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> boo
         all_blocks[block_idx] = dir_inode->sectors[block_idx];
     }
     if(dir_inode->sectors.back() != 0) {
-        ide_read(part->my_disk,dir_inode->sectors.back(),all_blocks.data() + 12,1);
+        block_read_blocks(part->device,dir_inode->sectors.back(),all_blocks.data() + 12,1);
     }
     // 目录项在存储时保证不跨扇区
     auto dir_entry_size = part->sb->dir_entry_size;
@@ -224,7 +249,7 @@ auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> boo
         }
         memset(iobuf,0,SECTOR_SIZE);
         // 读取扇区，获得目录项
-        ide_read(part->my_disk,all_blocks[block_idx],iobuf,1);
+        block_read_blocks(part->device,all_blocks[block_idx],iobuf,1);
         is_dir_first_block = false;
         // 遍历所有的目录项
         auto dir_entry_cnt = 0;
@@ -234,7 +259,7 @@ auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> boo
             if(entry.type == file_type::unknown) {
                 continue;
             }
-            auto filename = std::string_view{ entry.filename };
+            auto filename = dir_entry_name_view(entry.filename);
             if(filename == "."sv) {
                 is_dir_first_block = true;
             } else if(filename != ".."sv) {
@@ -274,7 +299,7 @@ auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> boo
                 if(indirect_blocks > 1) {
                     // 间接索引表还包括其他间接块，仅在索引表中擦除这个间接块地址
                     all_blocks[block_idx] = 0;
-                    ide_write(part->my_disk,dir_inode->sectors.back(),all_blocks.data() + 12,1);
+                    block_write_blocks(part->device,dir_inode->sectors.back(),all_blocks.data() + 12,1);
                 } else {    // 间接索引表就当前这1个间接块
                     // 直接把间接索引表所在的块回收，然后擦除简介索引表块地址
                     block_bitmap_idx = dir_inode->sectors.back() - part->sb->data_start_lba;
@@ -286,7 +311,7 @@ auto delete_dir_entry(partition* part,dir* pdir,u32 inode_no,void* iobuf) -> boo
             }
         } else {    // 仅将该目录项清空
             *dir_entry_found = {};
-            ide_write(part->my_disk,all_blocks[block_idx],iobuf,1);
+            block_write_blocks(part->device,all_blocks[block_idx],iobuf,1);
         }
 
         // 更新i结点信息并同步到硬盘
@@ -312,7 +337,7 @@ auto dir_read(dir* dir) -> dir_entry*
         all_blocks[block_idx] = dir_inode->sectors[block_idx];
     }
     if(dir_inode->sectors.back() != 0) { // 若含有一级间接块表
-        ide_read(cur_part->my_disk,dir_inode->sectors.back(),all_blocks.data() + 12,1);
+        block_read_blocks(cur_part->device,dir_inode->sectors.back(),all_blocks.data() + 12,1);
         block_cnt = 140;
     }
     auto dir_entry_size = cur_part->sb->dir_entry_size;
@@ -326,7 +351,7 @@ auto dir_read(dir* dir) -> dir_entry*
             continue;
         }
         dir->buf | std::fill[0];
-        ide_read(cur_part->my_disk,all_blocks[block_idx],dir_e,1);
+        block_read_blocks(cur_part->device,all_blocks[block_idx],dir_e,1);
         for(auto dir_entry_idx : std::iota[dir_entrys_per_sec]) {   // 遍历扇区内所有目录项
             if(dir_e[dir_entry_idx].type == file_type::unknown) {   // 如果是未知目录项
                 continue;
@@ -379,7 +404,7 @@ auto get_parent_dir_inode_no(u32 child_inode_no,void* iobuf) -> u32
     auto block_lba = child_dir_inode->sectors.front();
     ASSERT(block_lba >= cur_part->sb->data_start_lba);
     inode_close(child_dir_inode);
-    ide_read(cur_part->my_disk,block_lba,iobuf,1);
+    block_read_blocks(cur_part->device,block_lba,iobuf,1);
     auto dir_e = (dir_entry*)(iobuf);
     // 第0个目录项是"."，第一个是".."
     ASSERT(dir_e[1].inode_no < 4096 and dir_e[1].type == file_type::directory);
@@ -397,7 +422,7 @@ auto get_child_dir_name(u32 p_inode_no,u32 c_inode_no,char* path,void* iobuf) ->
         all_blocks[block_idx] = parent_dir_inode->sectors[block_idx];
     }
     if(parent_dir_inode->sectors.back() != 0) { // 如果包含了一级间接表
-        ide_read(cur_part->my_disk,parent_dir_inode->sectors.back(),all_blocks.data() + 12,1);
+        block_read_blocks(cur_part->device,parent_dir_inode->sectors.back(),all_blocks.data() + 12,1);
         block_cnt = 140;
     }
     inode_close(parent_dir_inode);
@@ -408,13 +433,14 @@ auto get_child_dir_name(u32 p_inode_no,u32 c_inode_no,char* path,void* iobuf) ->
         if(not all_blocks[block_idx]) { // 如果该块为空
             continue;
         }
-        ide_read(cur_part->my_disk,all_blocks[block_idx],iobuf,1);  // 读入该块
+        block_read_blocks(cur_part->device,all_blocks[block_idx],iobuf,1);  // 读入该块
         for(auto dir_e_idx : std::iota[dir_entrys_per_sec]) {   // 遍历每个目录项
             if(dir_e[dir_e_idx].inode_no != c_inode_no) {   // 查找目录本身
                 continue;
             }
+            auto filename = dir_entry_name_cstr(dir_e[dir_e_idx].filename);
             strcat(path,"/");
-            strcat(path,dir_e[dir_e_idx].filename.data());
+            strcat(path,filename.data());
             return true;
         }
     }

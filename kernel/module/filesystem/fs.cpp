@@ -4,7 +4,8 @@ module;
 
 export module filesystem;
 
-import ide;
+import block.device;
+import block.partition;
 import utility;
 import filesystem.utility;
 import inode.structure;
@@ -68,9 +69,9 @@ auto format_partition(partition* part) -> void
     console::println("    inode_table_sects:0x{x}", sb.inode_table_sects);
     console::println("    data_start_lba:0x{x}", sb.data_start_lba);
 
-    auto hd = part->my_disk;
+    auto dev = part->device;
     // 将超级块写入本分去的1扇区
-    ide_write(hd,part->start_lba + 1,&sb,1);
+    block_write_blocks(dev,part->start_lba + 1,&sb,1);
     console::println("    super_block_lba:0x{x}",part->start_lba + 1);
     // 找出数据量最大的元信息，用其尺寸做存储缓冲区
     auto buf_size = std::max(sb.block_bitmap_sects,sb.inode_bitmap_sects,sb.inode_table_sects) * BLOCK_SIZE;
@@ -88,7 +89,7 @@ auto format_partition(partition* part) -> void
     for(auto i = 0; i != block_bitmap_last_bit; ++i) {
         buf[block_bitmap_last_byte] ^= (1 << i);
     }
-    ide_write(hd,sb.block_bitmap_lba,buf.data(),sb.block_bitmap_sects);
+    block_write_blocks(dev,sb.block_bitmap_lba,buf.data(),sb.block_bitmap_sects);
     // 只清空该清空的地方，提高一点点微弱的效率
     buf[0] = 0;
     buf[block_bitmap_last_byte,buf.size()] | std::fill[0];
@@ -96,7 +97,7 @@ auto format_partition(partition* part) -> void
     // 将inode位图初始化并写入sb.inode_bitmap_lba
     buf[0] |= 0x1;      // 第0个inode分给根目录
     //规定最大存4096个inode，刚好占1个扇区，所以这个位图不需要额外多处理
-    ide_write(hd,sb.inode_bitmap_lba,buf.data(),sb.inode_bitmap_sects);
+    block_write_blocks(dev,sb.inode_bitmap_lba,buf.data(),sb.inode_bitmap_sects);
     buf[0] = 0;
 
     // 将inode数组初始化并写入sb.inode_table_lba
@@ -107,7 +108,7 @@ auto format_partition(partition* part) -> void
         .size = sb.dir_entry_size * 2,  // .和..
         .sectors = { sb.data_start_lba } // 数据的开端是根目录
     };
-    ide_write(hd,sb.inode_table_lba,buf.data(),sb.inode_table_sects);
+    block_write_blocks(dev,sb.inode_table_lba,buf.data(),sb.inode_table_sects);
     buf[0,sizeof(inode)] | std::fill[0];
 
     // 将根目录写入sb.data_start_lba
@@ -120,7 +121,7 @@ auto format_partition(partition* part) -> void
     p_de->inode_no = 0;     // 根目录的父目录仍然是根目录自己
     p_de->type = file_type::directory;
     // data_start_lba已经分配给根目录，里面是根目录的目录项 目前是. ..
-    ide_write(hd,sb.data_start_lba,buf.data(),1);
+    block_write_blocks(dev,sb.data_start_lba,buf.data(),1);
 
     console::println("    root_dir_lba:0x{x}",sb.data_start_lba);
     console::println("{} format done",part->name);
@@ -137,7 +138,7 @@ auto mount(list::node* pelem,char const* part_name) -> bool
         return false;
     }
     cur_part = part;
-    auto hd = cur_part->my_disk;
+    auto dev = cur_part->device;
     auto sb = new super_block{};
     // 在内存中创建分区cur_part的超级块
     cur_part->sb = new super_block;
@@ -145,7 +146,7 @@ auto mount(list::node* pelem,char const* part_name) -> bool
         PANIC("alloc memory failed!");
     }
     // 读入超级块
-    ide_read(hd,cur_part->start_lba + 1,sb,1);;
+    block_read_blocks(dev,cur_part->start_lba + 1,sb,1);
     // 复制超级块sb到分区的超级块sb中
     cur_part->sb = sb;
     // 将硬盘上的块位图读入到内存
@@ -155,7 +156,7 @@ auto mount(list::node* pelem,char const* part_name) -> bool
     }
     cur_part->block.sz = sb->block_bitmap_sects * BLOCK_SIZE;
     // 从硬盘上读入块位图到分区的bits
-    ide_read(hd,sb->block_bitmap_lba,cur_part->block.bits,sb->block_bitmap_sects);
+    block_read_blocks(dev,sb->block_bitmap_lba,cur_part->block.bits,sb->block_bitmap_sects);
     // 将硬盘上的inode位图读入到内存
     cur_part->inode.bits = new u8[sb->inode_bitmap_sects * BLOCK_SIZE];
     if(cur_part->inode.bits == nullptr) {
@@ -163,7 +164,7 @@ auto mount(list::node* pelem,char const* part_name) -> bool
     }
     cur_part->inode.sz = sb->inode_bitmap_sects * BLOCK_SIZE;
     // 从硬盘上读入inode位图到分区的inode.bits
-    ide_read(hd,sb->inode_bitmap_lba,cur_part->inode.bits,sb->inode_bitmap_sects);
+    block_read_blocks(dev,sb->inode_bitmap_lba,cur_part->inode.bits,sb->inode_bitmap_sects);
     console::println("mount {} done!",part->name);
     return true;
 }

@@ -10,6 +10,7 @@ import utility;
 import algorithm;
 import memory;
 import alloc;
+import arena;
 import filesystem.syscall;
 import filesystem.utility;
 import scope;
@@ -201,6 +202,10 @@ export auto exec(char const* path,char* argv[]) -> i32
         return false;
     }
     auto cur = running_thread();
+    // exec 会把新的用户映像直接装载到 USER_VADDR_START 附近，
+    // 旧进程用户堆里的 arena/free-list 可能恰好落在这些页上并被新程序覆盖。
+    // 这里重置用户态小块分配器描述符，避免继续沿用已失效的 free-list 节点。
+    block_desc_init(cur->u_block_desc);
     auto constexpr task_name_size = sizeof(task{}.name);
     memcpy(cur->name,path,task_name_size);
     cur->name[task_name_size - 1] = '\0';   // 空终止

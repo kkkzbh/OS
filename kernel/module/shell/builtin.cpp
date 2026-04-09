@@ -23,7 +23,7 @@ using namespace fs;
 auto wash_path(char const* old_abs_path,char* new_abs_path) -> void
 {
     ASSERT(old_abs_path[0] == '/');
-    auto name = std::array<char,MAX_FILES_NAME_LEN>{};
+    auto name = std::array<char,MAX_FILES_NAME_LEN + 1>{};
     char const* subp = old_abs_path;
     subp = path::parse(subp,name.data());
     if(name.front() == '\0') {  // 只键入了 '/'

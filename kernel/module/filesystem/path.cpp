@@ -48,7 +48,7 @@ namespace path
     {
         ASSERT(pathname != nullptr);
         auto p = pathname;
-        auto name = std::array<char,MAX_FILES_NAME_LEN>{};
+        auto name = std::array<char,MAX_FILES_NAME_LEN + 1>{};
         auto dep = size_t{};
 
         while(p) {   // 首项不是'\0'说明含有昵称
@@ -83,7 +83,7 @@ namespace path
             return {};
         }
         auto parent_dir = &root;
-        auto name = std::array<char,MAX_FILES_NAME_LEN>{};      // 每次解析的单个昵称的缓冲区
+        auto name = std::array<char,MAX_FILES_NAME_LEN + 1>{};      // 每次解析的单个昵称的缓冲区
         search_record->parent_dir = parent_dir;
         search_record->type = file_type::unknown;
         auto parent_inode_no = 0;

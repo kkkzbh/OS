@@ -11,7 +11,8 @@ import optional;
 import algorithm;
 import console;
 import schedule;
-import ide;
+import block.device;
+import block.partition;
 import string;
 import vector;
 import filesystem;
@@ -98,12 +99,12 @@ auto bitmap_sync(partition* part,u32 bi,bitmap_type btmp) -> void
         case inode: {
             auto sec_lba = part->sb->inode_bitmap_lba + off_sec;
             auto bitmap_off = part->inode.bits + off_size;
-            ide_write(part->my_disk,sec_lba,bitmap_off,1);
+            block_write_blocks(part->device,sec_lba,bitmap_off,1);
             break;
         } case block: {
             auto sec_lba = part->sb->block_bitmap_lba + off_sec;
             auto bitmap_off = part->block.bits + off_size;
-            ide_write(part->my_disk,sec_lba,bitmap_off,1);
+            block_write_blocks(part->device,sec_lba,bitmap_off,1);
             break;
         }
     }

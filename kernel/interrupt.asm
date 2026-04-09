@@ -111,6 +111,8 @@ syscall_handler:
     push gs
     pushad
 
+    mov esi, eax
+
     mov ax, SELECTOR_K_DATA
     mov ds, ax
     mov es, ax
@@ -120,7 +122,7 @@ syscall_handler:
     push edx
     push ecx
     push ebx
-    call [syscall_table + eax * 4]
+    call [syscall_table + esi * 4]
     add esp, 12
     mov [esp + 8 * 4], eax  ; 对应 pushad 的EAX
     jmp intr_exit

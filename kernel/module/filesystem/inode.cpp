@@ -9,7 +9,8 @@ export module inode;
 import utility;
 import list;
 import array;
-import ide;
+import block.device;
+import block.partition;
 import filesystem.utility;
 import algorithm;
 import schedule;
@@ -62,9 +63,9 @@ auto inode_sync(partition* part,inode* node,void* buf) -> void
     auto ibuf = (char*)buf;
     auto cnt = 1 + inode_pos.two_sec; // 1 or 2
     // 读出所在扇区 写入后 再写回去
-    ide_read(part->my_disk,inode_pos.sec_lba,ibuf,cnt);
+    block_read_blocks(part->device,inode_pos.sec_lba,ibuf,cnt);
     memcpy(ibuf + inode_pos.off_size,&pure_inode,sizeof(inode));
-    ide_write(part->my_disk,inode_pos.sec_lba,ibuf,cnt);
+    block_write_blocks(part->device,inode_pos.sec_lba,ibuf,cnt);
 }
 
 // 根据i结点号返回相应的i结点
@@ -97,7 +98,7 @@ auto inode_open(partition* part,u32 inode_no) -> inode*
     cur->pgdir = cur_pagedir_bak;
     auto seccnt = 1 + inode_pos.two_sec;
     auto buf = std::vector(seccnt * BLOCK_SIZE,'\0');
-    ide_read(part->my_disk,inode_pos.sec_lba,buf.data(),seccnt);
+    block_read_blocks(part->device,inode_pos.sec_lba,buf.data(),seccnt);
     memcpy(nd,buf.data() + inode_pos.off_size,sizeof(inode));
     
     // 验证从磁盘读取的 sectors[12] 必须有效 (0 或 < 0x30000)
@@ -135,11 +136,11 @@ auto inode_delete(partition* part,u32 inode_no,void* buf) -> void
     ASSERT(sec_lba <= part->start_lba + part->sec_cnt);
     auto buffer = (char*)(buf);
     // 将原硬盘上的内容先读出来
-    ide_read(part->my_disk,sec_lba,buffer,1 + two_sec);
+    block_read_blocks(part->device,sec_lba,buffer,1 + two_sec);
     // 将inode清空
     *(inode*)(buffer + off_size) = {};
     // 用清空后的内存数据覆盖硬盘
-    ide_write(part->my_disk,sec_lba,buffer,1 + two_sec);
+    block_write_blocks(part->device,sec_lba,buffer,1 + two_sec);
 }
 
 // 回收inode的数据块和inode本身
@@ -155,7 +156,7 @@ auto inode_release(partition* part,u32 inode_no)
     auto block_cnt = 12;
     if(node->sectors.back() != 0) {
         block_cnt = 140;
-        ide_read(part->my_disk,node->sectors.back(),all_blocks.data() + 12,1);
+        block_read_blocks(part->device,node->sectors.back(),all_blocks.data() + 12,1);
         // 回收一级间接块表占用的扇区
         auto block_bitmap_idx = node->sectors.back() - part->sb->data_start_lba;
         ASSERT(block_bitmap_idx != 0);
@@ -179,4 +180,3 @@ auto inode_release(partition* part,u32 inode_no)
     inode_delete(part,inode_no,iobuf.data());   // 实现中会对数据清0，实则并不需要
     inode_close(node);
 }
-

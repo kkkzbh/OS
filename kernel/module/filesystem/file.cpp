@@ -24,14 +24,14 @@ import path.structure;
 import path;
 import string.format;
 import array.format;
-import ide;
+import block.device;
+import block.partition;
 import buffer;
 import free;
 import malloc;
 import alloc;
 import pool;
 import memory;
-import scope;
 import schedule;
 
 using namespace fs;
@@ -40,6 +40,7 @@ using namespace fs;
 export auto file_create(dir* parent_dir,std::string_view<char const> filename,u8 flag) -> optional<i32>
 {
     auto scope_state = true;
+    auto cur = running_thread();
 
     auto iobuf = std::vector(1024,char{});      // 后续操作的公共缓冲区
     if(not iobuf) {
@@ -53,8 +54,10 @@ export auto file_create(dir* parent_dir,std::string_view<char const> filename,u8
     }
     auto ino = u32(*oino);
 
-
+    auto pgdir_bak = cur->pgdir;
+    cur->pgdir = nullptr;
     auto finode = new inode{ ino };
+    cur->pgdir = pgdir_bak;
     auto finode_scope = scope_exit {
         [&] {
             cur_part->inode.set(ino,false);
@@ -69,7 +72,10 @@ export auto file_create(dir* parent_dir,std::string_view<char const> filename,u8
     auto ofd_idx = get_free_slot_in_global();
     auto ofd_idx_scope = scope_exit {
         [&] {
+            auto bak = cur->pgdir;
+            cur->pgdir = nullptr;
             delete finode;
+            cur->pgdir = bak;
         },
         scope_state
     };
@@ -220,7 +226,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
             // 未写入新数据之前已经占用了间接块，需要将间接块地址读进来
             ASSERT(file->node->sectors.back() != 0);
             auto indirect_block_table = file->node->sectors.back();
-            ide_read(cur_part->my_disk, indirect_block_table,all_blocks.data() + 12,1);
+            block_read_blocks(cur_part->device, indirect_block_table,all_blocks.data() + 12,1);
         }
     } else {
         // 若有增量，涉及分配新扇区以及是否分配一级间接块表
@@ -282,7 +288,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
                 bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
             }
             // 同步一级间接块表到硬盘
-            ide_write(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+            block_write_blocks(cur_part->device,indirect_block_table,all_blocks.data() + 12,1);
         } else if(file_has_used_blocks > 12) {  // 情况 3
             auto& sectors = file->node->sectors;
             // 确保已经具备了一级间接块表
@@ -290,7 +296,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
             // 获取一级间接块表地址
             auto indirect_block_table = sectors.back();
             // 已使用的间接块也将被读入all_blocks，无需单独收录
-            ide_read(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1); // 获取所有间接块地址
+            block_read_blocks(cur_part->device,indirect_block_table,all_blocks.data() + 12,1); // 获取所有间接块地址
             for(auto i : std::iota[file_has_used_blocks,file_will_use_blocks]) {
                 auto block_lba = block_bitmap_alloc(cur_part);
                 if(not block_lba) {
@@ -303,7 +309,7 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
                 bitmap_sync(cur_part,block_bitmap_idx,bitmap_type::block);
             }
             // 同步一级间接块表到硬盘
-            ide_write(cur_part->my_disk,indirect_block_table,all_blocks.data() + 12,1);
+            block_write_blocks(cur_part->device,indirect_block_table,all_blocks.data() + 12,1);
         }
     }
 
@@ -321,12 +327,11 @@ export auto file_write(file_manager* file,void const* buf,u32 count) -> i32
         // 判断此次写入磁盘的数据大小
         auto chunk_size = std::min(size_left,sec_left_bytes);
         if(first_write_block) {
-            ide_read(cur_part->my_disk,sec_lba,iobuf.data(),1);
+            block_read_blocks(cur_part->device,sec_lba,iobuf.data(),1);
             first_write_block = false;
         }
         memcpy(iobuf.data() + sec_off_bytes,src,chunk_size);
-        ide_write(cur_part->my_disk,sec_lba,iobuf.data(),1);
-        // console::println("file write at lba {x}",sec_lba);  // 调试信息，可去
+        block_write_blocks(cur_part->device,sec_lba,iobuf.data(),1);
         src += chunk_size;
         file->node->size += chunk_size;
         file->pos += chunk_size;
@@ -381,7 +386,7 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
             all_blocks[block_idx] = file->node->sectors[block_idx];
         } else {    // 用到了一级间接块表，需要将表中间接块读进来
             auto indirect_block_table = file->node->sectors.back();
-            ide_read(cur_part->my_disk,indirect_block_table,all_blocks + 12,1);
+            block_read_blocks(cur_part->device,indirect_block_table,all_blocks + 12,1);
         }
     } else {    // 要读多个块
         if(block_read_end_idx < 12) {   // 数据结束所在的块属于直接块
@@ -398,12 +403,12 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
             ASSERT(file->node->sectors.back() != 0);
             // 再将间接块地址写入all_blocks
             auto indirect_block_table = file->node->sectors.back();
-            ide_read(cur_part->my_disk,indirect_block_table,all_blocks + 12,1);
+            block_read_blocks(cur_part->device,indirect_block_table,all_blocks + 12,1);
         } else {    // 数据块在间接块中
             // 确保已经分配了一级间接块表
             ASSERT(file->node->sectors.back() != 0);
             auto indirect_block_table = file->node->sectors.back();
-            ide_read(cur_part->my_disk,indirect_block_table,all_blocks + 12,1);
+            block_read_blocks(cur_part->device,indirect_block_table,all_blocks + 12,1);
         }
     }
 
@@ -418,7 +423,7 @@ export auto file_read(file_manager* file,void* buf,u32 count) -> i32
         auto sec_left_bytes = BLOCK_SIZE - sec_off_bytes;
         auto chunk_size = std::min(size_left,sec_left_bytes);
         memset(iobuf, 0, BLOCK_SIZE);
-        ide_read(cur_part->my_disk,sec_lba,iobuf,1);
+        block_read_blocks(cur_part->device,sec_lba,iobuf,1);
         memcpy(a,iobuf + sec_off_bytes,chunk_size);
         a += chunk_size;
         file->pos += chunk_size;
