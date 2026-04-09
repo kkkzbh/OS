@@ -63,6 +63,12 @@ namespace path
     // 搜索文件pathname(/开头的全路径)，找到返回inode号
     auto search(char const* pathname,search_record* search_record) -> optional<int>
     {
+        if(pathname == nullptr) {
+            search_record->parent_dir = &root;
+            search_record->type = file_type::unknown;
+            search_record->path[0] = '\0';
+            return {};
+        }
         auto sv = std::string_view{ pathname };
         if(sv == "/"sv or sv == "/."sv or sv == "/.."sv) {    // 如果查找的是根目录
             search_record->parent_dir = &root;
@@ -70,7 +76,12 @@ namespace path
             search_record->path[0] = '\0';  // 清空搜索路径
             return 0;
         }
-        ASSERT(sv.front() == '/' and sv.size() > 1 and sv.size() < MAX_PATH_LEN);  // 确保pathname合法 从/出发
+        if(sv.empty() or sv.front() != '/' or sv.size() >= MAX_PATH_LEN) {
+            search_record->parent_dir = &root;
+            search_record->type = file_type::unknown;
+            search_record->path[0] = '\0';
+            return {};
+        }
         auto parent_dir = &root;
         auto name = std::array<char,MAX_FILES_NAME_LEN>{};      // 每次解析的单个昵称的缓冲区
         search_record->parent_dir = parent_dir;

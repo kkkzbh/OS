@@ -9,6 +9,7 @@ import alloc;
 import tss;
 import syscall.init;
 import ide.init;
+import ide.regression;
 import filesystem.init;
 import console;
 import thread.init;
@@ -54,6 +55,14 @@ auto init_all() -> void
     intr_enable();
     ide_init();         // 初始化 硬盘
 
+    if(disk_regression_mode_requested()) {
+        if(not disk_regression_mode_case()) {
+            start_init_process();
+        }
+        return;
+    }
+
     filesystem_init();  // 初始化 文件系统
+    start_init_process();
 
 }

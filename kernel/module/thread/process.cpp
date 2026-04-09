@@ -29,6 +29,8 @@ auto start_process(void* filename) -> void
 {
     auto func = filename;
     auto cur = running_thread();
+    auto* user_stack = get_a_page(pool_flags::USER,USER_STACK3_VADDR);
+    ASSERT(user_stack != nullptr);
     cur->self_kstack = (u32*)((char*)cur->self_kstack + sizeof(thread_stack));
     auto proc_stack = (intr_stack*)cur->self_kstack;
     *proc_stack = (intr_stack) {
@@ -38,7 +40,7 @@ auto start_process(void* filename) -> void
         .eip    = (void(*)())func,
         .cs     = SELECTOR_U_CODE,
         .eflags = EFLAGS_IOPL_0 | EFLAGS_MBS | EFLAGS_IF_1,
-        .esp    = (void*)((u32)get_a_page(pool_flags::USER,USER_STACK3_VADDR) + PG_SIZE),
+        .esp    = (void*)((u32)user_stack + PG_SIZE),
         .ss     = SELECTOR_U_DATA
     };
 
@@ -75,5 +77,3 @@ auto process_execute(void* filename,char const* name) -> void
     thread_all_list.push_back(&thread->all_list_tag);
     intr_set_status(old_status);
 }
-
-

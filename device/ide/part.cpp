@@ -73,23 +73,23 @@ auto scan_partition(disk* __hd,u32 __ext_lba) -> void
                 }
             } else { // 如果是非扩展分区
                 if(ext_lba == 0) { // 此时全是主分区
+                    ASSERT(p_no < 4);
                     auto& part = hd->prim_parts[p_no];
                     part.start_lba = ext_lba + p.start_lba;
                     part.sec_cnt = p.sec_cnt;
                     part.my_disk = hd;
                     partition_list.push_back(&part.part_tag);
                     std::format_to(part.name,"{}{}",hd->name,++p_no);
-                    ASSERT(p_no < 4); // 0 1 2 3
                 } else { // 处理逻辑分区的情况
+                    if(l_no >= 8) { // 实现上只允许支持8个逻辑分区，数组大小为8
+                        return;
+                    }
                     auto& part = hd->logic_parts[l_no];
                     part.start_lba = ext_lba + p.start_lba;
                     part.sec_cnt = p.sec_cnt;
                     part.my_disk = hd;
                     partition_list.push_back(&part.part_tag);
                     std::format_to(part.name,"{}{}",hd->name,l_no++ + 5);
-                    if(l_no >= 8) { // 实现上只允许支持8个逻辑分区，数组大小为8
-                        return;
-                    }
                 }
             }
         }

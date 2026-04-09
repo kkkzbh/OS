@@ -30,6 +30,7 @@ export enum struct sysid : int
     ps,
     exec,
     wait,
+    disktest,
     exit
 };
 

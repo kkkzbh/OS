@@ -95,6 +95,7 @@ target_sources(ide
         ide/init.cpp
         ide/intr.cpp
         ide/part.cpp
+        ide/regression.cpp
 )
 
 target_link_libraries(ide

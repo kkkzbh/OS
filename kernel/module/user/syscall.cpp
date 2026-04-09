@@ -167,6 +167,11 @@ namespace std
         return syscall(+sysid::exec,path,argv);
     }
 
+    export auto disktest(std::string_view<char const> case_name) -> bool
+    {
+        return syscall(+sysid::disktest, case_name.data());
+    }
+
     export auto wait(i32& status) -> pid_t
     {
         return syscall(+sysid::wait, &status);

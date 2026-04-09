@@ -37,6 +37,7 @@ auto constexpr DEV_DEV = 0x10;
 auto constexpr CMD_IDENTIFY = 0xec;     // identify指令
 auto constexpr CMD_READ_SECTOR = 0x20;  // 读扇区指令
 auto constexpr CMD_WRITE_SECTOR = 0x30; // 写扇区指令
+auto constexpr sector_size = u32(512);
 
 // 定义可读写的最大扇区数，调试用
 auto constexpr max_lba = 80 * 1024 * 1024 / 512 - 1;   // 仅80MB硬盘
@@ -212,6 +213,12 @@ auto select_sector(disk* hd,u32 lba,u8 sec_cnt) -> void
     outb(reg::dev(channel),device);
 }
 
+auto encode_sector_count(u32 sec_cnt) -> u8
+{
+    ASSERT(sec_cnt > 0 and sec_cnt <= 256);
+    return sec_cnt == 256 ? u8(0) : u8(sec_cnt);
+}
+
 // 向通道channel发命令cmd
 auto cmd_out(ide_channel* channel,u8 cmd) -> void
 {
@@ -275,23 +282,23 @@ auto ide_read(disk* hd,u32 lba,void* buf,u32 sec_cnt) -> void
     select_disk(hd);
 
     for(auto k = 0u; k < sec_cnt; ) {
-        // 单次操作的扇区数不能超过256
-        auto op = std::min(sec_cnt - k,256u);
+        auto const chunk_secs = std::min(sec_cnt - k,256u);
+        auto const hw_secs = encode_sector_count(chunk_secs);
         // 写入待读入的扇区数和起始扇区号
-        select_sector(hd,lba + k,op);
+        select_sector(hd,lba + k,hw_secs);
         // 执行的命令写入cmd寄存器
         cmd_out(hd->my_channel,CMD_READ_SECTOR);    // 准备开始读数据
         // 硬盘已经开始工作，现在选择阻塞自己
         hd->my_channel->disk_done.acquire();
         // 醒来后检测是否可读
         if(not busy_wait(hd)) {
-            auto error = std::array<char,64>{};
-            std::format_to(error.data(),"{} read sector {} failed!!!\n",hd->name,lba);
+            auto error = std::array<char,96>{};
+            std::format_to(error.data(),"{} read sector chunk lba {} secs {} failed!!!\n",hd->name,lba + k,chunk_secs);
             PANIC(error.data());
         }
         // 把数据从硬盘的缓冲区读出
-        read_from_sector(hd,(void*)((u32)buf + k * 512),op);
-        k += op;
+        read_from_sector(hd,(void*)((u32)buf + k * sector_size),hw_secs);
+        k += chunk_secs;
     }
 
 }
@@ -304,19 +311,20 @@ auto ide_write(disk* hd,u32 lba,void* buf,u32 sec_cnt) -> void
     auto lcg = lock_guard{ hd->my_channel->mtx };
     select_disk(hd);
     for(auto k = 0u; k < sec_cnt; ) {
-        auto op = std::min(sec_cnt - k,256u);
-        select_sector(hd,lba + k,op);
+        auto const chunk_secs = std::min(sec_cnt - k,256u);
+        auto const hw_secs = encode_sector_count(chunk_secs);
+        select_sector(hd,lba + k,hw_secs);
         cmd_out(hd->my_channel,CMD_WRITE_SECTOR);
         if(not busy_wait(hd)) {
-            auto error = std::array<char,64>{};
-            std::format_to(error.data(),"{} write sector {} failed!!!!!!\n",hd->name,lba);
+            auto error = std::array<char,96>{};
+            std::format_to(error.data(),"{} write sector chunk lba {} secs {} failed!!!!!!\n",hd->name,lba + k,chunk_secs);
             PANIC(error.data());
         }
         // 写入数据到硬盘
-        write_sector(hd,(void*)((u32)buf + k * 512),op);
+        write_sector(hd,(void*)((u32)buf + k * sector_size),hw_secs);
         // 在硬盘响应期间阻塞自己
         hd->my_channel->disk_done.acquire();
-        k += op;
+        k += chunk_secs;
     }
 }
 

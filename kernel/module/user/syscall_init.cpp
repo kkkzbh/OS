@@ -15,6 +15,7 @@ import ps;
 import exec;
 import wait;
 import exit;
+import ide.regression;
 
 export auto syscall_init();
 
@@ -52,6 +53,7 @@ auto syscall_init()
     install(ps);
     install(exec);
     install(wait);
+    install(disktest);
     install(exit);
     puts("syscall_init done\n");
 }

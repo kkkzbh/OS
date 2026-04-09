@@ -3,6 +3,7 @@
 [bits 32]
 %define ERROR_CODE nop  ; 主要用于统一对齐栈，不压入ERROR_CODE的中断程序就压入0
 %define ZERO push 0
+%define SELECTOR_K_DATA 0x10
 
 extern puts
 extern idt_table ; C中注册的中断处理程序数组
@@ -109,6 +110,11 @@ syscall_handler:
     push fs
     push gs
     pushad
+
+    mov ax, SELECTOR_K_DATA
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
 
     push 0x80
     push edx

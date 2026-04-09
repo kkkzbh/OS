@@ -149,6 +149,8 @@ export auto shell() -> void
             builtin::rmdir(argc,argv.data());
         } else if(cli == "rm"sv) {
             builtin::rm(argc,argv.data());
+        } else if(cli == "disktest"sv) {
+            builtin::disktest(argc,argv.data());
         } else {
             auto pid = std::fork();
             if(pid) {   // 让父进程停下，否则会清空final_path

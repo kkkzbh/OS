@@ -8,6 +8,7 @@ import select
 import shutil
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -19,11 +20,87 @@ VGA_VISIBLE_ROWS = 24
 VGA_MARKER_ROWS = 1
 VGA_COLS = 80
 VGA_ROW_BYTES = VGA_COLS * 2
-PROMPT_TEXT = "k@kkkzbh /$ >"
+SECTOR_SIZE = 512
+DISK_MODE_MARKER = b"DISKTEST"
+DISK_MODE_MARKER_LBA = 1799
+DISK_CASE_OFFSET = 16
+ROOT_PROMPT_PATTERN = re.compile(r"K@KKKZBH /\$ >")
+PROMPT_PATTERN = re.compile(r"K@KKKZBH [^\n]+\$ >")
+FATAL_PATTERNS = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"#PF",
+        r"PAGE-FAULT",
+        r"PANIC",
+        r"ASSERT",
+        r"GENERAL PROTECTION",
+        r"DOUBLE FAULT",
+        r"TRIPLE FAULT",
+        r"EXCEPTION MESSAGE BEGIN",
+    )
+]
 
 
 def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, check=check, text=True, capture_output=True)
+
+
+def normalize_text(text: str) -> str:
+    return " ".join(text.upper().split())
+
+
+def literal_pattern(text: str) -> re.Pattern[str]:
+    return re.compile(re.escape(text.upper()))
+
+
+def ensure_images_exist(os_image: Path, data_image: Path) -> None:
+    for path in (os_image, data_image):
+        if not path.exists():
+            raise FileNotFoundError(f"missing disk image: {path}")
+
+
+def clone_images_for_test(os_image: Path, data_image: Path, artifacts_dir: Path, clone_images: bool) -> tuple[Path, Path]:
+    ensure_images_exist(os_image, data_image)
+    if not clone_images:
+        return os_image, data_image
+
+    cloned_os = artifacts_dir / os_image.name
+    cloned_data = artifacts_dir / data_image.name
+    shutil.copy2(os_image, cloned_os)
+    shutil.copy2(data_image, cloned_data)
+    return cloned_os, cloned_data
+
+
+def configure_disk_autorun(os_image: Path, case_name: str) -> None:
+    payload = bytearray(SECTOR_SIZE)
+    payload[: len(DISK_MODE_MARKER)] = DISK_MODE_MARKER
+    case_bytes = case_name.encode("ascii")
+    payload[DISK_CASE_OFFSET : DISK_CASE_OFFSET + len(case_bytes)] = case_bytes
+    with os_image.open("r+b") as fp:
+        fp.seek(DISK_MODE_MARKER_LBA * SECTOR_SIZE)
+        fp.write(payload)
+
+
+def render_bochs_config(base_config: Path, output_config: Path, os_image: Path, data_image: Path, artifacts_dir: Path) -> None:
+    lines: list[str] = []
+    for line in base_config.read_text(encoding="utf-8").splitlines():
+        if line.startswith("log:"):
+            lines.append(f"log: {artifacts_dir / 'bochs.log'}")
+        elif line.startswith("debugger_log:"):
+            lines.append(f"debugger_log: {artifacts_dir / 'bochs_debugger.log'}")
+        elif line.startswith("com1:"):
+            lines.append(f'com1: enabled=1, mode=file, dev="{artifacts_dir / "serial.txt"}"')
+        elif line.startswith("ata0-master:"):
+            lines.append(
+                f'ata0-master: type=disk, path="{os_image}", mode=flat, cylinders=130, heads=16, spt=63'
+            )
+        elif line.startswith("ata0-slave:"):
+            lines.append(
+                f'ata0-slave: type=disk, path="{data_image}", mode=flat, cylinders=162, heads=16, spt=63'
+            )
+        else:
+            lines.append(line)
+    output_config.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def find_bochs_window(timeout: float = 15.0) -> str:
@@ -161,32 +238,6 @@ class GdbMiSession:
         return [line for line in text.splitlines() if line and line != "(gdb) " and line != "(gdb)"]
 
 
-def dump_screen(gdb: GdbMiSession, artifacts_dir: Path, stem: str, window_id: str) -> tuple[list[str], str]:
-    visible = gdb.read_bytes(VGA_TEXT_BASE, VGA_VISIBLE_ROWS * VGA_ROW_BYTES)
-    marker = gdb.read_bytes(
-        VGA_TEXT_BASE + VGA_VISIBLE_ROWS * VGA_ROW_BYTES,
-        VGA_MARKER_ROWS * VGA_ROW_BYTES,
-    )
-    visible_rows = decode_vga_rows(visible, VGA_VISIBLE_ROWS)
-    marker_row = decode_vga_rows(marker, VGA_MARKER_ROWS)[0]
-
-    capture_window(window_id, artifacts_dir, stem)
-    dump_path = artifacts_dir / f"{stem}.txt"
-    dump_path.write_text(
-        "\n".join(
-            [
-                "== Visible ==",
-                *visible_rows,
-                "",
-                "== Marker ==",
-                marker_row,
-                "",
-            ]
-        )
-    )
-    return visible_rows, marker_row
-
-
 def connect_gdb(kernel_path: Path, port: int, timeout: float = 15.0) -> GdbMiSession:
     deadline = time.time() + timeout
     last_error: Exception | None = None
@@ -202,60 +253,181 @@ def connect_gdb(kernel_path: Path, port: int, timeout: float = 15.0) -> GdbMiSes
     raise TimeoutError(f"timed out connecting gdb to tcp::{port}: {last_error}")
 
 
-def wait_for_guest_state(
+def capture_screen(gdb: GdbMiSession, artifacts_dir: Path, stem: str, window_id: str) -> tuple[Path, str]:
+    visible = gdb.read_bytes(VGA_TEXT_BASE, VGA_VISIBLE_ROWS * VGA_ROW_BYTES)
+    marker = gdb.read_bytes(
+        VGA_TEXT_BASE + VGA_VISIBLE_ROWS * VGA_ROW_BYTES,
+        VGA_MARKER_ROWS * VGA_ROW_BYTES,
+    )
+    visible_rows = decode_vga_rows(visible, VGA_VISIBLE_ROWS)
+    marker_row = decode_vga_rows(marker, VGA_MARKER_ROWS)[0]
+
+    capture_window(window_id, artifacts_dir, stem)
+    dump_path = artifacts_dir / f"{stem}.txt"
+    text = "\n".join(
+        [
+            "== Visible ==",
+            *visible_rows,
+            "",
+            "== Marker ==",
+            marker_row,
+            "",
+        ]
+    )
+    dump_path.write_text(text, encoding="utf-8")
+
+    normalized = normalize_text(text)
+    for pattern in FATAL_PATTERNS:
+        if pattern.search(normalized):
+            raise RuntimeError(f"fatal screen pattern {pattern.pattern!r} seen in {dump_path}")
+
+    return dump_path, text
+
+
+def wait_for_patterns(
     *,
     gdb: GdbMiSession,
     window_id: str,
     artifacts_dir: Path,
     label: str,
+    patterns: list[re.Pattern[str]],
     timeout: float,
-    matcher,
     interval: float = 0.5,
-) -> tuple[list[str], str]:
+) -> tuple[Path, str]:
     deadline = time.time() + timeout
     attempt = 0
-    latest_rows: list[str] = []
-    latest_marker = ""
+    latest_artifact: Path | None = None
+    latest_text = ""
 
     gdb.continue_run()
     while time.time() < deadline:
         time.sleep(interval)
         gdb.interrupt()
-        stem = f"{label}-{attempt:02d}"
-        latest_rows, latest_marker = dump_screen(gdb, artifacts_dir, stem, window_id)
-        if matcher(latest_rows, latest_marker):
-            print(f"[ok] {label}: {artifacts_dir / (stem + '.txt')}")
-            return latest_rows, latest_marker
+        artifact_path, text = capture_screen(gdb, artifacts_dir, f"{label}-{attempt:02d}", window_id)
+        latest_artifact = artifact_path
+        latest_text = text
+        normalized = normalize_text(text)
+        if all(pattern.search(normalized) for pattern in patterns):
+            print(f"[ok] {label}: {artifact_path}")
+            return artifact_path, text
         attempt += 1
         gdb.continue_run()
 
     raise TimeoutError(
-        f"timed out waiting for {label}; latest marker={latest_marker!r}; "
-        f"latest visible tail={latest_rows[-5:]!r}"
+        f"timed out waiting for {label}; latest artifact={latest_artifact}, latest text={latest_text!r}"
     )
 
 
-def has_prompt(rows: list[str], marker: str) -> bool:
-    return "BOOT:SH" in marker and any(PROMPT_TEXT in row for row in rows)
+def run_shell_command(
+    gdb: GdbMiSession,
+    window_id: str,
+    artifacts_dir: Path,
+    *,
+    label: str,
+    command: str,
+    patterns: list[re.Pattern[str]] | None = None,
+    timeout: float = 10.0,
+) -> tuple[Path, str]:
+    print(f"[info] sending: {command}")
+    type_command(window_id, command)
+    expected = list(patterns or [])
+    expected.append(PROMPT_PATTERN)
+    return wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label=label,
+        patterns=expected,
+        timeout=timeout,
+    )
 
 
-def has_ps_output(rows: list[str], marker: str) -> bool:
-    joined = "\n".join(rows)
-    return "BOOT:SH" in marker and "PID" in joined and "COMMAND" in joined and PROMPT_TEXT in joined
+def scenario_boot_prompt_clean(gdb: GdbMiSession, window_id: str, artifacts_dir: Path, boot_timeout: float) -> None:
+    print("[info] waiting for shell prompt")
+    wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label="boot-prompt",
+        patterns=[ROOT_PROMPT_PATTERN, literal_pattern("BOOT:SH")],
+        timeout=boot_timeout,
+    )
 
 
-def has_pwd_output(rows: list[str], marker: str) -> bool:
-    joined = "\n".join(rows)
-    return "BOOT:SH" in marker and PROMPT_TEXT in joined and "\n/" in ("\n" + joined)
+def scenario_disk_read_sector(gdb: GdbMiSession, window_id: str, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label="disk-read-sector",
+        patterns=[literal_pattern("DISKCASE:read_sector:PASS")],
+        timeout=boot_timeout,
+    )
 
 
-def smoke(artifacts_dir: Path, bochs_binary: str, bochs_config: str, kernel_path: Path) -> int:
+def scenario_disk_cross_sector_read(gdb: GdbMiSession, window_id: str, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label="disk-cross-sector-read",
+        patterns=[literal_pattern("DISKCASE:cross_sector_read:PASS")],
+        timeout=boot_timeout,
+    )
+
+
+def scenario_disk_read_after_write(gdb: GdbMiSession, window_id: str, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label="disk-read-after-write",
+        patterns=[literal_pattern("DISKCASE:read_after_write:PASS")],
+        timeout=boot_timeout,
+    )
+
+
+def scenario_disk_partition_table_scan(gdb: GdbMiSession, window_id: str, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label="disk-partition-table-scan",
+        patterns=[literal_pattern("DISKCASE:partition_table_scan:PASS")],
+        timeout=boot_timeout,
+    )
+
+
+def run_disk_scenario(
+    *,
+    scenario: str,
+    artifacts_dir: Path,
+    bochs_binary: str,
+    bochs_config: Path,
+    kernel_path: Path,
+    os_image: Path,
+    data_image: Path,
+    clone_images: bool,
+    boot_timeout: float,
+) -> int:
     artifacts_dir.parent.mkdir(parents=True, exist_ok=True)
     if artifacts_dir.exists():
         shutil.rmtree(artifacts_dir)
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    cmd = [bochs_binary, "-qf", bochs_config]
+    os_image, data_image = clone_images_for_test(os_image, data_image, artifacts_dir, clone_images)
+    disk_case_name = {
+        "disk_read_sector": "read_sector",
+        "disk_cross_sector_read": "cross_sector_read",
+        "disk_read_after_write": "read_after_write",
+        "disk_partition_table_scan": "partition_table_scan",
+    }.get(scenario)
+    if disk_case_name is not None:
+        configure_disk_autorun(os_image, disk_case_name)
+    rendered_config = artifacts_dir / "bochsrc.test.disk"
+    render_bochs_config(bochs_config, rendered_config, os_image, data_image, artifacts_dir)
+
+    cmd = [bochs_binary, "-qf", str(rendered_config)]
     print(f"[info] artifacts: {artifacts_dir}")
     print(f"[info] bochs: {' '.join(cmd)}")
     proc = subprocess.Popen(
@@ -270,40 +442,60 @@ def smoke(artifacts_dir: Path, bochs_binary: str, bochs_config: str, kernel_path
     try:
         window_id = find_bochs_window()
         print(f"[info] bochs window: {window_id}")
-
         gdb = connect_gdb(kernel_path, 1234)
 
-        wait_for_guest_state(
-            gdb=gdb,
-            window_id=window_id,
-            artifacts_dir=artifacts_dir,
-            label="prompt",
-            timeout=20.0,
-            matcher=has_prompt,
-        )
+        if scenario == "disk_read_sector":
+            scenario_disk_read_sector(gdb, window_id, artifacts_dir, boot_timeout)
+        elif scenario == "disk_cross_sector_read":
+            scenario_disk_cross_sector_read(gdb, window_id, artifacts_dir, boot_timeout)
+        elif scenario == "disk_read_after_write":
+            scenario_disk_read_after_write(gdb, window_id, artifacts_dir, boot_timeout)
+        elif scenario == "disk_partition_table_scan":
+            scenario_disk_partition_table_scan(gdb, window_id, artifacts_dir, boot_timeout)
+        else:
+            raise ValueError(f"unknown scenario: {scenario}")
 
-        print("[info] sending: ps")
-        type_command(window_id, "ps")
-        wait_for_guest_state(
-            gdb=gdb,
-            window_id=window_id,
-            artifacts_dir=artifacts_dir,
-            label="ps",
-            timeout=10.0,
-            matcher=has_ps_output,
-        )
+        (artifacts_dir / "scenario.pass").write_text(f"{scenario}\n", encoding="utf-8")
+        print(f"[ok] scenario passed: {scenario}")
+        return 0
+    finally:
+        if gdb is not None:
+            gdb.close()
+        os.killpg(proc.pid, signal.SIGTERM)
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait(timeout=5)
 
-        print("[info] sending: pwd")
-        type_command(window_id, "pwd")
-        wait_for_guest_state(
-            gdb=gdb,
-            window_id=window_id,
-            artifacts_dir=artifacts_dir,
-            label="pwd",
-            timeout=10.0,
-            matcher=has_pwd_output,
-        )
 
+def smoke(artifacts_dir: Path, bochs_binary: str, bochs_config: Path, kernel_path: Path, boot_timeout: float) -> int:
+    rendered_config = bochs_config.resolve()
+    cmd = [bochs_binary, "-qf", str(rendered_config)]
+    artifacts_dir.parent.mkdir(parents=True, exist_ok=True)
+    if artifacts_dir.exists():
+        shutil.rmtree(artifacts_dir)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"[info] artifacts: {artifacts_dir}")
+    print(f"[info] bochs: {' '.join(cmd)}")
+    proc = subprocess.Popen(
+        cmd,
+        cwd=REPO_ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+    gdb: GdbMiSession | None = None
+
+    try:
+        window_id = find_bochs_window()
+        print(f"[info] bochs window: {window_id}")
+        gdb = connect_gdb(kernel_path, 1234)
+
+        scenario_boot_prompt_clean(gdb, window_id, artifacts_dir, boot_timeout)
+        run_shell_command(gdb, window_id, artifacts_dir, label="ps", command="ps", patterns=[literal_pattern("PID"), literal_pattern("COMMAND")])
+        run_shell_command(gdb, window_id, artifacts_dir, label="pwd", command="pwd", patterns=[literal_pattern("/")])
         print("[ok] bochs shell smoke passed")
         return 0
     finally:
@@ -317,23 +509,71 @@ def smoke(artifacts_dir: Path, bochs_binary: str, bochs_config: str, kernel_path
             proc.wait(timeout=5)
 
 
+def command_smoke(args: argparse.Namespace) -> int:
+    return smoke(
+        Path(args.artifacts_dir),
+        args.bochs_binary,
+        Path(args.bochs_config).resolve(),
+        Path(args.kernel).resolve(),
+        args.boot_timeout,
+    )
+
+
+def command_test(args: argparse.Namespace) -> int:
+    return run_disk_scenario(
+        scenario=args.scenario,
+        artifacts_dir=Path(args.artifacts_dir),
+        bochs_binary=args.bochs_binary,
+        bochs_config=Path(args.bochs_config).resolve(),
+        kernel_path=Path(args.kernel).resolve(),
+        os_image=Path(args.os_image).resolve(),
+        data_image=Path(args.data_image).resolve(),
+        clone_images=args.clone_images,
+        boot_timeout=args.boot_timeout,
+    )
+
+
 def parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Drive and smoke-test knix under Bochs via gdbstub.")
-    p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
-    p.add_argument("--bochs-binary", default="/usr/local/bochs-gdb/bin/bochs")
-    p.add_argument("--bochs-config", default="bochsrc-gdb.disk")
-    p.add_argument("--kernel", default=str(REPO_ROOT / "build-fs" / "bin" / "kernel"))
+    p = argparse.ArgumentParser(description="Drive and test knix under Bochs via gdbstub.")
+    sub = p.add_subparsers(dest="cmd")
+
+    smoke_p = sub.add_parser("smoke", help="Run the legacy Bochs shell smoke test.")
+    smoke_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
+    smoke_p.add_argument("--bochs-binary", default="/usr/local/bochs-gdb/bin/bochs")
+    smoke_p.add_argument("--bochs-config", default="bochsrc-gdb.disk")
+    smoke_p.add_argument("--kernel", default=str(REPO_ROOT / "build-fs" / "bin" / "kernel"))
+    smoke_p.add_argument("--boot-timeout", type=float, default=20.0)
+    smoke_p.set_defaults(func=command_smoke)
+
+    test_p = sub.add_parser("test", help="Run a Bochs disk regression scenario.")
+    test_p.add_argument(
+        "--scenario",
+        required=True,
+        choices=[
+            "disk_read_sector",
+            "disk_cross_sector_read",
+            "disk_read_after_write",
+            "disk_partition_table_scan",
+        ],
+    )
+    test_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
+    test_p.add_argument("--bochs-binary", default="/usr/local/bochs-gdb/bin/bochs")
+    test_p.add_argument("--bochs-config", default="bochsrc-gdb.disk")
+    test_p.add_argument("--kernel", default=str(REPO_ROOT / "build-fs" / "bin" / "kernel"))
+    test_p.add_argument("--os-image", required=True)
+    test_p.add_argument("--data-image", required=True)
+    test_p.add_argument("--clone-images", action="store_true")
+    test_p.add_argument("--boot-timeout", type=float, default=20.0)
+    test_p.set_defaults(func=command_test)
     return p
 
 
 def main() -> int:
-    args = parser().parse_args()
-    return smoke(
-        Path(args.artifacts_dir),
-        args.bochs_binary,
-        args.bochs_config,
-        Path(args.kernel),
-    )
+    argv = sys.argv[1:]
+    if not argv or argv[0].startswith("-"):
+        argv = ["smoke", *argv]
+    args = parser().parse_args(argv)
+    return int(args.func(args))
 
 
 if __name__ == "__main__":

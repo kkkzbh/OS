@@ -261,4 +261,13 @@ export namespace builtin
 
     }
 
+    auto disktest(u32 argc,char** argv) -> bool
+    {
+        if(argc != 2) {
+            std::print("usage: disktest <read_sector|cross_sector_read|read_after_write|partition_table_scan>\n");
+            return false;
+        }
+        return std::disktest(argv[1]);
+    }
+
 }

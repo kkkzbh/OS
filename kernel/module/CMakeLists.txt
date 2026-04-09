@@ -267,6 +267,7 @@ target_link_libraries(user
         format
         console
         filesystem
+        ide
         thread
         thread_pid
         wait_exit
@@ -595,6 +596,7 @@ target_link_libraries(shell
         stdfmt
         assert
         filesystem
+        ide
         user
         wait_exit
 )
@@ -623,4 +625,3 @@ target_link_libraries(wait_exit
         thread
         filesystem
 )
-

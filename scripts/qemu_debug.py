@@ -20,6 +20,10 @@ DEFAULT_GDB_PORT = 1234
 ROOT_PROMPT_PATTERN = re.compile(r"K@KKKZBH /\$ >")
 PROMPT_PATTERN = re.compile(r"K@KKKZBH [^\n]+\$ >")
 BOOT_MARKERS = ["BOOT:M1", "BOOT:L1", "BOOT:L2", "BOOT:K1", "BOOT:SH"]
+SECTOR_SIZE = 512
+DISK_MODE_MARKER = b"DISKTEST"
+DISK_MODE_MARKER_LBA = 1799
+DISK_CASE_OFFSET = 16
 FATAL_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
@@ -169,6 +173,28 @@ def ensure_images_exist(os_image: Path, data_image: Path) -> None:
     for path in (os_image, data_image):
         if not path.exists():
             raise FileNotFoundError(f"missing disk image: {path}")
+
+
+def clone_images_for_test(os_image: Path, data_image: Path, artifacts_dir: Path, clone_images: bool) -> tuple[Path, Path]:
+    ensure_images_exist(os_image, data_image)
+    if not clone_images:
+        return os_image, data_image
+
+    cloned_os = artifacts_dir / os_image.name
+    cloned_data = artifacts_dir / data_image.name
+    shutil.copy2(os_image, cloned_os)
+    shutil.copy2(data_image, cloned_data)
+    return cloned_os, cloned_data
+
+
+def configure_disk_autorun(os_image: Path, case_name: str) -> None:
+    payload = bytearray(SECTOR_SIZE)
+    payload[: len(DISK_MODE_MARKER)] = DISK_MODE_MARKER
+    case_bytes = case_name.encode("ascii")
+    payload[DISK_CASE_OFFSET : DISK_CASE_OFFSET + len(case_bytes)] = case_bytes
+    with os_image.open("r+b") as fp:
+        fp.seek(DISK_MODE_MARKER_LBA * SECTOR_SIZE)
+        fp.write(payload)
 
 
 def send_text(qmp: QmpClient, text: str, delay: float = 0.08) -> None:
@@ -590,6 +616,50 @@ def scenario_runner_fs_persistence_dir_verify(qmp: QmpClient, artifacts_dir: Pat
     run_runner_case(qmp, artifacts_dir, "persistence_directory_verify")
 
 
+def scenario_disk_read_sector(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="disk-read-sector",
+        patterns=[literal_pattern("DISKCASE:read_sector:PASS")],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+
+
+def scenario_disk_cross_sector_read(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="disk-cross-sector-read",
+        patterns=[literal_pattern("DISKCASE:cross_sector_read:PASS")],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+
+
+def scenario_disk_read_after_write(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="disk-read-after-write",
+        patterns=[literal_pattern("DISKCASE:read_after_write:PASS")],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+
+
+def scenario_disk_partition_table_scan(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="disk-partition-table-scan",
+        patterns=[literal_pattern("DISKCASE:partition_table_scan:PASS")],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+
+
 def run_scenario(
     *,
     scenario: str,
@@ -599,12 +669,21 @@ def run_scenario(
     snapshot: bool,
     os_image: Path,
     data_image: Path,
+    clone_images: bool,
 ) -> int:
-    ensure_images_exist(os_image, data_image)
     artifacts_dir.parent.mkdir(parents=True, exist_ok=True)
     if artifacts_dir.exists():
         shutil.rmtree(artifacts_dir)
     artifacts_dir.mkdir(parents=True, exist_ok=True)
+    os_image, data_image = clone_images_for_test(os_image, data_image, artifacts_dir, clone_images)
+    disk_case_name = {
+        "disk_read_sector": "read_sector",
+        "disk_cross_sector_read": "cross_sector_read",
+        "disk_read_after_write": "read_after_write",
+        "disk_partition_table_scan": "partition_table_scan",
+    }.get(scenario)
+    if disk_case_name is not None:
+        configure_disk_autorun(os_image, disk_case_name)
 
     qmp_socket = artifacts_dir / "qmp.sock"
     qemu_log = artifacts_dir / "qemu.log"
@@ -672,6 +751,14 @@ def run_scenario(
             scenario_runner_fs_persistence_dir_write(qmp, artifacts_dir, boot_timeout)
         elif scenario == "runner_fs_persistence_dir_verify":
             scenario_runner_fs_persistence_dir_verify(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "disk_read_sector":
+            scenario_disk_read_sector(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "disk_cross_sector_read":
+            scenario_disk_cross_sector_read(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "disk_read_after_write":
+            scenario_disk_read_after_write(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "disk_partition_table_scan":
+            scenario_disk_partition_table_scan(qmp, artifacts_dir, boot_timeout)
         else:
             raise ValueError(f"unknown scenario: {scenario}")
         (artifacts_dir / "scenario.pass").write_text(f"{scenario}\n", encoding="utf-8")
@@ -721,6 +808,7 @@ def command_smoke(args: argparse.Namespace) -> int:
         snapshot=args.snapshot,
         os_image=Path(args.os_image).resolve() if args.os_image else REPO_ROOT / "hd64M.img",
         data_image=Path(args.data_image).resolve() if args.data_image else REPO_ROOT / "hd80M.img",
+        clone_images=args.clone_images,
     )
 
 
@@ -733,6 +821,7 @@ def command_test(args: argparse.Namespace) -> int:
         snapshot=args.snapshot,
         os_image=Path(args.os_image).resolve() if args.os_image else REPO_ROOT / "hd64M.img",
         data_image=Path(args.data_image).resolve() if args.data_image else REPO_ROOT / "hd80M.img",
+        clone_images=args.clone_images,
     )
 
 
@@ -762,6 +851,7 @@ def parser() -> argparse.ArgumentParser:
     smoke_p.add_argument("--no-snapshot", dest="snapshot", action="store_false")
     smoke_p.add_argument("--os-image", default="")
     smoke_p.add_argument("--data-image", default="")
+    smoke_p.add_argument("--clone-images", action="store_true")
     smoke_p.set_defaults(snapshot=True)
     smoke_p.set_defaults(func=command_smoke)
 
@@ -789,6 +879,10 @@ def parser() -> argparse.ArgumentParser:
             "runner_fs_persistence_verify",
             "runner_fs_persistence_dir_write",
             "runner_fs_persistence_dir_verify",
+            "disk_read_sector",
+            "disk_cross_sector_read",
+            "disk_read_after_write",
+            "disk_partition_table_scan",
         ],
     )
     test_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))
@@ -799,6 +893,7 @@ def parser() -> argparse.ArgumentParser:
     test_p.add_argument("--data-image", default="")
     test_p.add_argument("--snapshot", dest="snapshot", action="store_true")
     test_p.add_argument("--no-snapshot", dest="snapshot", action="store_false")
+    test_p.add_argument("--clone-images", action="store_true")
     test_p.set_defaults(snapshot=True)
     test_p.set_defaults(func=command_test)
     return p
