@@ -14,7 +14,6 @@ import utility;
 import format;
 import lock_guard;
 import ata.pio.intr;
-import ata.pio.part;
 import algorithm;
 
 export auto ata_pio_init() -> void
@@ -50,7 +49,7 @@ export auto ata_pio_init() -> void
             identify_ata_pio_device(hd);
             register_block_device(&hd->base);
             if(dev_no != 0) {
-                scan_partition(hd,0);
+                scan_block_device_partitions(&hd->base);
             }
         }
     }

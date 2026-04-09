@@ -117,7 +117,6 @@ target_sources(ata_pio
         ata_pio/ata_pio.cpp
         ata_pio/init.cpp
         ata_pio/intr.cpp
-        ata_pio/part.cpp
         ata_pio/regression.cpp
 )
 

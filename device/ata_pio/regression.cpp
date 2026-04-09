@@ -357,36 +357,40 @@ namespace
     auto case_partition_table_scan() -> bool
     {
         auto* sdb = &ata_channels[0].devices[1];
-        if(not check_partition(sdb->prim_parts[0], "sdb1", 0x800, 0x8000)) {
+        auto* table = find_block_partition_table(&sdb->base);
+        if(table == nullptr) {
+            return fail(partition_table_scan_case, "partition table missing");
+        }
+        if(not check_partition(table->primary[0], "sdb1", 0x800, 0x8000)) {
             return fail(partition_table_scan_case, "sdb1 mismatch");
         }
-        if(not check_empty_partition(sdb->prim_parts[1])) {
+        if(not check_empty_partition(table->primary[1])) {
             return fail(partition_table_scan_case, "primary slot 2 should be empty");
         }
-        if(not check_empty_partition(sdb->prim_parts[2])) {
+        if(not check_empty_partition(table->primary[2])) {
             return fail(partition_table_scan_case, "primary slot 3 should be empty");
         }
-        if(not check_empty_partition(sdb->prim_parts[3])) {
+        if(not check_empty_partition(table->primary[3])) {
             return fail(partition_table_scan_case, "primary slot 4 should be empty");
         }
 
-        if(not check_partition(sdb->logic_parts[0], "sdb5", 0x9000, 0x4800)) {
+        if(not check_partition(table->logical[0], "sdb5", 0x9000, 0x4800)) {
             return fail(partition_table_scan_case, "sdb5 mismatch");
         }
-        if(not check_partition(sdb->logic_parts[1], "sdb6", 0xE000, 0x6000)) {
+        if(not check_partition(table->logical[1], "sdb6", 0xE000, 0x6000)) {
             return fail(partition_table_scan_case, "sdb6 mismatch");
         }
-        if(not check_partition(sdb->logic_parts[2], "sdb7", 0x14800, 0x3800)) {
+        if(not check_partition(table->logical[2], "sdb7", 0x14800, 0x3800)) {
             return fail(partition_table_scan_case, "sdb7 mismatch");
         }
-        if(not check_partition(sdb->logic_parts[3], "sdb8", 0x18800, 0x7800)) {
+        if(not check_partition(table->logical[3], "sdb8", 0x18800, 0x7800)) {
             return fail(partition_table_scan_case, "sdb8 mismatch");
         }
-        if(not check_partition(sdb->logic_parts[4], "sdb9", 0x20800, 0x75E0)) {
+        if(not check_partition(table->logical[4], "sdb9", 0x20800, 0x75E0)) {
             return fail(partition_table_scan_case, "sdb9 mismatch");
         }
         for(auto idx = 5u; idx != 8; ++idx) {
-            if(not check_empty_partition(sdb->logic_parts[idx])) {
+            if(not check_empty_partition(table->logical[idx])) {
                 return fail(partition_table_scan_case, "unused logical partition slot should be empty");
             }
         }

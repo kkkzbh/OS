@@ -17,7 +17,6 @@ import console;
 import algorithm;
 import schedule;
 import block.device;
-import block.partition;
 
 auto constexpr STAT_ERR = u8(0x01);
 auto constexpr STAT_DRQ = u8(0x08);
@@ -61,8 +60,6 @@ struct ata_pio_device
     block_device base{};
     ata_channel* my_channel;
     u8 dev_no;
-    partition prim_parts[4];
-    partition logic_parts[8];
 };
 
 struct ata_channel
@@ -168,12 +165,6 @@ namespace
         hd.base.write_blocks = nullptr;
         hd.my_channel = channel;
         hd.dev_no = dev_no;
-        for(auto& part : hd.prim_parts) {
-            init_partition_runtime(part);
-        }
-        for(auto& part : hd.logic_parts) {
-            init_partition_runtime(part);
-        }
     }
 
     auto ata_pio_read_blocks(block_device* dev,u32 lba,void* buf,u32 block_cnt) -> void;

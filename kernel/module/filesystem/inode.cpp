@@ -91,7 +91,8 @@ auto inode_open(partition* part,u32 inode_no) -> inode*
 
     // 需要让新inode被所有任务共享，让inode置于内核空间，于是需要临时将cur_pbc->pgdir置为nullptr
     auto cur = running_thread();
-    auto cur_pagedir_bak = std::exchange(cur->pgdir,nullptr);
+    auto cur_pagedir_bak = cur->pgdir;
+    cur->pgdir = nullptr;
     // 这样分配的nd将源自内核空间 (使用{}确保零初始化)
     auto nd = new inode{};
     // 恢复pgdir
@@ -119,7 +120,7 @@ auto inode_close(inode* node) -> void
         list::erase(&node->tag);
         // 同样的套路，从内核空间回收内存
         auto cur = running_thread();
-        auto bak = std::exchange(cur->pgdir,nullptr);
+        auto bak = cur->pgdir;
         cur->pgdir = nullptr;
         delete node;
         cur->pgdir = bak;
