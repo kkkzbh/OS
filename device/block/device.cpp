@@ -6,6 +6,7 @@ export module block.device;
 
 import utility;
 import array;
+import string;
 
 export struct block_device;
 
@@ -38,6 +39,21 @@ export auto register_block_device(block_device* dev) -> void
     ASSERT(dev != nullptr);
     ASSERT(block_device_cnt < MAX_BLOCK_DEVICES);
     block_devices[block_device_cnt++] = dev;
+}
+
+export auto find_block_device(char const* name) -> block_device*
+{
+    if(name == nullptr) {
+        return nullptr;
+    }
+    auto const wanted = std::string_view{ name };
+    for(auto idx = u8(0); idx != block_device_cnt; ++idx) {
+        auto* dev = block_devices[idx];
+        if(dev != nullptr and std::string_view{ dev->name } == wanted) {
+            return dev;
+        }
+    }
+    return nullptr;
 }
 
 export auto block_read_blocks(block_device* dev,u32 lba,void* buf,u32 block_cnt) -> void

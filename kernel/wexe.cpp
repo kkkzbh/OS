@@ -7,6 +7,7 @@ export module write_execution;
 import utility;
 import filesystem.utility;
 import block.device;
+import array;
 import vector;
 import filesystem.syscall;
 import console;
@@ -72,6 +73,51 @@ namespace elf32
 
 }
 
+namespace
+{
+
+    struct staged_program
+    {
+        char const* source_device_name;
+        u32 start_lba;
+        u32 reserved_sectors;
+        char const* target_path;
+        bool required;
+    };
+
+    auto constexpr staged_programs = std::array{
+        staged_program{
+            .source_device_name = "sda",
+            .start_lba = 1500,
+            .reserved_sectors = 200,
+            .target_path = "/bin/fs_test_runner",
+            .required = false,
+        },
+        // staged_program{
+        //     .source_device_name = "sda",
+        //     .start_lba = 1000,
+        //     .reserved_sectors = 100,
+        //     .target_path = "/bin/a",
+        //     .required = true,
+        // },
+        // staged_program{
+        //     .source_device_name = "sda",
+        //     .start_lba = 1100,
+        //     .reserved_sectors = 200,
+        //     .target_path = "/bin/eb",
+        //     .required = true,
+        // },
+        // staged_program{
+        //     .source_device_name = "sda",
+        //     .start_lba = 1300,
+        //     .reserved_sectors = 100,
+        //     .target_path = "/bin/cat",
+        //     .required = true,
+        // },
+    };
+
+}
+
 // 从"磁盘扇区读入的 ELF 镜像缓冲区"中推导出需要写入文件系统的最小字节数。
 // 规则：取所有 PT_LOAD 段中 (offset + filesz) 的最大值。
 // 若校验失败或越界则返回 0。
@@ -114,87 +160,73 @@ auto static detect_elf_image_size(void const* buf, u32 buf_sz) -> u32
 }
 
 // 通用的程序写入函数
-// lba: 磁盘起始扇区
-// reserved_sectors: 预留扇区数
-// target: 目标文件路径
-auto static write_program_to_fs(u32 lba, u32 reserved_sectors, char const* target, bool required = true) -> void
+auto static write_program_to_fs(staged_program const& program) -> void
 {
-    auto const reserved_bytes = reserved_sectors * SECTOR_SIZE;
-    auto sda = block_devices[0];
+    auto* source_device = find_block_device(program.source_device_name);
+    if(source_device == nullptr) {
+        console::println(
+            "{}: source device {} not found, skip!",
+            program.target_path,
+            program.source_device_name
+        );
+        return;
+    }
+
+    auto const reserved_bytes = program.reserved_sectors * SECTOR_SIZE;
     auto program_buf = std::vector(reserved_bytes, char{});
 
-    block_read_blocks(sda, lba, program_buf.data(), reserved_sectors);
+    block_read_blocks(source_device, program.start_lba, program_buf.data(), program.reserved_sectors);
 
     // 检测 ELF 实际大小
     auto elf_size = detect_elf_image_size(program_buf.data(), reserved_bytes);
     if(elf_size == 0) {
-        if(required) {
-            console::println("{}: invalid ELF format, abort!", target);
+        if(program.required) {
+            console::println("{}: invalid ELF format, abort!", program.target_path);
         }
         return;
     }
 
     // 验证 ELF 大小是否超出预留空间
     if(elf_size > reserved_bytes) {
-        console::println("{}: ELF size {} bytes exceeds reserved {} bytes!", 
-                        target, elf_size, reserved_bytes);
+        console::println(
+            "{}: ELF size {} bytes exceeds reserved {} bytes!",
+            program.target_path,
+            elf_size,
+            reserved_bytes
+        );
         return;
     }
 
     // 删除旧文件，避免尾部残留
-    unlink(target);
+    unlink(program.target_path);
 
-    auto fd = open(target, +open_flags::create | +open_flags::rdwr);
+    auto fd = open(program.target_path, +open_flags::create | +open_flags::rdwr);
     if(fd == -1) {
-        console::println("{}: cannot open file for writing!", target);
+        console::println("{}: cannot open file for writing!", program.target_path);
         return;
     }
 
     // 写入完整 ELF 镜像
     auto const write_size = elf_size;
     if(auto wsz = write(fd, program_buf.data(), write_size); (u32)wsz != write_size) {
-        console::println("{}: write error! expected {} bytes but wrote {} bytes", 
-                        target, write_size, wsz);
+        console::println(
+            "{}: write error! expected {} bytes but wrote {} bytes",
+            program.target_path,
+            write_size,
+            wsz
+        );
         close(fd);
         return;
     }
 
     close(fd);
-    console::println("write {} ({} bytes)", target, write_size);
-}
-
-// 写入应用程序 std_print (program_no_arg)
-// 与 kernel/module/program/CMakeLists.txt 的 add_disk_target 保持一致
-auto std_print() -> void
-{
-    write_program_to_fs(1000, 100, "/bin/a");
-}
-
-// 写入应用程序 prog_arg (program_arg)
-// 与 kernel/module/program/CMakeLists.txt 的 add_disk_target 保持一致
-auto prog_arg() -> void
-{
-    write_program_to_fs(1100, 200, "/bin/eb");
-}
-
-// 写入应用程序 cat
-// 与 kernel/module/program/CMakeLists.txt 的 add_disk_target 保持一致
-auto write_cat() -> void
-{
-    write_program_to_fs(1300, 100, "/bin/cat");
-}
-
-// 写入应用程序 fs_test_runner
-auto write_fs_test_runner() -> void
-{
-    write_program_to_fs(1500, 200, "/bin/fs_test_runner", false);
+    console::println("write {} ({} bytes)", program.target_path, write_size);
 }
 
 export auto write_execution() -> void
 {
     mkdir("/bin");
-    write_fs_test_runner();
-    // std_print();
-    // prog_arg();
-    // write_cat();
+    for(auto const& program : staged_programs) {
+        write_program_to_fs(program);
+    }
 }
