@@ -48,10 +48,91 @@ function(add_disk_target target_name binary_file sector_start sector_count)
     )
 endfunction()
 
+function(knix_enable_source_debug target_name)
+    if(NOT TARGET ${target_name})
+        message(FATAL_ERROR "knix_enable_source_debug target not found: ${target_name}")
+    endif()
+
+    get_target_property(_knix_target_type ${target_name} TYPE)
+    if(_knix_target_type STREQUAL "INTERFACE_LIBRARY")
+        return()
+    endif()
+
+    target_compile_options(${target_name} PRIVATE
+        $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:C>>:-g3;-Og;-fno-omit-frame-pointer>
+        $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-g3;-Og;-fno-omit-frame-pointer>
+        $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:ASM_NASM>>:-g;-F;dwarf>
+    )
+
+    if(
+        _knix_target_type STREQUAL "EXECUTABLE"
+        OR _knix_target_type STREQUAL "SHARED_LIBRARY"
+        OR _knix_target_type STREQUAL "MODULE_LIBRARY"
+    )
+        target_link_options(${target_name} PRIVATE
+            $<$<CONFIG:Debug>:-g3>
+        )
+    endif()
+endfunction()
+
 # 添加子目录
 add_subdirectory(boot)
 add_subdirectory(kernel)
 add_subdirectory(device)
+
+set(KNIX_KERNEL_DEBUG_TARGETS
+    stdio
+    assert
+    interrupt
+    string_impl
+    string
+    system
+    optional
+    utility
+    bitmap
+    memory
+    memory_utility
+    list_node
+    list
+    sync_alloc
+    new
+    sysnew
+    thread
+    thread_pid
+    thread_init
+    syscall
+    user
+    format
+    std_core
+    std_string
+    std_vector
+    std_algorithm
+    std_array
+    std_array_format
+    std_string_format
+    std_vector_format
+    sleep
+    filesystem_types
+    filesystem
+    super_block
+    ref
+    shell
+    wait_exit
+    init
+    kernel_module
+    os
+    kernel
+    test_os
+    time
+    console
+    keyboard
+    ioqueue
+    ide
+)
+
+foreach(knix_target IN LISTS KNIX_KERNEL_DEBUG_TARGETS)
+    knix_enable_source_debug(${knix_target})
+endforeach()
 
 # 创建完整构建目标
 add_custom_target(osbuild

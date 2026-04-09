@@ -89,6 +89,13 @@ boot/mbr.asm
 cmake -S . -B build -G Ninja
 ```
 
+如需正式启用内核源码级调试，请使用仓库约定的 `Debug` 配置：
+
+```bash
+/home/kkkzbh/.local/share/JetBrains/Toolbox/apps/clion/bin/cmake/linux/x64/bin/cmake \
+  -S . -B build-debug -G Ninja -DCMAKE_BUILD_TYPE=Debug
+```
+
 ### 2) 生成可启动镜像内容
 
 ```bash
@@ -192,20 +199,30 @@ cmake --build build --target write_program_arg write_cat
 
 ### Bochs + GDB
 
+先用 `Debug` 配置构建：
+
+```bash
+/home/kkkzbh/.local/share/JetBrains/Toolbox/apps/clion/bin/cmake/linux/x64/bin/cmake \
+  --build build-debug --target osbuild
+```
+
 1. 启动带 GDB stub 的模拟器：
 
 ```bash
-cmake --build build --target bochs-gdb
+cmake --build build-debug --target bochs-gdb
 ```
 
 2. 在另一个终端连接：
 
 ```bash
-gdb build/bin/kernel
+gdb build-debug/bin/kernel
 (gdb) target remote :1234
-(gdb) b kkkzbh
+(gdb) list kernel/init.cpp:37
+(gdb) b kernel/init.cpp:39
 (gdb) c
 ```
+
+`build-debug/bin/kernel` 是供 `gdb` 使用的主机侧 ELF；写入镜像的仍然是 `build-debug/bin/kernel_stripped`。
 
 日志文件：
 
@@ -236,7 +253,7 @@ cmake --build build --target qemu-smoke
 - `ctest -L boot`：正式的 boot 回归测试入口，输出工件位于 `build/test/artifacts/*`
 - `ctest -L fs`：正式的文件系统回归测试入口，覆盖 shell 场景与 `fs_test_runner`
 - `qemu`：图形模式启动，适合日常交互验证
-- `qemu-gdb`：QEMU 在 `tcp::1234` 等待，可直接 `gdb build/bin/kernel`
+- `qemu-gdb`：QEMU 在 `tcp::1234` 等待；正式源码级调试请配合 `Debug` 构建并连接 `gdb <build-dir>/bin/kernel`
 - `qemu-smoke`：兼容保留的 shell smoke，会在发现 fatal screen pattern 时直接失败
 
 也可以直接使用脚本：
@@ -247,6 +264,20 @@ python3 scripts/qemu_debug.py run --gdb 1234 --paused
 python3 scripts/qemu_debug.py smoke
 python3 scripts/qemu_debug.py test --scenario boot_milestones
 python3 scripts/qemu_debug.py test --scenario shell_fs_cwd
+```
+
+正式的 `QEMU` 内核源码级调试流程：
+
+```bash
+/home/kkkzbh/.local/share/JetBrains/Toolbox/apps/clion/bin/cmake/linux/x64/bin/cmake \
+  -S . -B build-debug -G Ninja -DCMAKE_BUILD_TYPE=Debug
+/home/kkkzbh/.local/share/JetBrains/Toolbox/apps/clion/bin/cmake/linux/x64/bin/cmake \
+  --build build-debug --target osbuild qemu-gdb
+gdb build-debug/bin/kernel
+(gdb) target remote :1234
+(gdb) list kernel/init.cpp:37
+(gdb) b kernel/init.cpp:39
+(gdb) c
 ```
 
 `ctest -L boot` 和 `ctest -L fs` 的工件默认放在 `build/test/artifacts/`，`qemu-smoke` 的工件默认放在 `.cache/qemu-smoke/latest/`。其中 VGA 路径会保存：
@@ -278,6 +309,7 @@ python3 scripts/qemu_debug.py test --scenario shell_fs_cwd
 - 当前还没有 CI，但仓库已经接入 `CTest` 的 `boot` 与 `fs` 回归测试。
 - 当前文件系统运行期存在真实缺陷：`mkdir` 与 `/bin/fs_test_runner` 执行路径在 QEMU 下会触发 `#PF`，`ctest -L fs` 会稳定暴露该问题。
 - 用户程序导入文件系统目前默认只启用 `fs_test_runner`，其余示例程序仍需手动开启。
+- 正式支持的源码级调试目前仅覆盖内核，并要求使用 `Debug` 构建；用户程序仍不在本阶段保证范围内。
 
 ## 路线图
 
