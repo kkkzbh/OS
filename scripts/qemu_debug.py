@@ -24,6 +24,7 @@ SECTOR_SIZE = 512
 DISK_MODE_MARKER = b"DISKTEST"
 DISK_MODE_MARKER_LBA = 1799
 DISK_CASE_OFFSET = 16
+FS_RUNNER_TIMEOUT = 60.0
 FATAL_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
@@ -407,7 +408,7 @@ def run_shell_command(
     )
 
 
-def run_runner_case(qmp: QmpClient, artifacts_dir: Path, case_name: str, timeout: float = 20.0) -> tuple[Path, str]:
+def run_runner_case(qmp: QmpClient, artifacts_dir: Path, case_name: str, timeout: float = FS_RUNNER_TIMEOUT) -> tuple[Path, str]:
     token = literal_pattern(f"FSCASE:{case_name}:PASS")
     return run_shell_command(
         qmp,
@@ -660,6 +661,55 @@ def scenario_disk_partition_table_scan(qmp: QmpClient, artifacts_dir: Path, boot
     )
 
 
+def scenario_disk_multi_sector_read(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="disk-multi-sector-read",
+        patterns=[
+            literal_pattern("DISKCASE:multi_sector_read:PASS"),
+            literal_pattern("DISKSTAT:multi_sector_read:cmds=1"),
+            literal_pattern("timeouts=0"),
+            literal_pattern("reads=16"),
+        ],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+
+
+def scenario_disk_max_transfer_boundary_read(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="disk-max-transfer-boundary-read",
+        patterns=[
+            literal_pattern("DISKCASE:max_transfer_boundary_read:PASS"),
+            literal_pattern("DISKSTAT:max_transfer_boundary_read:cmds=2"),
+            literal_pattern("timeouts=0"),
+            literal_pattern("reads=257"),
+        ],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+
+
+def scenario_disk_multi_sector_write(qmp: QmpClient, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        qmp=qmp,
+        artifacts_dir=artifacts_dir,
+        label="disk-multi-sector-write",
+        patterns=[
+            literal_pattern("DISKCASE:multi_sector_write:PASS"),
+            literal_pattern("DISKSTAT:multi_sector_write:cmds=2"),
+            literal_pattern("timeouts=0"),
+            literal_pattern("reads=8"),
+            literal_pattern("writes=8"),
+        ],
+        timeout=boot_timeout,
+        interval=0.5,
+    )
+
+
 def run_scenario(
     *,
     scenario: str,
@@ -681,6 +731,9 @@ def run_scenario(
         "disk_cross_sector_read": "cross_sector_read",
         "disk_read_after_write": "read_after_write",
         "disk_partition_table_scan": "partition_table_scan",
+        "disk_multi_sector_read": "multi_sector_read",
+        "disk_max_transfer_boundary_read": "max_transfer_boundary_read",
+        "disk_multi_sector_write": "multi_sector_write",
     }.get(scenario)
     if disk_case_name is not None:
         configure_disk_autorun(os_image, disk_case_name)
@@ -759,6 +812,12 @@ def run_scenario(
             scenario_disk_read_after_write(qmp, artifacts_dir, boot_timeout)
         elif scenario == "disk_partition_table_scan":
             scenario_disk_partition_table_scan(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "disk_multi_sector_read":
+            scenario_disk_multi_sector_read(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "disk_max_transfer_boundary_read":
+            scenario_disk_max_transfer_boundary_read(qmp, artifacts_dir, boot_timeout)
+        elif scenario == "disk_multi_sector_write":
+            scenario_disk_multi_sector_write(qmp, artifacts_dir, boot_timeout)
         else:
             raise ValueError(f"unknown scenario: {scenario}")
         (artifacts_dir / "scenario.pass").write_text(f"{scenario}\n", encoding="utf-8")
@@ -883,6 +942,9 @@ def parser() -> argparse.ArgumentParser:
             "disk_cross_sector_read",
             "disk_read_after_write",
             "disk_partition_table_scan",
+            "disk_multi_sector_read",
+            "disk_max_transfer_boundary_read",
+            "disk_multi_sector_write",
         ],
     )
     test_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))

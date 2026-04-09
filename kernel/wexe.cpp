@@ -6,7 +6,7 @@ export module write_execution;
 
 import utility;
 import filesystem.utility;
-import ide;
+import block.device;
 import vector;
 import filesystem.syscall;
 import console;
@@ -120,10 +120,10 @@ auto static detect_elf_image_size(void const* buf, u32 buf_sz) -> u32
 auto static write_program_to_fs(u32 lba, u32 reserved_sectors, char const* target, bool required = true) -> void
 {
     auto const reserved_bytes = reserved_sectors * SECTOR_SIZE;
-    auto sda = &channels[0].devices[0];
+    auto sda = block_devices[0];
     auto program_buf = std::vector(reserved_bytes, char{});
 
-    ide_read(sda, lba, program_buf.data(), reserved_sectors);
+    block_read_blocks(sda, lba, program_buf.data(), reserved_sectors);
 
     // 检测 ELF 实际大小
     auto elf_size = detect_elf_image_size(program_buf.data(), reserved_bytes);

@@ -80,7 +80,7 @@ def command_seed(args: argparse.Namespace) -> int:
     os_image = suite_dir / "hd64M.img"
     write_region(os_image, build_dir / "boot" / "mbr.bin", sector_start=0, sector_count=1)
     write_region(os_image, build_dir / "boot" / "loader.bin", sector_start=2, sector_count=4)
-    write_region(os_image, build_dir / "bin" / "kernel_stripped", sector_start=9, sector_count=380)
+    write_region(os_image, build_dir / "bin" / "kernel_stripped", sector_start=9, sector_count=455)
     write_region(os_image, build_dir / "bin" / "fs_test_runner", sector_start=1500, sector_count=200)
 
     for cloned_dir in (persist_file_dir, persist_dir_dir):

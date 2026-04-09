@@ -4,7 +4,10 @@ LOADER_STACK_TOP       equ         LOADER_BASE_ADDR
 LOADER_START_SECTOR    equ         0x2                           ; loader 起始扇区 (LBA) 
 
 PAGE_DIR_TABLE_POS     equ         0x100000          
-KERNEL_BIN_BASE_ADDR   equ         0x70000
+; 用一段完整的低端 RAM 暂存剥离后的 ELF:
+; 1. 低于 0xA0000，避免落入 VGA/保留区。
+; 2. 高于内核最终复制到的低端物理区间，避免覆盖后续 program header。
+KERNEL_BIN_BASE_ADDR   equ         0x40000
 KERNEL_START_SECTOR    equ         0x9
 KERNEL_ENTRY_POINT     equ         0xC0001500
 

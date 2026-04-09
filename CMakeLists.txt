@@ -127,7 +127,8 @@ set(KNIX_KERNEL_DEBUG_TARGETS
     console
     keyboard
     ioqueue
-    ide
+    block_device
+    ata_pio
 )
 
 foreach(knix_target IN LISTS KNIX_KERNEL_DEBUG_TARGETS)

@@ -14,6 +14,12 @@ MODE_MARKER_LBA = 1799
 READ_SECTOR_LBA = 1800
 CROSS_SECTOR_LBA = 1801
 SCRATCH_SECTOR_LBA = 1803
+MULTI_SECTOR_READ_LBA = 1804
+MULTI_SECTOR_READ_COUNT = 16
+MAX_TRANSFER_BOUNDARY_LBA = MULTI_SECTOR_READ_LBA + MULTI_SECTOR_READ_COUNT
+MAX_TRANSFER_BOUNDARY_COUNT = 257
+MULTI_SECTOR_WRITE_LBA = MAX_TRANSFER_BOUNDARY_LBA + MAX_TRANSFER_BOUNDARY_COUNT
+MULTI_SECTOR_WRITE_COUNT = 8
 SEED_SALT = 0x11
 DISK_MODE_MARKER = b"DISKTEST"
 
@@ -109,12 +115,15 @@ def command_seed(args: argparse.Namespace) -> int:
     os_image = suite_dir / "hd64M.img"
     write_region(os_image, build_dir / "boot" / "mbr.bin", sector_start=0, sector_count=1)
     write_region(os_image, build_dir / "boot" / "loader.bin", sector_start=2, sector_count=4)
-    write_region(os_image, build_dir / "bin" / "kernel_stripped", sector_start=9, sector_count=380)
+    write_region(os_image, build_dir / "bin" / "kernel_stripped", sector_start=9, sector_count=455)
 
     write_marker(os_image, MODE_MARKER_LBA, DISK_MODE_MARKER)
     fill_pattern(os_image, READ_SECTOR_LBA, 1, SEED_SALT)
     fill_pattern(os_image, CROSS_SECTOR_LBA, 2, SEED_SALT)
     fill_pattern(os_image, SCRATCH_SECTOR_LBA, 1, SEED_SALT)
+    fill_pattern(os_image, MULTI_SECTOR_READ_LBA, MULTI_SECTOR_READ_COUNT, SEED_SALT)
+    fill_pattern(os_image, MAX_TRANSFER_BOUNDARY_LBA, MAX_TRANSFER_BOUNDARY_COUNT, SEED_SALT)
+    fill_pattern(os_image, MULTI_SECTOR_WRITE_LBA, MULTI_SECTOR_WRITE_COUNT, SEED_SALT)
 
     print(f"[ok] seeded disk suite images under {image_root}")
     return 0

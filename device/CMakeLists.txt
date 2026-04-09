@@ -85,21 +85,45 @@ target_link_libraries(ioqueue
         assert
 )
 
-add_library(ide)
+add_library(block_device)
 
-target_sources(ide
+target_sources(block_device
         PUBLIC
         FILE_SET CXX_MODULES
         FILES
-        ide/ide.cpp
-        ide/init.cpp
-        ide/intr.cpp
-        ide/part.cpp
-        ide/regression.cpp
+        block/device.cpp
+        block/partition.cpp
 )
 
-target_link_libraries(ide
+target_link_libraries(block_device
         PRIVATE
+        utility
+        sync_alloc
+        bitmap
+        std
+        console
+        assert
+        format
+        kernel_utility
+        super_block
+)
+
+add_library(ata_pio)
+
+target_sources(ata_pio
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        ata_pio/ata_pio.cpp
+        ata_pio/init.cpp
+        ata_pio/intr.cpp
+        ata_pio/part.cpp
+        ata_pio/regression.cpp
+)
+
+target_link_libraries(ata_pio
+        PRIVATE
+        block_device
         utility
         sync_alloc
         bitmap

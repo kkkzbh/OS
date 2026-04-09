@@ -264,7 +264,11 @@ export namespace builtin
     auto disktest(u32 argc,char** argv) -> bool
     {
         if(argc != 2) {
-            std::print("usage: disktest <read_sector|cross_sector_read|read_after_write|partition_table_scan>\n");
+            std::print(
+                "usage: disktest "
+                "<read_sector|cross_sector_read|read_after_write|partition_table_scan|"
+                "multi_sector_read|max_transfer_boundary_read|multi_sector_write>\n"
+            );
             return false;
         }
         return std::disktest(argv[1]);

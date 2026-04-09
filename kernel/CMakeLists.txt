@@ -119,7 +119,7 @@ target_link_libraries(init
         sync_alloc
         thread
         user
-        ide
+        ata_pio
         filesystem
         console
         thread_init
@@ -142,7 +142,7 @@ target_link_libraries(kernel_module
         init
         thread
         user
-        new
+        sysnew
         std
         time
         stdfmt
@@ -165,6 +165,8 @@ target_link_libraries(os
         kernel_module
         test_os
         stdio
+        block_device
+        ata_pio
 )
 
 # 创建内核可执行文件
@@ -222,7 +224,7 @@ add_custom_command(
 
 add_custom_target(kernel_stripped_bin DEPENDS ${KERNEL_STRIPPED})
 
-add_disk_target(write_kernel ${KERNEL_STRIPPED} 9 380)
+add_disk_target(write_kernel ${KERNEL_STRIPPED} 9 455)
 add_dependencies(write_kernel kernel_stripped_bin)
 
 add_subdirectory(test)

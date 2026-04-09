@@ -267,7 +267,7 @@ target_link_libraries(user
         format
         console
         filesystem
-        ide
+        ata_pio
         thread
         thread_pid
         wait_exit
@@ -535,7 +535,7 @@ target_link_libraries(filesystem
         utility
         std
         sync_alloc
-        ide
+        block_device
         console
         sysnew
         assert
@@ -596,7 +596,6 @@ target_link_libraries(shell
         stdfmt
         assert
         filesystem
-        ide
         user
         wait_exit
 )

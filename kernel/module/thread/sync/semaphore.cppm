@@ -37,6 +37,19 @@ export struct semaphore
         intr_set_status(old_status);
     }
 
+    auto try_acquire() -> bool
+    {
+        assert_initialized();
+        auto old_status = intr_disable();
+        if(value == 0) {
+            intr_set_status(old_status);
+            return false;
+        }
+        --value;
+        intr_set_status(old_status);
+        return true;
+    }
+
     auto release() -> void
     {
         assert_initialized();

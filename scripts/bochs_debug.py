@@ -398,6 +398,55 @@ def scenario_disk_partition_table_scan(gdb: GdbMiSession, window_id: str, artifa
     )
 
 
+def scenario_disk_multi_sector_read(gdb: GdbMiSession, window_id: str, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label="disk-multi-sector-read",
+        patterns=[
+            literal_pattern("DISKCASE:multi_sector_read:PASS"),
+            literal_pattern("DISKSTAT:multi_sector_read:cmds=1"),
+            literal_pattern("timeouts=0"),
+            literal_pattern("reads=16"),
+        ],
+        timeout=boot_timeout,
+    )
+
+
+def scenario_disk_max_transfer_boundary_read(gdb: GdbMiSession, window_id: str, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label="disk-max-transfer-boundary-read",
+        patterns=[
+            literal_pattern("DISKCASE:max_transfer_boundary_read:PASS"),
+            literal_pattern("DISKSTAT:max_transfer_boundary_read:cmds=2"),
+            literal_pattern("timeouts=0"),
+            literal_pattern("reads=257"),
+        ],
+        timeout=boot_timeout,
+    )
+
+
+def scenario_disk_multi_sector_write(gdb: GdbMiSession, window_id: str, artifacts_dir: Path, boot_timeout: float) -> None:
+    wait_for_patterns(
+        gdb=gdb,
+        window_id=window_id,
+        artifacts_dir=artifacts_dir,
+        label="disk-multi-sector-write",
+        patterns=[
+            literal_pattern("DISKCASE:multi_sector_write:PASS"),
+            literal_pattern("DISKSTAT:multi_sector_write:cmds=2"),
+            literal_pattern("timeouts=0"),
+            literal_pattern("reads=8"),
+            literal_pattern("writes=8"),
+        ],
+        timeout=boot_timeout,
+    )
+
+
 def run_disk_scenario(
     *,
     scenario: str,
@@ -421,6 +470,9 @@ def run_disk_scenario(
         "disk_cross_sector_read": "cross_sector_read",
         "disk_read_after_write": "read_after_write",
         "disk_partition_table_scan": "partition_table_scan",
+        "disk_multi_sector_read": "multi_sector_read",
+        "disk_max_transfer_boundary_read": "max_transfer_boundary_read",
+        "disk_multi_sector_write": "multi_sector_write",
     }.get(scenario)
     if disk_case_name is not None:
         configure_disk_autorun(os_image, disk_case_name)
@@ -452,6 +504,12 @@ def run_disk_scenario(
             scenario_disk_read_after_write(gdb, window_id, artifacts_dir, boot_timeout)
         elif scenario == "disk_partition_table_scan":
             scenario_disk_partition_table_scan(gdb, window_id, artifacts_dir, boot_timeout)
+        elif scenario == "disk_multi_sector_read":
+            scenario_disk_multi_sector_read(gdb, window_id, artifacts_dir, boot_timeout)
+        elif scenario == "disk_max_transfer_boundary_read":
+            scenario_disk_max_transfer_boundary_read(gdb, window_id, artifacts_dir, boot_timeout)
+        elif scenario == "disk_multi_sector_write":
+            scenario_disk_multi_sector_write(gdb, window_id, artifacts_dir, boot_timeout)
         else:
             raise ValueError(f"unknown scenario: {scenario}")
 
@@ -554,6 +612,9 @@ def parser() -> argparse.ArgumentParser:
             "disk_cross_sector_read",
             "disk_read_after_write",
             "disk_partition_table_scan",
+            "disk_multi_sector_read",
+            "disk_max_transfer_boundary_read",
+            "disk_multi_sector_write",
         ],
     )
     test_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))

@@ -62,12 +62,12 @@ def main() -> int:
 
     if loader.stat().st_size > 4 * 512:
         raise AssertionError(f"{loader} exceeds 4 sectors")
-    if kernel.stat().st_size > 380 * 512:
-        raise AssertionError(f"{kernel} exceeds 380 sectors")
+    if kernel.stat().st_size > 455 * 512:
+        raise AssertionError(f"{kernel} exceeds 455 sectors")
 
     verify_region(image, mbr, sector_start=0, sector_count=1)
     verify_region(image, loader, sector_start=2, sector_count=4)
-    verify_region(image, kernel, sector_start=9, sector_count=380)
+    verify_region(image, kernel, sector_start=9, sector_count=455)
 
     print(f"[ok] verified boot image layout in {image}")
     return 0

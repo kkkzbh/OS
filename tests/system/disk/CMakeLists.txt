@@ -112,6 +112,66 @@ knix_add_system_test(disk.qemu.partition_table_scan
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS disk regression
 )
+
+knix_add_system_test(disk.qemu.multi_sector_read
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_multi_sector_read
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.multi_sector_read
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression
+)
+
+knix_add_system_test(disk.qemu.max_transfer_boundary_read
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_max_transfer_boundary_read
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.max_transfer_boundary_read
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression
+)
+
+knix_add_system_test(disk.qemu.multi_sector_write
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_multi_sector_write
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.multi_sector_write
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression
+)
 endif()
 
 if(BOCHS_GDB)
@@ -183,6 +243,66 @@ knix_add_system_test(disk.bochs.partition_table_scan
         test
         --scenario disk_partition_table_scan
         --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.bochs.partition_table_scan
+        --bochs-binary ${BOCHS_GDB}
+        --bochs-config ${CMAKE_SOURCE_DIR}/bochsrc-gdb.disk
+        --kernel ${CMAKE_BINARY_DIR}/bin/kernel
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK bochs_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression
+)
+
+knix_add_system_test(disk.bochs.multi_sector_read
+    BOCHS
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_BOCHS_SCRIPT}
+        test
+        --scenario disk_multi_sector_read
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.bochs.multi_sector_read
+        --bochs-binary ${BOCHS_GDB}
+        --bochs-config ${CMAKE_SOURCE_DIR}/bochsrc-gdb.disk
+        --kernel ${CMAKE_BINARY_DIR}/bin/kernel
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK bochs_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression
+)
+
+knix_add_system_test(disk.bochs.max_transfer_boundary_read
+    BOCHS
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_BOCHS_SCRIPT}
+        test
+        --scenario disk_max_transfer_boundary_read
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.bochs.max_transfer_boundary_read
+        --bochs-binary ${BOCHS_GDB}
+        --bochs-config ${CMAKE_SOURCE_DIR}/bochsrc-gdb.disk
+        --kernel ${CMAKE_BINARY_DIR}/bin/kernel
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK bochs_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression
+)
+
+knix_add_system_test(disk.bochs.multi_sector_write
+    BOCHS
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_BOCHS_SCRIPT}
+        test
+        --scenario disk_multi_sector_write
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.bochs.multi_sector_write
         --bochs-binary ${BOCHS_GDB}
         --bochs-config ${CMAKE_SOURCE_DIR}/bochsrc-gdb.disk
         --kernel ${CMAKE_BINARY_DIR}/bin/kernel

@@ -6,7 +6,9 @@ add_custom_command(
     COMMAND nasm -I ${CMAKE_CURRENT_SOURCE_DIR}/include 
                  ${CMAKE_CURRENT_SOURCE_DIR}/mbr.asm 
                  -o ${CMAKE_CURRENT_BINARY_DIR}/mbr.bin
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mbr.asm
+    DEPENDS
+            ${CMAKE_CURRENT_SOURCE_DIR}/mbr.asm
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/boot.inc
     COMMENT "Building MBR"
     VERBATIM
 )
@@ -19,7 +21,9 @@ add_custom_command(
     COMMAND nasm -I ${CMAKE_CURRENT_SOURCE_DIR}/include/
                  ${CMAKE_CURRENT_SOURCE_DIR}/loader.asm 
                  -o ${CMAKE_CURRENT_BINARY_DIR}/loader.bin
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/loader.asm
+    DEPENDS
+            ${CMAKE_CURRENT_SOURCE_DIR}/loader.asm
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/boot.inc
     COMMENT "Building Loader"
     VERBATIM
 )

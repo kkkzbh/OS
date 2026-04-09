@@ -6,7 +6,7 @@ auto init_all() -> void;
 auto main() -> void;
 
 import write_execution;
-import ide.regression;
+import ata.pio.regression;
 import thread;
 import schedule;
 
