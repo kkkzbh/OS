@@ -83,7 +83,7 @@ add_custom_target(bochs-gdb
 )
 
 add_custom_target(bochs-smoke
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/bochs_debug.py --bochs-binary ${BOCHS_NODEBUG} --bochs-config bochsrc.disk
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/bochs_debug.py --bochs-binary ${BOCHS_GDB} --bochs-config bochsrc-gdb.disk --kernel ${CMAKE_BINARY_DIR}/bin/kernel
     DEPENDS osbuild
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Running Bochs shell smoke test..."
