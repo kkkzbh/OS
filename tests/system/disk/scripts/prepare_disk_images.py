@@ -104,6 +104,7 @@ def command_seed(args: argparse.Namespace) -> int:
             "mbr_bin",
             "loader_bin",
             "kernel_stripped_bin",
+            "fs_test_runner",
         ],
         cwd=source_dir,
     )
@@ -116,6 +117,7 @@ def command_seed(args: argparse.Namespace) -> int:
     write_region(os_image, build_dir / "boot" / "mbr.bin", sector_start=0, sector_count=1)
     write_region(os_image, build_dir / "boot" / "loader.bin", sector_start=2, sector_count=4)
     write_region(os_image, build_dir / "bin" / "kernel_stripped", sector_start=9, sector_count=455)
+    write_region(os_image, build_dir / "bin" / "fs_test_runner", sector_start=1500, sector_count=200)
 
     write_marker(os_image, MODE_MARKER_LBA, DISK_MODE_MARKER)
     fill_pattern(os_image, READ_SECTOR_LBA, 1, SEED_SALT)

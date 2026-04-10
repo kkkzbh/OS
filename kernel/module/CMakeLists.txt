@@ -267,7 +267,7 @@ target_link_libraries(user
         format
         console
         filesystem
-        ata_pio
+        storage
         thread
         thread_pid
         wait_exit

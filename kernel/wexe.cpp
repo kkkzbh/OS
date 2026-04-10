@@ -75,7 +75,6 @@ namespace elf32
 
 namespace
 {
-
     struct staged_program
     {
         char const* source_device_name;

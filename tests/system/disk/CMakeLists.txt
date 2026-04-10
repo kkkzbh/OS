@@ -172,6 +172,153 @@ knix_add_system_test(disk.qemu.multi_sector_write
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS disk regression
 )
+
+knix_add_system_test(disk.qemu.ahci.read_sector
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_read_sector
+        --storage-topology ahci
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.ahci.read_sector
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression ahci
+)
+
+knix_add_system_test(disk.qemu.ahci.read_after_write
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_read_after_write
+        --storage-topology ahci
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.ahci.read_after_write
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression ahci
+)
+
+knix_add_system_test(disk.qemu.ahci.partition_table_scan
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_partition_table_scan
+        --storage-topology ahci
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.ahci.partition_table_scan
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression ahci
+)
+
+knix_add_system_test(disk.qemu.ahci.multi_sector_read
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_multi_sector_read
+        --storage-topology ahci
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.ahci.multi_sector_read
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression ahci
+)
+
+knix_add_system_test(disk.qemu.ahci.max_transfer_boundary_read
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_max_transfer_boundary_read
+        --storage-topology ahci
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.ahci.max_transfer_boundary_read
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression ahci
+)
+
+knix_add_system_test(disk.qemu.ahci.multi_sector_write
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario disk_multi_sector_write
+        --storage-topology ahci
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.ahci.multi_sector_write
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression ahci
+)
+
+knix_add_system_test(disk.qemu.ahci.shell_smoke
+    QEMU
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${DISK_QEMU_SCRIPT}
+        test
+        --scenario runner_fs_basic
+        --storage-topology ahci
+        --build-dir ${CMAKE_BINARY_DIR}
+        --qemu-binary ${QEMU_SYSTEM_I386}
+        --artifacts-dir ${DISK_TEST_ARTIFACT_ROOT}/disk.qemu.ahci.shell_smoke
+        --os-image ${DISK_SUITE_IMAGE_DIR}/hd64M.img
+        --data-image ${DISK_SUITE_IMAGE_DIR}/hd80M.img
+        --clone-images
+        --no-snapshot
+    FIXTURES_REQUIRED DiskImages
+    RESOURCE_LOCK qemu_disk
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS disk regression ahci
+)
 endif()
 
 if(BOCHS_GDB)

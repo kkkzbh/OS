@@ -24,6 +24,7 @@ export auto get_mutex(pool_flags pf) -> auto&;
 export auto malloc_page(pool_flags pf,u32 pg_cnt) -> void*;
 export auto mfree_page(pool_flags pf,void* _vaddr,size_t pg_cnt) -> void;
 export auto get_a_page_without_op_vaddr_bitmap(pool_flags pf,u32 vaddr) -> void*;
+export auto map_kernel_phys_range(u32 phys_addr,size_t bytes) -> void*;
 
 auto page_table_add(void* __vaddr,void* __page_phyaddr) -> void;
 
@@ -102,6 +103,30 @@ auto get_kernel_pages(u32 pg_cnt) -> void*
         memset(vaddr, 0, pg_cnt * PG_SIZE);
     }
     return vaddr;
+}
+
+auto map_kernel_phys_range(u32 phys_addr,size_t bytes) -> void*
+{
+    ASSERT(bytes > 0);
+    auto const phys_base = phys_addr & 0xfffff000;
+    auto const page_off = phys_addr & 0x00000fff;
+    auto const span = size_t(page_off) + bytes;
+    auto const page_cnt = u32((span + PG_SIZE - 1) / PG_SIZE);
+
+    auto lcg = lock_guard{ kernel_alloc_mtx };
+    auto vaddr_start = get_vaddr(pool_flags::KERNEL,page_cnt);
+    if(not vaddr_start) {
+        return nullptr;
+    }
+
+    auto vaddr = reinterpret_cast<u32>(vaddr_start);
+    auto page_phys = phys_base;
+    for(auto i = 0u; i != page_cnt; ++i) {
+        page_table_add(reinterpret_cast<void*>(vaddr),reinterpret_cast<void*>(page_phys));
+        vaddr += PG_SIZE;
+        page_phys += PG_SIZE;
+    }
+    return reinterpret_cast<void*>(reinterpret_cast<u32>(vaddr_start) + page_off);
 }
 
 // 在用户空间申请4k内存，并返回虚拟地址

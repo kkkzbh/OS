@@ -108,6 +108,24 @@ target_link_libraries(block_device
         super_block
 )
 
+add_library(pci)
+
+target_sources(pci
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        pci/pci.cpp
+        pci/mmio.cpp
+)
+
+target_link_libraries(pci
+        PRIVATE
+        utility
+        sync_alloc
+        memory
+        assert
+)
+
 add_library(ata_pio)
 
 target_sources(ata_pio
@@ -136,4 +154,54 @@ target_link_libraries(ata_pio
         sysnew
         string
         super_block
+)
+
+add_library(ahci)
+
+target_sources(ahci
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        ahci/ahci.cpp
+)
+
+target_link_libraries(ahci
+        PRIVATE
+        block_device
+        pci
+        utility
+        sync_alloc
+        std
+        console
+        assert
+        format
+        kernel_utility
+        string
+        memory
+)
+
+add_library(storage)
+
+target_sources(storage
+        PUBLIC
+        FILE_SET CXX_MODULES
+        FILES
+        storage/init.cpp
+        storage/regression.cpp
+)
+
+target_link_libraries(storage
+        PRIVATE
+        ahci
+        ata_pio
+        block_device
+        utility
+        std
+        console
+        assert
+        format
+        string
+        kernel_utility
+        sleep
+        interrupt
 )

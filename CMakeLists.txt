@@ -129,6 +129,9 @@ set(KNIX_KERNEL_DEBUG_TARGETS
     ioqueue
     block_device
     ata_pio
+    pci
+    ahci
+    storage
 )
 
 foreach(knix_target IN LISTS KNIX_KERNEL_DEBUG_TARGETS)

@@ -8,8 +8,8 @@
 import alloc;
 import tss;
 import syscall.init;
-import ata.pio.init;
-import ata.pio.regression;
+import storage.init;
+import storage.regression;
 import filesystem.init;
 import console;
 import thread.init;
@@ -53,7 +53,7 @@ auto init_all() -> void
 
     // 初始化硬盘要开中断
     intr_enable();
-    ata_pio_init();     // 初始化 硬盘
+    storage_init();     // 初始化 存储
 
     if(disk_regression_mode_requested()) {
         if(not disk_regression_mode_case()) {

@@ -119,7 +119,7 @@ target_link_libraries(init
         sync_alloc
         thread
         user
-        ata_pio
+        storage
         filesystem
         console
         thread_init
@@ -166,7 +166,7 @@ target_link_libraries(os
         test_os
         stdio
         block_device
-        ata_pio
+        storage
 )
 
 # 创建内核可执行文件

@@ -15,7 +15,7 @@ import ps;
 import exec;
 import wait;
 import exit;
-import ata.pio.regression;
+import storage.regression;
 
 export auto syscall_init();
 
