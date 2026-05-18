@@ -120,6 +120,7 @@ def qemu_command(
     qemu_binary: str,
     accel: str,
     profile: str,
+    keyboard_layout: str,
     display: str,
     qmp_socket: Path | None,
     monitor: str,
@@ -139,6 +140,8 @@ def qemu_command(
         "32",
         "-machine",
         machine,
+        "-k",
+        keyboard_layout,
         "-boot",
         "c",
         "-name",
@@ -793,6 +796,7 @@ def run_scenario(
     qemu_binary: str,
     accel: str,
     profile: str,
+    keyboard_layout: str,
     artifacts_dir: Path,
     boot_timeout: float,
     snapshot: bool,
@@ -834,6 +838,7 @@ def run_scenario(
         qemu_binary=qemu_binary,
         accel=accel,
         profile=profile,
+        keyboard_layout=keyboard_layout,
         display="none",
         qmp_socket=qmp_socket,
         monitor="none",
@@ -943,6 +948,7 @@ def command_run(args: argparse.Namespace) -> int:
         qemu_binary=args.qemu_binary,
         accel=args.accel,
         profile=args.profile,
+        keyboard_layout=args.keyboard_layout,
         display=args.display,
         qmp_socket=Path(args.qmp_socket) if args.qmp_socket else None,
         monitor=args.monitor,
@@ -970,6 +976,7 @@ def command_smoke(args: argparse.Namespace) -> int:
         qemu_binary=args.qemu_binary,
         accel=args.accel,
         profile="default",
+        keyboard_layout=args.keyboard_layout,
         artifacts_dir=Path(args.artifacts_dir),
         boot_timeout=args.boot_timeout,
         snapshot=args.snapshot,
@@ -989,6 +996,7 @@ def command_test(args: argparse.Namespace) -> int:
         qemu_binary=args.qemu_binary,
         accel=args.accel,
         profile="default",
+        keyboard_layout=args.keyboard_layout,
         artifacts_dir=Path(args.artifacts_dir),
         boot_timeout=args.boot_timeout,
         snapshot=args.snapshot,
@@ -1010,6 +1018,7 @@ def parser() -> argparse.ArgumentParser:
     run_p.add_argument("--accel", default="auto", choices=["auto", "kvm", "tcg"])
     run_p.add_argument("--profile", default="default", choices=["default", "interactive-lowlatency"])
     run_p.add_argument("--gtk-backend", default="auto", choices=["auto", "x11", "wayland"])
+    run_p.add_argument("--keyboard-layout", default="en-us")
     run_p.add_argument("--display", default="gtk", choices=["gtk", "sdl", "curses", "none"])
     run_p.add_argument("--monitor", default="none", choices=["none", "stdio"])
     run_p.add_argument("--qmp-socket", default="")
@@ -1026,6 +1035,7 @@ def parser() -> argparse.ArgumentParser:
     smoke_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))
     smoke_p.add_argument("--qemu-binary", default=shutil.which("qemu-system-i386") or "qemu-system-i386")
     smoke_p.add_argument("--accel", default="auto", choices=["auto", "kvm", "tcg"])
+    smoke_p.add_argument("--keyboard-layout", default="en-us")
     smoke_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
     smoke_p.add_argument("--boot-timeout", type=float, default=40.0)
     smoke_p.add_argument("--snapshot", dest="snapshot", action="store_true")
@@ -1074,6 +1084,7 @@ def parser() -> argparse.ArgumentParser:
     test_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))
     test_p.add_argument("--qemu-binary", default=shutil.which("qemu-system-i386") or "qemu-system-i386")
     test_p.add_argument("--accel", default="auto", choices=["auto", "kvm", "tcg"])
+    test_p.add_argument("--keyboard-layout", default="en-us")
     test_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
     test_p.add_argument("--boot-timeout", type=float, default=40.0)
     test_p.add_argument("--storage-topology", default="ide", choices=["ide", "ahci"])

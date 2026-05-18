@@ -35,6 +35,7 @@ auto constexpr ctrl_l_make      = 0x1d;
 auto constexpr ctrl_r_make      = 0xe01d;
 auto constexpr ctrl_r_break     = 0xe09d;
 auto constexpr caps_lock_make   = 0x3a;
+auto constexpr keypad_decimal_make = 0x53;
 
 /* 定义以下变量记录相应键按下的状态，
  * ext_scancode 用于记录 makecode 是否以 0xe0 开头 */
@@ -145,6 +146,11 @@ void static intr_keyboard_handler()
     }
 
     // 如果是通码
+    if(scancode == keypad_decimal_make) {
+        solve('.');
+        return;
+    }
+
     auto shift = false; // 判断是否与shift结合
     if((scancode > 0x00 && scancode < 0x3b) || scancode == alt_r_make || scancode == ctrl_r_make) {
         if(scancode < 0x0e || scancode == 0x29 || scancode == 0x1a || scancode == 0x1b || scancode == 0x2b || scancode == 0x27 || scancode == 0x28 || scancode == 0x33 || scancode == 0x34 || scancode == 0x35) {
@@ -178,8 +184,6 @@ void static intr_keyboard_handler()
 
         return;
     }
-
-    puts("unknown key!\n");
 
 }
 

@@ -1,0 +1,10 @@
+version = 1
+name = "os"
+
+[setup]
+script = ""
+
+[[actions]]
+name = "启动 Bochs"
+icon = "run"
+command = "cmake --build build --target bochs"
