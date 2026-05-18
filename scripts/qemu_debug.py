@@ -118,6 +118,8 @@ class QmpClient:
 def qemu_command(
     *,
     qemu_binary: str,
+    accel: str,
+    profile: str,
     display: str,
     qmp_socket: Path | None,
     monitor: str,
@@ -129,12 +131,14 @@ def qemu_command(
     os_image: Path,
     data_image: Path,
 ) -> list[str]:
+    machine = qemu_machine_arg(accel, profile)
+    resolved_display = qemu_display_arg(display, profile)
     cmd = [
         qemu_binary,
         "-m",
         "32",
         "-machine",
-        "pc",
+        machine,
         "-boot",
         "c",
         "-name",
@@ -178,7 +182,7 @@ def qemu_command(
     if snapshot:
         cmd.append("-snapshot")
 
-    cmd.extend(["-display", "none" if display == "none" else display])
+    cmd.extend(["-display", resolved_display])
 
     if qmp_socket is not None:
         qmp_socket.parent.mkdir(parents=True, exist_ok=True)
@@ -198,6 +202,40 @@ def qemu_command(
         cmd.append("-S")
 
     return cmd
+
+
+def qemu_machine_arg(accel: str, profile: str) -> str:
+    accel_mode = {
+        "auto": "kvm:tcg",
+        "kvm": "kvm",
+        "tcg": "tcg",
+    }.get(accel)
+    if accel_mode is None:
+        raise ValueError(f"unknown qemu accel: {accel}")
+    machine = "pc"
+    options = [f"accel={accel_mode}"]
+    if profile == "interactive-lowlatency":
+        machine = "pc-i440fx-10.1"
+        options.extend(["kernel-irqchip=on", "hpet=off", "usb=off"])
+    elif profile != "default":
+        raise ValueError(f"unknown qemu profile: {profile}")
+    return ",".join([machine, *options])
+
+
+def qemu_display_arg(display: str, profile: str) -> str:
+    if display == "none":
+        return "none"
+    if profile == "interactive-lowlatency" and display == "gtk":
+        return "gtk,gl=off,grab-on-hover=on,zoom-to-fit=off,show-tabs=off,show-menubar=off"
+    return display
+
+
+def qemu_run_env(profile: str, display: str, gtk_backend: str) -> dict[str, str]:
+    env = os.environ.copy()
+    if profile != "interactive-lowlatency" or display != "gtk" or gtk_backend == "auto":
+        return env
+    env["GDK_BACKEND"] = gtk_backend
+    return env
 
 
 def ensure_images_exist(os_image: Path, data_image: Path) -> None:
@@ -753,6 +791,8 @@ def run_scenario(
     *,
     scenario: str,
     qemu_binary: str,
+    accel: str,
+    profile: str,
     artifacts_dir: Path,
     boot_timeout: float,
     snapshot: bool,
@@ -792,6 +832,8 @@ def run_scenario(
     qemu_log = artifacts_dir / "qemu.log"
     cmd = qemu_command(
         qemu_binary=qemu_binary,
+        accel=accel,
+        profile=profile,
         display="none",
         qmp_socket=qmp_socket,
         monitor="none",
@@ -899,6 +941,8 @@ def command_run(args: argparse.Namespace) -> int:
     ensure_optional_image_exists(boot_image)
     cmd = qemu_command(
         qemu_binary=args.qemu_binary,
+        accel=args.accel,
+        profile=args.profile,
         display=args.display,
         qmp_socket=Path(args.qmp_socket) if args.qmp_socket else None,
         monitor=args.monitor,
@@ -910,7 +954,11 @@ def command_run(args: argparse.Namespace) -> int:
         os_image=os_image,
         data_image=data_image,
     )
-    os.execvp(cmd[0], cmd)
+    env = qemu_run_env(args.profile, args.display, args.gtk_backend)
+    if env.get("GDK_BACKEND") is not None:
+        print(f"[info] host GDK_BACKEND={env['GDK_BACKEND']}")
+    print(f"[info] qemu: {' '.join(cmd)}", flush=True)
+    os.execvpe(cmd[0], cmd, env)
     return 0
 
 
@@ -920,6 +968,8 @@ def command_smoke(args: argparse.Namespace) -> int:
     return run_scenario(
         scenario="legacy_shell_smoke",
         qemu_binary=args.qemu_binary,
+        accel=args.accel,
+        profile="default",
         artifacts_dir=Path(args.artifacts_dir),
         boot_timeout=args.boot_timeout,
         snapshot=args.snapshot,
@@ -937,6 +987,8 @@ def command_test(args: argparse.Namespace) -> int:
     return run_scenario(
         scenario=args.scenario,
         qemu_binary=args.qemu_binary,
+        accel=args.accel,
+        profile="default",
         artifacts_dir=Path(args.artifacts_dir),
         boot_timeout=args.boot_timeout,
         snapshot=args.snapshot,
@@ -955,6 +1007,9 @@ def parser() -> argparse.ArgumentParser:
     run_p = sub.add_parser("run", help="Run the OS under QEMU.")
     run_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))
     run_p.add_argument("--qemu-binary", default=shutil.which("qemu-system-i386") or "qemu-system-i386")
+    run_p.add_argument("--accel", default="auto", choices=["auto", "kvm", "tcg"])
+    run_p.add_argument("--profile", default="default", choices=["default", "interactive-lowlatency"])
+    run_p.add_argument("--gtk-backend", default="auto", choices=["auto", "x11", "wayland"])
     run_p.add_argument("--display", default="gtk", choices=["gtk", "sdl", "curses", "none"])
     run_p.add_argument("--monitor", default="none", choices=["none", "stdio"])
     run_p.add_argument("--qmp-socket", default="")
@@ -970,6 +1025,7 @@ def parser() -> argparse.ArgumentParser:
     smoke_p = sub.add_parser("smoke", help="Run the legacy headless shell smoke test.")
     smoke_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))
     smoke_p.add_argument("--qemu-binary", default=shutil.which("qemu-system-i386") or "qemu-system-i386")
+    smoke_p.add_argument("--accel", default="auto", choices=["auto", "kvm", "tcg"])
     smoke_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
     smoke_p.add_argument("--boot-timeout", type=float, default=40.0)
     smoke_p.add_argument("--snapshot", dest="snapshot", action="store_true")
@@ -1017,6 +1073,7 @@ def parser() -> argparse.ArgumentParser:
     )
     test_p.add_argument("--build-dir", default=str(DEFAULT_BUILD_DIR))
     test_p.add_argument("--qemu-binary", default=shutil.which("qemu-system-i386") or "qemu-system-i386")
+    test_p.add_argument("--accel", default="auto", choices=["auto", "kvm", "tcg"])
     test_p.add_argument("--artifacts-dir", default=str(DEFAULT_ARTIFACTS_DIR))
     test_p.add_argument("--boot-timeout", type=float, default=40.0)
     test_p.add_argument("--storage-topology", default="ide", choices=["ide", "ahci"])

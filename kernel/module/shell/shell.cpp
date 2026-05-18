@@ -129,27 +129,27 @@ export auto shell() -> void
             std::print("num of arguments exceed {}\n",MAX_ARG_NR);
             continue;
         }
-        auto cli = std::string_view{ argv[0] };
-        if(cli == "ls"sv) {
+        auto cli = argv[0];
+        if(strcmp(cli,"ls") == 0) {
             builtin::ls(argc,argv.data());
-        } else if(cli == "cd"sv) {
+        } else if(strcmp(cli,"cd") == 0) {
             if(builtin::cd(argc,argv.data())) {
                 cwd_cache = {};
                 strcpy(cwd_cache.data(),final_path.data());
             }
-        } else if(cli == "pwd"sv) {
+        } else if(strcmp(cli,"pwd") == 0) {
             builtin::pwd(argc,argv.data());
-        } else if(cli == "ps"sv) {
+        } else if(strcmp(cli,"ps") == 0) {
             builtin::ps(argc,argv.data());
-        } else if(cli == "clear"sv) {
+        } else if(strcmp(cli,"clear") == 0) {
             builtin::clear(argc,argv.data());
-        } else if(cli == "mkdir"sv) {
+        } else if(strcmp(cli,"mkdir") == 0) {
             builtin::mkdir(argc,argv.data());
-        } else if(cli == "rmdir"sv) {
+        } else if(strcmp(cli,"rmdir") == 0) {
             builtin::rmdir(argc,argv.data());
-        } else if(cli == "rm"sv) {
+        } else if(strcmp(cli,"rm") == 0) {
             builtin::rm(argc,argv.data());
-        } else if(cli == "disktest"sv) {
+        } else if(strcmp(cli,"disktest") == 0) {
             builtin::disktest(argc,argv.data());
         } else {
             auto pid = std::fork();

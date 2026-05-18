@@ -167,6 +167,7 @@ target_link_libraries(os
         stdio
         block_device
         storage
+        thread_init
 )
 
 # 创建内核可执行文件

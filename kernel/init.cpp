@@ -63,6 +63,5 @@ auto init_all() -> void
     }
 
     filesystem_init();  // 初始化 文件系统
-    start_init_process();
 
 }

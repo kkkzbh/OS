@@ -252,18 +252,32 @@ cmake --build build --target qemu-smoke
 
 - `ctest -L boot`：正式的 boot 回归测试入口，输出工件位于 `build/test/artifacts/*`
 - `ctest -L fs`：正式的文件系统回归测试入口，覆盖 shell 场景与 `fs_test_runner`
-- `qemu`：图形模式启动，适合日常交互验证
-- `qemu-gdb`：QEMU 在 `tcp::1234` 等待；正式源码级调试请配合 `Debug` 构建并连接 `gdb <build-dir>/bin/kernel`
-- `qemu-smoke`：兼容保留的 shell smoke，会在发现 fatal screen pattern 时直接失败
+- `qemu`：图形模式启动，适合日常交互验证；默认使用 `--accel auto --profile interactive-lowlatency --gtk-backend x11`，优先尝试 `KVM` 并通过 `X11/Xwayland GTK` 走低延迟交互配置
+- `qemu-gdb`：QEMU 在 `tcp::1234` 等待；保留保守配置，仅默认使用 `--accel auto`；正式源码级调试请配合 `Debug` 构建并连接 `gdb <build-dir>/bin/kernel`
+- `qemu-smoke`：兼容保留的 shell smoke，保留保守配置，仅默认使用 `--accel auto`，会在发现 fatal screen pattern 时直接失败
+
+`scripts/qemu_debug.py` 现在支持统一的加速器选择：
+
+- `--accel auto`：使用 `-machine pc,accel=kvm:tcg`，优先尝试 `KVM`，不可用时自动回退到 `TCG`
+- `--accel kvm`：使用 `-machine pc,accel=kvm`，要求宿主机支持 `/dev/kvm`
+- `--accel tcg`：使用 `-machine pc,accel=tcg`，适合复现纯软件模拟路径下的问题
+
+交互式 `run` 还支持 host-side 低延迟选项：
+
+- `--profile interactive-lowlatency`：将 machine 固定为 `pc-i440fx-10.1,accel=...,kernel-irqchip=on,hpet=off,usb=off`
+- `--gtk-backend x11`：为 QEMU 注入 `GDK_BACKEND=x11`，优先走 `X11/Xwayland`
+- `--gtk-backend wayland`：为 QEMU 注入 `GDK_BACKEND=wayland`
+- `--gtk-backend auto`：不注入 host GTK 后端，由宿主 GTK 自行选择
 
 也可以直接使用脚本：
 
 ```bash
-python3 scripts/qemu_debug.py run
-python3 scripts/qemu_debug.py run --gdb 1234 --paused
-python3 scripts/qemu_debug.py smoke
-python3 scripts/qemu_debug.py test --scenario boot_milestones
-python3 scripts/qemu_debug.py test --scenario shell_fs_cwd
+python3 scripts/qemu_debug.py run --accel auto --profile interactive-lowlatency --gtk-backend x11
+python3 scripts/qemu_debug.py run --accel auto --profile interactive-lowlatency --gtk-backend wayland
+python3 scripts/qemu_debug.py run --accel kvm --gdb 1234 --paused
+python3 scripts/qemu_debug.py smoke --accel auto
+python3 scripts/qemu_debug.py test --scenario boot_milestones --accel auto
+python3 scripts/qemu_debug.py test --scenario shell_fs_cwd --accel tcg
 ```
 
 正式的 `QEMU` 内核源码级调试流程：

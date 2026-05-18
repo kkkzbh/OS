@@ -177,7 +177,7 @@ add_custom_target(bochs-smoke
 
 if(QEMU_SYSTEM_I386)
 add_custom_target(qemu
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py run --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386}
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py run --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386} --accel auto --profile interactive-lowlatency --gtk-backend x11
     DEPENDS osbuild
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Starting QEMU..."
@@ -185,7 +185,7 @@ add_custom_target(qemu
 )
 
 add_custom_target(qemu-gdb
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py run --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386} --gdb 1234 --paused
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py run --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386} --accel auto --gdb 1234 --paused
     DEPENDS osbuild
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Starting QEMU with GDB support on tcp::1234..."
@@ -193,7 +193,7 @@ add_custom_target(qemu-gdb
 )
 
 add_custom_target(qemu-smoke
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py test --scenario legacy_shell_smoke --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386}
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/qemu_debug.py test --scenario legacy_shell_smoke --build-dir ${CMAKE_BINARY_DIR} --qemu-binary ${QEMU_SYSTEM_I386} --accel auto
     DEPENDS osbuild
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Running headless QEMU shell smoke test..."

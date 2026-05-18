@@ -34,8 +34,7 @@ auto wash_path(char const* old_abs_path,char* new_abs_path) -> void
     auto buffer = std::buffer{ new_abs_path,0 };
     buffer += "/";
     while(name[0]) {
-        auto sv = std::string_view{ name };
-        if(sv == ".."sv) {  // 如果是上一级目录
+        if(strcmp(name.data(),"..") == 0) {  // 如果是上一级目录
             auto slashp = strrchr(new_abs_path,'/');
             if(slashp != new_abs_path) {    // 如果没到达顶层目录'/'
                 *slashp = '\0'; // 等效于回到上一级目录
@@ -44,8 +43,8 @@ auto wash_path(char const* old_abs_path,char* new_abs_path) -> void
                 *(slashp + 1) = '\0';
                 buffer.sz = 1;
             }
-        } else if(sv != "."sv) {    // 如果不是'.'，将name拼接到new_abs_path
-            if(buffer != "/"sv) {   // 防止 "//"
+        } else if(strcmp(name.data(),".") != 0) {    // 如果不是'.'，将name拼接到new_abs_path
+            if(not (buffer.size() == 1 and buffer[0] == '/')) {   // 防止 "//"
                 buffer += "/";
             }
             buffer += name;
@@ -96,7 +95,8 @@ export namespace builtin
             return nullptr;
         }
         if(argc == 1) {     // 只是键入cd，则实现是回到根目录
-            final_path[0,2] | std::copy["/"sv];
+            final_path[0] = '/';
+            final_path[1] = '\0';
             return final_path.data();
         }
         make_clear_abs_path(argv[1],final_path.data());
@@ -113,17 +113,17 @@ export namespace builtin
         auto pathname = (char*)nullptr;
         auto arg_path_num = 0;
         for(auto i : std::iota[1,argc]) {   // 跳过第一个 "ls"
-            auto str = std::string_view{ argv[i] };
-            if(str.starts_with("-"sv)) {
-                if(str == "-l"sv) {
+            auto arg = argv[i];
+            if(arg[0] == '-') {
+                if(strcmp(arg,"-l") == 0) {
                     long_info = true;
-                } else if(str == "-h") {
+                } else if(strcmp(arg,"-h") == 0) {
                     std::print("usage: -l list all information about the file.\n");
                     std::print("-h for help\n");
                     std::print("list all files in the current dirctory if no option\n");
                     return;
                 } else {
-                    std::print("ls: invalid option {}\n",str);
+                    std::print("ls: invalid option {}\n",arg);
                     std::print("Try 'ls -h' for more information.\n");
                     return;
                 }
@@ -223,7 +223,7 @@ export namespace builtin
         }
         make_clear_abs_path(argv[1],final_path.data());
         auto path = std::string_view{ final_path };
-        if(path == "/"sv or not std::mkdir(path)) {     // 如果创建是根目录或者失败
+        if((final_path[0] == '/' and final_path[1] == '\0') or not std::mkdir(path)) {     // 如果创建是根目录或者失败
             std::print("mkdir: create directory {} failed.\n",argv[1]);
             return false;
         }
@@ -238,7 +238,7 @@ export namespace builtin
         }
         make_clear_abs_path(argv[1],final_path.data());
         auto path = std::string_view{ final_path };
-        if(path == "/"sv or not std::rmdir(path)) {   // 如果删除根目录或者删除失败
+        if((final_path[0] == '/' and final_path[1] == '\0') or not std::rmdir(path)) {   // 如果删除根目录或者删除失败
             std::print("rmdir: remove {} failed.\n",argv[1]);
             return false;
         }
@@ -253,7 +253,7 @@ export namespace builtin
         }
         make_clear_abs_path(argv[1],final_path.data());
         auto path = std::string_view{ final_path };
-        if(path == "/"sv or not std::unlink(path)) {
+        if((final_path[0] == '/' and final_path[1] == '\0') or not std::unlink(path)) {
             std::print("rm: delete {} failed.\n",argv[1]);
             return false;
         }
