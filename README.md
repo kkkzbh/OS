@@ -1,5 +1,7 @@
 # knix
 
+English | [简体中文](README.zh-CN.md)
+
 `knix` is a 32-bit x86 experimental operating system built from the boot sector all the way to a user-space shell.
 
 It connects the main operating-system pipeline end to end: MBR, Loader, kernel initialization, interrupts, memory management, threads, processes, file system, system calls, and user-program execution.
