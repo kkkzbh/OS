@@ -43,8 +43,6 @@
 % 限制图片最大高度，避免小图被“抬到”浮动页
 \setkeys{Gin}{width=0.9\textwidth,height=0.75\textheight,keepaspectratio}
 \RequirePackage{threeparttable}  % 表注支持
-% Ensure minted sees outputdir before any dependent package may load it
-\PassOptionsToPackage{outputdir=_build}{minted}
 \RequirePackage{minted}
 \RequirePackage[skins,breakable,listings]{tcolorbox}
 \tcbuselibrary{minted}
@@ -142,10 +140,10 @@
   {}
 
 % Header & footer
-% 3: Header: Songti 5 hao, Center: "网络空间安全与计算机学院操作系统课程设计"
+% 3: Header: Songti 5 hao, centered project title
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[C]{\songti\zihao{5} 网络空间安全与计算机学院操作系统课程设计}
+\fancyhead[C]{\songti\zihao{5} knix - i386操作系统设计}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.5pt} % Default rule
 \setlength{\headheight}{14pt} % Fix warning
@@ -153,7 +151,7 @@
 % 让章节开始页也显示相同的页眉
 \fancypagestyle{plain}{%
   \fancyhf{}
-  \fancyhead[C]{\songti\zihao{5} 网络空间安全与计算机学院操作系统课程设计}
+  \fancyhead[C]{\songti\zihao{5} knix - i386操作系统设计}
   \fancyfoot[C]{\thepage}
   \renewcommand{\headrulewidth}{0.5pt}
 }

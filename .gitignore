@@ -13,6 +13,7 @@ build-*/
 
 .run/
 .cache/
+.codex/
 Testing/
 __pycache__/
 AGENTS.md
