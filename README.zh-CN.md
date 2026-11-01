@@ -46,22 +46,10 @@ cmake --build build --target qemu-gdb        # 启动后挂起，等待 GDB 连�
 
 ## 架构
 
-```mermaid
-flowchart TB
-    subgraph U["用户态 (ring 3)"]
-        SH["Shell"] --- PROG["用户程序 + CRT"]
-    end
-    subgraph K["内核 (ring 0)"]
-        SC["系统调用 int 0x80"]
-        FS["文件系统"] & PM["进程 / 调度"] & MM["内存管理"]
-        BLK["块设备层"] & INT["中断 / IDT / PIC"]
-        DRV["驱动：AHCI · ATA PIO · 键盘 · PIT · 控制台"]
-    end
-    U --> SC --> FS & PM & MM
-    FS --> BLK --> DRV
-    INT --> PM
-    DRV --> INT
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/architecture-zh-dark.svg">
+  <img alt="knix 架构图" src="assets/readme/architecture-zh-light.svg">
+</picture>
 
 启动链路：`BIOS → MBR(0x7C00) → Loader(0x900) → 保护模式 + 分页 → 解析 kernel ELF → main()`，
 随后依次初始化 IDT、内存、线程、控制台、键盘、时钟、存储、文件系统、系统调用，最后创建 init 进程并拉起 Shell。

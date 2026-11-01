@@ -46,22 +46,10 @@ cmake --build build --target qemu-gdb        # start paused, wait for GDB on :12
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    subgraph U["User space (ring 3)"]
-        SH["Shell"] --- PROG["User programs + CRT"]
-    end
-    subgraph K["Kernel (ring 0)"]
-        SC["System calls int 0x80"]
-        FS["File system"] & PM["Processes / scheduling"] & MM["Memory management"]
-        BLK["Block device layer"] & INT["Interrupts / IDT / PIC"]
-        DRV["Drivers: AHCI · ATA PIO · keyboard · PIT · console"]
-    end
-    U --> SC --> FS & PM & MM
-    FS --> BLK --> DRV
-    INT --> PM
-    DRV --> INT
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/architecture-en-dark.svg">
+  <img alt="knix architecture" src="assets/readme/architecture-en-light.svg">
+</picture>
 
 Boot path: `BIOS → MBR(0x7C00) → Loader(0x900) → protected mode + paging → parse kernel ELF → main()`.
 The kernel then initializes the IDT, memory, threads, console, keyboard, timer, storage, file system, and system calls in order, and finally creates the init process, which launches the shell.
