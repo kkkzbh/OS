@@ -47,8 +47,8 @@ cmake --build build --target qemu-gdb        # start paused, wait for GDB on :12
 ## Architecture
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/architecture-en-dark.svg">
-  <img alt="knix architecture" src="assets/readme/architecture-en-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/arch-en-dark.svg">
+  <img alt="knix architecture" src="assets/readme/arch-en-light.svg">
 </picture>
 
 Boot path: `BIOS → MBR(0x7C00) → Loader(0x900) → protected mode + paging → parse kernel ELF → main()`.

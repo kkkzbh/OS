@@ -47,8 +47,8 @@ cmake --build build --target qemu-gdb        # 启动后挂起，等待 GDB 连�
 ## 架构
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/architecture-zh-dark.svg">
-  <img alt="knix 架构图" src="assets/readme/architecture-zh-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/arch-zh-dark.svg">
+  <img alt="knix 架构图" src="assets/readme/arch-zh-light.svg">
 </picture>
 
 启动链路：`BIOS → MBR(0x7C00) → Loader(0x900) → 保护模式 + 分页 → 解析 kernel ELF → main()`，
